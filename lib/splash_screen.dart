@@ -2,7 +2,7 @@
 import 'package:flutter/cupertino.dart';
 import 'package:flutter/material.dart';
 import 'dart:async';
-import 'package:myapp/main.dart'; // Import MyHomePage
+import 'package:myapp/onboarding_screen.dart'; // Import OnboardingScreen
 import 'package:myapp/bouncing_dots_indicator.dart';
 
 class SplashScreen extends StatefulWidget {
@@ -26,9 +26,10 @@ class _SplashScreenState extends State<SplashScreen> with SingleTickerProviderSt
     _fadeAnimation = Tween<double>(begin: 0.0, end: 1.0).animate(_animationController);
     _animationController.forward();
 
-    Timer(const Duration(seconds: 10), () {
+    // Navigate to OnboardingScreen after 6 seconds
+    Timer(const Duration(seconds: 6), () {
       Navigator.of(context).pushReplacement(
-        MaterialPageRoute(builder: (context) => const MyHomePage(title: 'Flutter Demo Home Page')),
+        MaterialPageRoute(builder: (context) => const OnboardingScreen()),
       );
     });
   }
