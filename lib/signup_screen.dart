@@ -1,6 +1,6 @@
 
 import 'package:flutter/material.dart';
-import 'package:myapp/home_screen.dart'; // Import the HomeScreen
+import 'package:myapp/main_screen.dart'; // Import the MainScreen
 
 class SignUpScreen extends StatefulWidget {
   const SignUpScreen({super.key});
@@ -179,7 +179,7 @@ class _SignUpScreenState extends State<SignUpScreen> {
                 ElevatedButton(
                   onPressed: () {
                     Navigator.of(context).pushReplacement(
-                      MaterialPageRoute(builder: (context) => const HomeScreen()),
+                      MaterialPageRoute(builder: (context) => const MainScreen()),
                     );
                   },
                    style: ElevatedButton.styleFrom(

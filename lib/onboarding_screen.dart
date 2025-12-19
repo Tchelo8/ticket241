@@ -1,6 +1,7 @@
 
 import 'package:flutter/material.dart';
-import 'package:myapp/starting_screen.dart'; // Import StartingScreen
+import 'package:myapp/main_screen.dart'; // Import MainScreen
+import 'package:smooth_page_indicator/smooth_page_indicator.dart';
 
 class OnboardingScreen extends StatefulWidget {
   const OnboardingScreen({super.key});
@@ -54,27 +55,36 @@ class _OnboardingScreenState extends State<OnboardingScreen> {
               },
             ),
             Positioned(
+              top: 20,
+              right: 20,
+              child: TextButton(
+                onPressed: () {
+                  Navigator.of(context).pushReplacement(
+                    MaterialPageRoute(builder: (context) => const MainScreen()),
+                  );
+                },
+                child: const Text(
+                  'Passer',
+                  style: TextStyle(color: Colors.grey, fontSize: 16),
+                ),
+              ),
+            ),
+            Positioned(
               bottom: 20,
               left: 20,
               right: 20,
               child: Row(
                 mainAxisAlignment: MainAxisAlignment.spaceBetween,
                 children: [
-                  TextButton(
-                    onPressed: () {
-                      Navigator.of(context).pushReplacement(
-                        MaterialPageRoute(builder: (context) => const StartingScreen()),
-                      );
-                    },
-                    child: const Text(
-                      'Passer',
-                      style: TextStyle(color: Colors.grey, fontSize: 16),
-                    ),
-                  ),
-                  Row(
-                    children: List.generate(
-                      _onboardingData.length,
-                      (index) => buildDot(index, context),
+                  SmoothPageIndicator(
+                    controller: _pageController,
+                    count: _onboardingData.length,
+                    effect: const ExpandingDotsEffect(
+                      activeDotColor: Color(0xFF1E90FF),
+                      dotColor: Colors.grey,
+                      dotHeight: 10,
+                      dotWidth: 10,
+                      spacing: 8,
                     ),
                   ),
                   Container(
@@ -93,7 +103,7 @@ class _OnboardingScreenState extends State<OnboardingScreen> {
                           );
                         } else {
                           Navigator.of(context).pushReplacement(
-                             MaterialPageRoute(builder: (context) => const StartingScreen()),
+                             MaterialPageRoute(builder: (context) => const MainScreen()),
                           );
                         }
                       },
@@ -105,19 +115,6 @@ class _OnboardingScreenState extends State<OnboardingScreen> {
             ),
           ],
         ),
-      ),
-    );
-  }
-
-  AnimatedContainer buildDot(int index, BuildContext context) {
-    return AnimatedContainer(
-      duration: const Duration(milliseconds: 200),
-      height: 6,
-      width: _currentPage == index ? 20 : 6,
-      margin: const EdgeInsets.only(right: 5),
-      decoration: BoxDecoration(
-        color: _currentPage == index ? const Color(0xFF1E90FF) : Colors.grey,
-        borderRadius: BorderRadius.circular(3),
       ),
     );
   }
@@ -146,7 +143,7 @@ class OnboardingPage extends StatelessWidget {
           Center(
             child: Image.asset(
               image,
-              height: 300,
+              height: 350,
             ),
           ),
           const SizedBox(height: 50),

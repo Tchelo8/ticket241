@@ -1,6 +1,6 @@
 
 import 'package:flutter/material.dart';
-import 'package:myapp/home_screen.dart'; // Import the HomeScreen
+import 'package:myapp/main_screen.dart'; // Import the MainScreen
 
 class LoginScreen extends StatefulWidget {
   const LoginScreen({super.key});
@@ -120,7 +120,7 @@ class _LoginScreenState extends State<LoginScreen> {
               ElevatedButton(
                 onPressed: () {
                    Navigator.of(context).pushReplacement(
-                        MaterialPageRoute(builder: (context) => const HomeScreen()),
+                        MaterialPageRoute(builder: (context) => const MainScreen()),
                       );
                 },
                 style: ElevatedButton.styleFrom(

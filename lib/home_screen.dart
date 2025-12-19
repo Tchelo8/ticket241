@@ -1,15 +1,26 @@
 
 import 'package:flutter/material.dart';
 
-class HomeScreen extends StatefulWidget {
+class HomeScreen extends StatelessWidget {
   const HomeScreen({super.key});
 
-  @override
-  _HomeScreenState createState() => _HomeScreenState();
-}
-
-class _HomeScreenState extends State<HomeScreen> {
-  int _bottomNavIndex = 0;
+  void _showCitySelection(BuildContext context) {
+    showModalBottomSheet(
+      context: context,
+      builder: (context) {
+        return Container(
+          height: 250,
+          color: Colors.white,
+          child: const Center(
+            child: Text(
+              'Sélection de la ville (Design à venir)',
+              style: TextStyle(fontSize: 18),
+            ),
+          ),
+        );
+      },
+    );
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -21,7 +32,7 @@ class _HomeScreenState extends State<HomeScreen> {
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
               // Header
-              _buildHeader(),
+              _buildHeader(context),
               // Search Bar
               _buildSearchBar(),
               const SizedBox(height: 24),
@@ -30,7 +41,7 @@ class _HomeScreenState extends State<HomeScreen> {
               _buildUpcomingEventsList(),
               const SizedBox(height: 24),
               // Popular Now
-              _buildSectionHeader("Populaire maintenant", showSeeAll: true),
+              _buildSectionHeader("Populaire actuellement", showSeeAll: true),
               _buildPopularEventsList(imagePath: "assets/images/enb.jpg", title: "Entre Nous Bar"),
               const SizedBox(height: 24),
               // "Pour vous" section
@@ -49,34 +60,48 @@ class _HomeScreenState extends State<HomeScreen> {
           ),
         ),
       ),
-      bottomNavigationBar: _buildBottomNavigationBar(),
     );
   }
 
   // Header Widget
-  Widget _buildHeader() {
+  Widget _buildHeader(BuildContext context) {
     return Padding(
       padding: const EdgeInsets.symmetric(horizontal: 24.0, vertical: 16.0),
       child: Row(
         mainAxisAlignment: MainAxisAlignment.spaceBetween,
         children: [
-          Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              Text(
-                'Trouver des événements près de',
-                style: TextStyle(color: Colors.grey[600], fontSize: 14),
-              ),
-              const SizedBox(height: 4),
-              const Text(
-                'Libreville',
-                style: TextStyle(
-                  fontSize: 20,
-                  fontWeight: FontWeight.bold,
-                  color: Colors.black87,
+          GestureDetector(
+            onTap: () => _showCitySelection(context),
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Text(
+                  'Trouver des événements près de',
+                  style: TextStyle(color: Colors.grey[600], fontSize: 14),
                 ),
-              ),
-            ],
+                const SizedBox(height: 4),
+                const Row(
+                  children: [
+                    Text(
+                      'LBV',
+                      style: TextStyle(
+                        fontSize: 20,
+                        fontWeight: FontWeight.bold,
+                        color: Colors.black87,
+                      ),
+                    ),
+                    SizedBox(width: 8),
+                    Text(
+                      '∨',
+                      style: TextStyle(
+                        fontSize: 20,
+                        color: Colors.black87,
+                      ),
+                    ),
+                  ],
+                ),
+              ],
+            ),
           ),
           Container(
             decoration: BoxDecoration(
@@ -159,7 +184,7 @@ class _HomeScreenState extends State<HomeScreen> {
           return _buildUpcomingEventCard(
             image: 'assets/images/enb.jpg',
             title: 'ENB',
-            location: 'Libreville',
+            location: 'LBV',
             date: '29',
             month: 'Mar'
           );
@@ -218,31 +243,36 @@ class _HomeScreenState extends State<HomeScreen> {
             Expanded(
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
-                mainAxisAlignment: MainAxisAlignment.center,
+                mainAxisAlignment: MainAxisAlignment.spaceBetween,
                 children: [
                   Text(title, style: const TextStyle(fontSize: 16, fontWeight: FontWeight.bold), maxLines: 2, overflow: TextOverflow.ellipsis,),
-                  const SizedBox(height: 8),
                   Row(
+                    mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                    crossAxisAlignment: CrossAxisAlignment.end,
                     children: [
-                      const Icon(Icons.location_on_outlined, size: 16, color: Colors.grey),
-                      const SizedBox(width: 4),
-                      Text(location, style: const TextStyle(color: Colors.grey)),
+                      Row(
+                        children: [
+                          const Icon(Icons.location_on_outlined, size: 16, color: Colors.grey),
+                          const SizedBox(width: 4),
+                          Text(location, style: const TextStyle(color: Colors.grey, fontSize: 13)),
+                        ],
+                      ),
+                       ElevatedButton(
+                         onPressed: () {},
+                         style: ElevatedButton.styleFrom(
+                           backgroundColor: const Color(0xFF1E90FF).withOpacity(0.1),
+                           foregroundColor: const Color(0xFF1E90FF),
+                           elevation: 0,
+                           padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
+                           shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)),
+                         ),
+                         child: const Text('Précommander', style: TextStyle(fontSize: 12)),
+                       )
                     ],
-                  )
+                  ),
                 ],
               ),
             ),
-             const SizedBox(width: 12),
-             ElevatedButton(
-               onPressed: () {},
-               style: ElevatedButton.styleFrom(
-                 backgroundColor: const Color(0xFF1E90FF).withOpacity(0.1),
-                 foregroundColor: const Color(0xFF1E90FF),
-                 elevation: 0,
-                 shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)),
-               ),
-               child: const Text('Précommander'),
-             )
           ],
         ),
       ),
@@ -262,7 +292,7 @@ class _HomeScreenState extends State<HomeScreen> {
             image: imagePath,
             date: '29 Mar, 2024 - 22:00',
             title: title,
-            location: 'Libreville',
+            location: 'LBV',
             price: 'À partir de 2000 FCFA'
           );
         },
@@ -305,7 +335,7 @@ class _HomeScreenState extends State<HomeScreen> {
               children: [
                 Text(date, style: const TextStyle(fontSize: 12, color: Color(0xFF1E90FF), fontWeight: FontWeight.w600)),
                 const SizedBox(height: 8),
-                Text(title, style: const TextStyle(fontSize: 17, fontWeight: FontWeight.bold), maxLines: 1, overflow: TextOverflow.ellipsis,),
+                Text(title, style: const TextStyle(fontSize: 17, fontWeight: FontWeight.bold), maxLines: 1, overflow: TextOverflow.ellipsis, ),
                 const SizedBox(height: 12),
                 Row(
                   mainAxisAlignment: MainAxisAlignment.spaceBetween,
@@ -335,27 +365,4 @@ class _HomeScreenState extends State<HomeScreen> {
     );
   }
 
-  // Bottom Navigation Bar Widget
-  Widget _buildBottomNavigationBar() {
-    return BottomNavigationBar(
-      currentIndex: _bottomNavIndex,
-      onTap: (index) {
-        setState(() {
-          _bottomNavIndex = index;
-        });
-      },
-      type: BottomNavigationBarType.fixed,
-      selectedItemColor: const Color(0xFF1E90FF),
-      unselectedItemColor: Colors.grey,
-      selectedLabelStyle: const TextStyle(fontWeight: FontWeight.w600),
-      unselectedLabelStyle: const TextStyle(fontWeight: FontWeight.w600),
-      items: const [
-        BottomNavigationBarItem(icon: Icon(Icons.home), label: 'Accueil'),
-        BottomNavigationBarItem(icon: Icon(Icons.explore_outlined), label: 'Explorer'),
-        BottomNavigationBarItem(icon: Icon(Icons.favorite_border), label: 'Favoris'),
-        BottomNavigationBarItem(icon: Icon(Icons.confirmation_number_outlined), label: 'Billets'),
-        BottomNavigationBarItem(icon: Icon(Icons.person_outline), label: 'Profil'),
-      ],
-    );
-  }
 }
