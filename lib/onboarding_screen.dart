@@ -1,6 +1,6 @@
 
 import 'package:flutter/material.dart';
-import 'package:myapp/main_screen.dart'; // Import MainScreen
+import 'package:myapp/starting_screen.dart'; // Changement de l'import
 import 'package:smooth_page_indicator/smooth_page_indicator.dart';
 
 class OnboardingScreen extends StatefulWidget {
@@ -12,159 +12,146 @@ class OnboardingScreen extends StatefulWidget {
 
 class _OnboardingScreenState extends State<OnboardingScreen> {
   final PageController _pageController = PageController();
-  int _currentPage = 0;
+  bool _isLastPage = false;
 
-  final List<Map<String, String>> _onboardingData = [
-    {
-      "title": "Dites adieu aux files d'attente",
-      "subtitle": "Achetez vos billets en quelques clics et profitez de vos événements sans stress.",
-      "image": "assets/images/queue.png"
-    },
-    {
-      "title": "Découvrez un monde d'événements",
-      "subtitle": "Concerts, festivals, sport, théâtre... Vos prochaines sorties sont ici.",
-      "image": "assets/images/party.png"
-    },
-    {
-      "title": "Vos billets, toujours à portée de main",
-      "subtitle": "Accédez à vos tickets de manière sécurisée et ne manquez plus jamais un événement.",
-      "image": "assets/images/ticketHome.png"
-    }
+  final List<OnboardingPage> _pages = [
+    const OnboardingPage(
+      image: 'assets/images/queue.png',
+      title: "Dites adieu aux files d'attente",
+      subtitle: "Achetez vos billets en quelques clics et profitez de vos événements sans stress.",
+    ),
+    const OnboardingPage(
+      image: 'assets/images/party.png',
+      title: "Explorez les événements autour de vous",
+      subtitle: "Trouvez des concerts, des matchs, des spectacles et bien plus encore.",
+    ),
+    const OnboardingPage(
+      image: 'assets/images/ticketHome.png',
+      title: "Vos billets, toujours à portée de main",
+      subtitle: "Accédez à vos billets électroniques à tout moment, même sans connexion.",
+    ),
   ];
+
+  @override
+  void initState() {
+    super.initState();
+    _pageController.addListener(() {
+      setState(() {
+        _isLastPage = _pageController.page!.round() == _pages.length - 1;
+      });
+    });
+  }
+
+  @override
+  void dispose() {
+    _pageController.dispose();
+    super.dispose();
+  }
 
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      body: SafeArea(
-        child: Stack(
-          children: [
-            PageView.builder(
-              controller: _pageController,
-              onPageChanged: (int page) {
-                setState(() {
-                  _currentPage = page;
-                });
-              },
-              itemCount: _onboardingData.length,
-              itemBuilder: (context, index) {
-                return OnboardingPage(
-                  title: _onboardingData[index]['title']!,
-                  subtitle: _onboardingData[index]['subtitle']!,
-                  image: _onboardingData[index]['image']!,
-                );
-              },
-            ),
-            Positioned(
-              top: 20,
-              right: 20,
-              child: TextButton(
-                onPressed: () {
-                  Navigator.of(context).pushReplacement(
-                    MaterialPageRoute(builder: (context) => const MainScreen()),
-                  );
-                },
-                child: const Text(
-                  'Passer',
-                  style: TextStyle(color: Colors.grey, fontSize: 16),
-                ),
-              ),
-            ),
-            Positioned(
-              bottom: 20,
-              left: 20,
-              right: 20,
-              child: Row(
-                mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                children: [
-                  SmoothPageIndicator(
-                    controller: _pageController,
-                    count: _onboardingData.length,
-                    effect: const ExpandingDotsEffect(
-                      activeDotColor: Color(0xFF1E90FF),
-                      dotColor: Colors.grey,
-                      dotHeight: 10,
-                      dotWidth: 10,
-                      spacing: 8,
-                    ),
+      body: Stack(
+        children: [
+          PageView(
+            controller: _pageController,
+            children: _pages,
+          ),
+          Positioned(
+            bottom: 40,
+            left: 40,
+            right: 40,
+            child: Row(
+              mainAxisAlignment: MainAxisAlignment.spaceBetween,
+              children: [
+                SmoothPageIndicator(
+                  controller: _pageController,
+                  count: _pages.length,
+                  effect: const ExpandingDotsEffect(
+                    activeDotColor: Color(0xFF1E90FF),
+                    dotColor: Colors.grey,
+                    dotHeight: 10,
+                    dotWidth: 10,
                   ),
-                  Container(
-                    height: 60,
-                    width: 60,
-                    decoration: BoxDecoration(
-                      color: const Color(0xFF1E90FF),
-                      borderRadius: BorderRadius.circular(30),
-                    ),
-                    child: IconButton(
-                      onPressed: () {
-                        if (_currentPage < _onboardingData.length - 1) {
-                          _pageController.nextPage(
-                            duration: const Duration(milliseconds: 400),
-                            curve: Curves.easeInOut,
-                          );
-                        } else {
-                          Navigator.of(context).pushReplacement(
-                             MaterialPageRoute(builder: (context) => const MainScreen()),
-                          );
-                        }
-                      },
-                      icon: const Icon(Icons.arrow_forward_ios, color: Colors.white),
-                    ),
-                  )
-                ],
-              ),
+                ),
+                ElevatedButton(
+                  onPressed: () {
+                    if (_isLastPage) {
+                      Navigator.pushReplacement(
+                        context,
+                        // Redirection vers la page de démarrage
+                        MaterialPageRoute(builder: (context) => const StartingScreen()),
+                      );
+                    } else {
+                      _pageController.nextPage(
+                        duration: const Duration(milliseconds: 300),
+                        curve: Curves.ease,
+                      );
+                    }
+                  },
+                  style: ElevatedButton.styleFrom(
+                    shape: const CircleBorder(),
+                    padding: const EdgeInsets.all(15),
+                    backgroundColor: const Color(0xFF1E90FF),
+                    foregroundColor: Colors.white,
+                  ),
+                  child: const Icon(Icons.arrow_forward_ios, size: 20),
+                ),
+              ],
             ),
-          ],
-        ),
+          ),
+        ],
       ),
     );
   }
 }
 
 class OnboardingPage extends StatelessWidget {
+  final String image;
   final String title;
   final String subtitle;
-  final String image;
 
   const OnboardingPage({
     super.key,
+    required this.image,
     required this.title,
     required this.subtitle,
-    required this.image,
   });
 
   @override
   Widget build(BuildContext context) {
     return Padding(
       padding: const EdgeInsets.all(40.0),
-      child: Column(
-        mainAxisAlignment: MainAxisAlignment.center,
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          Center(
-            child: Image.asset(
-              image,
-              height: 350,
+      child: SingleChildScrollView(
+        child: Column(
+          mainAxisAlignment: MainAxisAlignment.center,
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Center(
+              child: Image.asset(
+                image,
+                height: 350,
+              ),
             ),
-          ),
-          const SizedBox(height: 50),
-          Text(
-            title,
-            style: const TextStyle(
-              fontSize: 28,
-              fontWeight: FontWeight.bold,
-              color: Colors.black87,
+            const SizedBox(height: 50),
+            Text(
+              title,
+              style: const TextStyle(
+                fontSize: 28,
+                fontWeight: FontWeight.bold,
+                color: Colors.black87,
+              ),
             ),
-          ),
-          const SizedBox(height: 20),
-          Text(
-            subtitle,
-            style: const TextStyle(
-              fontSize: 18,
-              color: Colors.black54,
+            const SizedBox(height: 20),
+            Text(
+              subtitle,
+              style: const TextStyle(
+                fontSize: 18,
+                color: Colors.black54,
+              ),
             ),
-          ),
-          const Spacer(),
-        ],
+          ],
+        ),
       ),
     );
   }

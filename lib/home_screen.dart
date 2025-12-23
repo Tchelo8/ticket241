@@ -1,5 +1,8 @@
 
 import 'package:flutter/material.dart';
+import 'package:myapp/event_details_screen.dart'; // Import the new screen
+import 'package:myapp/notifications_screen.dart';
+import 'package:flutter_staggered_animations/flutter_staggered_animations.dart';
 
 class HomeScreen extends StatelessWidget {
   const HomeScreen({super.key});
@@ -28,35 +31,46 @@ class HomeScreen extends StatelessWidget {
       backgroundColor: Colors.grey[100],
       body: SafeArea(
         child: SingleChildScrollView(
-          child: Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              // Header
-              _buildHeader(context),
-              // Search Bar
-              _buildSearchBar(),
-              const SizedBox(height: 24),
-              // Upcoming Events
-              _buildSectionHeader("Événements à venir"),
-              _buildUpcomingEventsList(),
-              const SizedBox(height: 24),
-              // Popular Now
-              _buildSectionHeader("Populaire actuellement", showSeeAll: true),
-              _buildPopularEventsList(imagePath: "assets/images/enb.jpg", title: "Entre Nous Bar"),
-              const SizedBox(height: 24),
-              // "Pour vous" section
-              _buildSectionHeader("Pour vous", showSeeAll: true),
-              _buildPopularEventsList(imagePath: "assets/images/enb.jpg", title: "Entre Nous Bar"),
-               const SizedBox(height: 24),
-              // "Sport" section
-              _buildSectionHeader("Sport", showSeeAll: true),
-               _buildPopularEventsList(imagePath: "assets/images/sibang.jpg", title: "CMS vs US Bitam"),
-               const SizedBox(height: 24),
-              // "Culture" section
-              _buildSectionHeader("Culture", showSeeAll: true),
-              _buildPopularEventsList(imagePath: "assets/images/oiseau.jpg", title: "Concert L'oiseau rare"),
-              const SizedBox(height: 24),
-            ],
+          child: AnimationLimiter(
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: AnimationConfiguration.toStaggeredList(
+                duration: const Duration(milliseconds: 375),
+                childAnimationBuilder: (widget) => SlideAnimation(
+                  verticalOffset: 50.0,
+                  child: FadeInAnimation(
+                    child: widget,
+                  ),
+                ),
+                children: [
+                  // Header
+                  _buildHeader(context),
+                  // Search Bar
+                  _buildSearchBar(),
+                  const SizedBox(height: 24),
+                  // Upcoming Events
+                  _buildSectionHeader("Événements à venir"),
+                  _buildUpcomingEventsList(),
+                  const SizedBox(height: 24),
+                  // Popular Now
+                  _buildSectionHeader("Populaire actuellement", showSeeAll: true),
+                  _buildPopularEventsList(context, imagePath: "assets/images/enb.jpg", title: "Entre Nous Bar"), // Pass context
+                  const SizedBox(height: 24),
+                  // "Pour vous" section
+                  _buildSectionHeader("Pour vous", showSeeAll: true),
+                  _buildPopularEventsList(context, imagePath: "assets/images/enb.jpg", title: "Entre Nous Bar"), // Pass context
+                  const SizedBox(height: 24),
+                  // "Sport" section
+                  _buildSectionHeader("Sport", showSeeAll: true),
+                  _buildPopularEventsList(context, imagePath: "assets/images/sibang.jpg", title: "CMS vs US Bitam"), // Pass context
+                  const SizedBox(height: 24),
+                  // "Culture" section
+                  _buildSectionHeader("Culture", showSeeAll: true),
+                  _buildPopularEventsList(context, imagePath: "assets/images/oiseau.jpg", title: "Concert L'oiseau rare"), // Pass context
+                  const SizedBox(height: 24),
+                ],
+              ),
+            ),
           ),
         ),
       ),
@@ -83,7 +97,7 @@ class HomeScreen extends StatelessWidget {
                 const Row(
                   children: [
                     Text(
-                      'LBV',
+                      'Libreville',
                       style: TextStyle(
                         fontSize: 20,
                         fontWeight: FontWeight.bold,
@@ -91,13 +105,7 @@ class HomeScreen extends StatelessWidget {
                       ),
                     ),
                     SizedBox(width: 8),
-                    Text(
-                      '∨',
-                      style: TextStyle(
-                        fontSize: 20,
-                        color: Colors.black87,
-                      ),
-                    ),
+                    Icon(Icons.expand_more, color: Colors.black87),
                   ],
                 ),
               ],
@@ -117,7 +125,12 @@ class HomeScreen extends StatelessWidget {
             ),
             child: IconButton(
               icon: const Icon(Icons.notifications_outlined, color: Colors.black),
-              onPressed: () {},
+              onPressed: () {
+                Navigator.push(
+                  context,
+                  MaterialPageRoute(builder: (context) => const NotificationsScreen()),
+                );
+              },
             ),
           ),
         ],
@@ -176,20 +189,31 @@ class HomeScreen extends StatelessWidget {
   Widget _buildUpcomingEventsList() {
     return SizedBox(
       height: 120,
-      child: ListView.builder(
-        scrollDirection: Axis.horizontal,
-        physics: const BouncingScrollPhysics(),
-        itemCount: 5, // Duplicated elements
-        itemBuilder: (context, index) {
-          return _buildUpcomingEventCard(
-            image: 'assets/images/enb.jpg',
-            title: 'ENB',
-            location: 'LBV',
-            date: '29',
-            month: 'Mar'
-          );
-        },
-        padding: const EdgeInsets.only(left: 24, top: 12),
+      child: AnimationLimiter(
+        child: ListView.builder(
+          scrollDirection: Axis.horizontal,
+          physics: const BouncingScrollPhysics(),
+          itemCount: 5,
+          itemBuilder: (context, index) {
+            return AnimationConfiguration.staggeredList(
+              position: index,
+              duration: const Duration(milliseconds: 375),
+              child: SlideAnimation(
+                horizontalOffset: 50.0,
+                child: FadeInAnimation(
+                  child: _buildUpcomingEventCard(
+                    image: 'assets/images/enb.jpg',
+                    title: 'ENB',
+                    location: 'LBV',
+                    date: '29',
+                    month: 'Mar',
+                  ),
+                ),
+              ),
+            );
+          },
+          padding: const EdgeInsets.only(left: 24, top: 12),
+        ),
       ),
     );
   }
@@ -280,23 +304,42 @@ class HomeScreen extends StatelessWidget {
   }
 
   // Popular Events List Widget
-  Widget _buildPopularEventsList({required String imagePath, required String title}) {
+  Widget _buildPopularEventsList(BuildContext context, {required String imagePath, required String title}) {
     return SizedBox(
       height: 250,
-      child: ListView.builder(
-        scrollDirection: Axis.horizontal,
-        physics: const BouncingScrollPhysics(),
-        itemCount: 5, // Duplicated elements
-        itemBuilder: (context, index) {
-          return _buildPopularEventCard(
-            image: imagePath,
-            date: '29 Mar, 2024 - 22:00',
-            title: title,
-            location: 'LBV',
-            price: 'À partir de 2000 FCFA'
-          );
-        },
-        padding: const EdgeInsets.only(left: 24, top: 12),
+      child: AnimationLimiter(
+        child: ListView.builder(
+          scrollDirection: Axis.horizontal,
+          physics: const BouncingScrollPhysics(),
+          itemCount: 5,
+          itemBuilder: (context, index) {
+            return AnimationConfiguration.staggeredList(
+              position: index,
+              duration: const Duration(milliseconds: 375),
+              child: SlideAnimation(
+                horizontalOffset: 50.0,
+                child: FadeInAnimation(
+                  child: GestureDetector( // Added GestureDetector for click handling
+                    onTap: () {
+                      Navigator.push(
+                        context,
+                        MaterialPageRoute(builder: (context) => const EventDetailsScreen()),
+                      );
+                    },
+                    child: _buildPopularEventCard(
+                      image: imagePath,
+                      date: '29 Mar, 2024 - 22:00',
+                      title: title,
+                      location: 'LBV',
+                      price: 'À partir de 2000 FCFA',
+                    ),
+                  ),
+                ),
+              ),
+            );
+          },
+          padding: const EdgeInsets.only(left: 24, top: 12),
+        ),
       ),
     );
   }
@@ -364,5 +407,4 @@ class HomeScreen extends StatelessWidget {
       ),
     );
   }
-
 }
