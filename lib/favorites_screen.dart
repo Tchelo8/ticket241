@@ -2,20 +2,17 @@
 import 'package:flutter/material.dart';
 import 'package:lottie/lottie.dart';
 
-class NotificationsScreen extends StatelessWidget {
-  const NotificationsScreen({super.key});
+class FavoritesScreen extends StatelessWidget {
+  const FavoritesScreen({super.key});
 
   @override
   Widget build(BuildContext context) {
     return Scaffold(
       appBar: AppBar(
-        title: const Text(
-          'Notifications',
-          style: TextStyle(fontWeight: FontWeight.bold),
-        ),
+        title: const Text('Favoris'),
         backgroundColor: Colors.white,
         foregroundColor: Colors.black,
-        elevation: 1,
+        elevation: 0,
       ),
       body: Center(
         child: Padding(
@@ -24,26 +21,26 @@ class NotificationsScreen extends StatelessWidget {
             mainAxisAlignment: MainAxisAlignment.center,
             children: [
               Lottie.asset(
-                'assets/animations/notif.json',
+                'assets/animations/nofav.json',
                 width: 250,
                 height: 250,
                 fit: BoxFit.contain,
               ),
               const SizedBox(height: 20),
-              Text(
-                'Aucune notification',
+              const Text(
+                'Aucun événement ajouté',
                 style: TextStyle(
                   fontSize: 22,
                   fontWeight: FontWeight.bold,
-                  color: Colors.grey[600],
                 ),
+                textAlign: TextAlign.center,
               ),
               const SizedBox(height: 10),
               Text(
-                'Vos notifications apparaîtront ici.',
+                'Naviguez parmi les événements et ajoutez vos favoris pour les retrouver ici.',
                 style: TextStyle(
                   fontSize: 16,
-                  color: Colors.grey[500],
+                  color: Colors.grey[600],
                 ),
                 textAlign: TextAlign.center,
               ),

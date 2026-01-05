@@ -4,6 +4,7 @@ import 'package:myapp/home_screen.dart';
 import 'package:myapp/tickets_screen.dart';
 import 'package:myapp/profile_screen.dart';
 import 'package:myapp/explorer_screen.dart';
+import 'package:myapp/favorites_screen.dart'; // Import the new screen
 
 class MainScreen extends StatefulWidget {
   const MainScreen({super.key});
@@ -18,6 +19,7 @@ class _MainScreenState extends State<MainScreen> {
   final List<Widget> _screens = [
     const HomeScreen(),
     const ExplorerScreen(),
+    const FavoritesScreen(), // Add the new screen to the list
     const TicketsScreen(),
     const ProfileScreen(),
   ];
@@ -50,6 +52,11 @@ class _MainScreenState extends State<MainScreen> {
             icon: Icon(Icons.search_outlined),
             activeIcon: Icon(Icons.search),
             label: 'Explorer',
+          ),
+          BottomNavigationBarItem(
+            icon: Icon(Icons.favorite_border_outlined),
+            activeIcon: Icon(Icons.favorite),
+            label: 'Favoris',
           ),
           BottomNavigationBarItem(
             icon: Icon(Icons.local_activity_outlined),

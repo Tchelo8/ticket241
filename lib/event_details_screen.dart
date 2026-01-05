@@ -1,42 +1,78 @@
 
 import 'package:flutter/material.dart';
+import 'package:myapp/checkout_screen.dart'; // Import the new screen
 
-class EventDetailsScreen extends StatelessWidget {
+class EventDetailsScreen extends StatefulWidget {
   const EventDetailsScreen({super.key});
 
   @override
+  _EventDetailsScreenState createState() => _EventDetailsScreenState();
+}
+
+class _EventDetailsScreenState extends State<EventDetailsScreen> {
+  final List<Map<String, dynamic>> _ticketData = [
+    {'name': 'Ticket normal', 'price': 2000.0, 'quantity': 1},
+    {'name': 'Pass VIP', 'price': 5000.0, 'quantity': 0},
+    {'name': 'Pass VVIP', 'price': 10000.0, 'quantity': 0},
+    {'name': 'Pass Terminus', 'price': 1500.0, 'quantity': 0},
+  ];
+
+  double _totalPrice = 2000.0;
+
+  void _updateTicketQuantity(int index, int change) {
+    setState(() {
+      if (_ticketData[index]['quantity'] + change >= 0) {
+        _ticketData[index]['quantity'] += change;
+        _calculateTotal();
+      }
+    });
+  }
+
+  void _calculateTotal() {
+    double total = 0;
+    for (var ticket in _ticketData) {
+      total += ticket['quantity'] * ticket['price'];
+    }
+    _totalPrice = total;
+  }
+
+  @override
   Widget build(BuildContext context) {
+    const primaryColor = Color(0xFF1E90FF);
+    const textColor = Colors.black87;
+    const secondaryTextColor = Colors.grey;
+
     return Scaffold(
-      backgroundColor: const Color(0xFF0D1B2A), // Dark blue background
+      backgroundColor: Colors.white,
       body: Stack(
         children: [
           SingleChildScrollView(
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                _buildHeaderImage(),
-                _buildEventInfo(),
-                _buildAboutSection(),
-                _buildGeneralInfoSection(),
-                _buildReviewsSection(),
-                _buildTicketSelectionSection(),
-                _buildLocationSection(),
-                _buildSuggestionsSection(),
-                const SizedBox(height: 100), // Space for the bottom bar
+                _buildHeaderImage(context),
+                _buildEventInfo(textColor),
+                _buildAboutSection(textColor, primaryColor),
+                _buildGeneralInfoSection(textColor, secondaryTextColor),
+                _buildReviewsSection(textColor, secondaryTextColor),
+                _buildTicketSelectionSection(primaryColor, textColor),
+                _buildLocationSection(textColor, secondaryTextColor),
+                _buildSuggestionsSection(textColor, secondaryTextColor, primaryColor),
+                const SizedBox(height: 100),
               ],
             ),
           ),
-          _buildBottomActionBar(),
+          _buildBottomActionBar(context, primaryColor, textColor),
         ],
       ),
     );
   }
 
-  Widget _buildHeaderImage() {
+  Widget _buildHeaderImage(BuildContext context) {
     return Stack(
       children: [
         Image.asset(
-          'assets/images/enb.jpg', // Using the existing image
+          'assets/images/enb.jpg',
           height: 300,
           width: double.infinity,
           fit: BoxFit.cover,
@@ -47,7 +83,7 @@ class EventDetailsScreen extends StatelessWidget {
             gradient: LinearGradient(
               begin: Alignment.topCenter,
               end: Alignment.bottomCenter,
-              colors: [Colors.transparent, Colors.black.withOpacity(0.8)],
+              colors: [Colors.transparent, Colors.black.withOpacity(0.7)],
             ),
           ),
         ),
@@ -60,7 +96,10 @@ class EventDetailsScreen extends StatelessWidget {
             children: [
               CircleAvatar(
                 backgroundColor: Colors.black.withOpacity(0.5),
-                child: const BackButton(color: Colors.white),
+                child: IconButton(
+                  icon: const Icon(Icons.arrow_back, color: Colors.white),
+                  onPressed: () => Navigator.of(context).pop(),
+                ),
               ),
               Row(
                 children: [
@@ -91,7 +130,7 @@ class EventDetailsScreen extends StatelessWidget {
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
               Text(
-                'Concert sous les étoiles', // Translated
+                'Concert sous les étoiles',
                 style: const TextStyle(
                   color: Colors.white,
                   fontSize: 28,
@@ -100,8 +139,8 @@ class EventDetailsScreen extends StatelessWidget {
               ),
               const SizedBox(height: 8),
               Text(
-                '15 Mars, 2025, 22:00 • Libreville', // Translated & adapted
-                style: TextStyle(color: Colors.white.withOpacity(0.8)),
+                '15 Mars, 2025, 22:00 • Libreville',
+                style: TextStyle(color: Colors.white.withOpacity(0.9)),
               ),
             ],
           ),
@@ -110,98 +149,87 @@ class EventDetailsScreen extends StatelessWidget {
     );
   }
 
-  Widget _buildEventInfo() {
+  Widget _buildEventInfo(Color textColor) {
     return Padding(
       padding: const EdgeInsets.all(20.0),
       child: Row(
         children: [
           const CircleAvatar(
-            backgroundImage: AssetImage('assets/images/oiseau.jpg'), // Placeholder
+            backgroundImage: AssetImage('assets/images/oiseau.jpg'),
             radius: 25,
           ),
           const SizedBox(width: 15),
-          const Column(
+          Column(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
               Text(
-                'Festival de musique', // Translated
-                style: TextStyle(color: Colors.white, fontSize: 16, fontWeight: FontWeight.bold),
+                'Entre Nous Bar',
+                style: TextStyle(color: textColor, fontSize: 16, fontWeight: FontWeight.bold),
               ),
-              Text(
-                '220K Abonnés', // Translated
+              const Text(
+                '30+ événements', // Changed as requested
                 style: TextStyle(color: Colors.grey, fontSize: 14),
               ),
             ],
-          ),
-          const Spacer(),
-          ElevatedButton(
-            onPressed: () {},
-            style: ElevatedButton.styleFrom(
-              backgroundColor: const Color(0xFF1E90FF),
-              shape: RoundedRectangleBorder(
-                borderRadius: BorderRadius.circular(8),
-              ),
-            ),
-            child: const Text('Suivre', style: TextStyle(color: Colors.white)), // Translated
           ),
         ],
       ),
     );
   }
 
-  Widget _buildAboutSection() {
+  Widget _buildAboutSection(Color textColor, Color primaryColor) {
     return Padding(
       padding: const EdgeInsets.symmetric(horizontal: 20.0),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          const Text('À propos', style: TextStyle(color: Colors.white, fontSize: 20, fontWeight: FontWeight.bold)), // Translated
+          Text('À propos', style: TextStyle(color: textColor, fontSize: 20, fontWeight: FontWeight.bold)),
           const SizedBox(height: 10),
           Text(
-            'Le festival de musique est un événement de renommée mondiale qui a lieu chaque année dans la ville animée de Libreville. C\'est une destination incontournable pour les amateurs de musique du monde entier, attirant des dizaines de milliers de participants venus vivre son atmosphère électrisante.', // Translated & adapted
-            style: TextStyle(color: Colors.white.withOpacity(0.8), height: 1.5),
+            'Le festival de musique est un événement de renommée mondiale qui a lieu chaque année dans la ville animée de Libreville. C\'est une destination incontournable pour les amateurs de musique du monde entier, attirant des dizaines de milliers de participants venus vivre son atmosphère électrisante.',
+            style: TextStyle(color: textColor.withOpacity(0.7), height: 1.5),
           ),
           TextButton(
             onPressed: () {},
-            child: const Text('Lire la suite', style: TextStyle(color: Color(0xFF1E90FF))), // Translated
+            child: Text('Lire la suite', style: TextStyle(color: primaryColor)),
           ),
         ],
       ),
     );
   }
 
-    Widget _buildGeneralInfoSection() {
+  Widget _buildGeneralInfoSection(Color textColor, Color secondaryTextColor) {
     return Padding(
       padding: const EdgeInsets.symmetric(horizontal: 20.0, vertical: 10.0),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          const Text('Informations générales', style: TextStyle(color: Colors.white, fontSize: 20, fontWeight: FontWeight.bold)), // Translated
+          Text('Informations générales', style: TextStyle(color: textColor, fontSize: 20, fontWeight: FontWeight.bold)),
           const SizedBox(height: 15),
-          _buildInfoRow(Icons.calendar_today, 'Date: Dimanche & Jeudi (sélectionnez la date ci-dessous)'), // Translated
-          _buildInfoRow(Icons.access_time, 'Heure: 15:30'), // Translated
-          _buildInfoRow(Icons.hourglass_bottom, 'Durée: 3.5 heures'), // Translated
-          _buildInfoRow(Icons.location_on, 'Lieu de rendez-vous: L\'horloge Suisse sur la place...'), // Translated & adapted
-          _buildInfoRow(Icons.person, 'Âge requis: 18+ avec pièce d\'identité valide'), // Translated
+          _buildInfoRow(Icons.calendar_today, 'Date: Dimanche & Jeudi (sélectionnez la date ci-dessous)', secondaryTextColor, textColor),
+          _buildInfoRow(Icons.access_time, 'Heure: 15:30', secondaryTextColor, textColor),
+          _buildInfoRow(Icons.hourglass_bottom, 'Durée: 3.5 heures', secondaryTextColor, textColor),
+          _buildInfoRow(Icons.location_on, 'Lieu de rendez-vous: L\'horloge Suisse sur la place...', secondaryTextColor, textColor),
+          _buildInfoRow(Icons.person, 'Âge requis: 18+ avec pièce d\'identité valide', secondaryTextColor, textColor),
         ],
       ),
     );
   }
 
-  Widget _buildInfoRow(IconData icon, String text) {
+  Widget _buildInfoRow(IconData icon, String text, Color iconColor, Color textColor) {
     return Padding(
       padding: const EdgeInsets.only(bottom: 12.0),
       child: Row(
         children: [
-          Icon(icon, color: Colors.grey, size: 20),
+          Icon(icon, color: iconColor, size: 20),
           const SizedBox(width: 15),
-          Expanded(child: Text(text, style: const TextStyle(color: Colors.white, fontSize: 15))),
+          Expanded(child: Text(text, style: TextStyle(color: textColor, fontSize: 15))),
         ],
       ),
     );
   }
 
-  Widget _buildReviewsSection() {
+  Widget _buildReviewsSection(Color textColor, Color secondaryTextColor) {
     return Padding(
       padding: const EdgeInsets.all(20.0),
       child: Column(
@@ -211,17 +239,17 @@ class EventDetailsScreen extends StatelessWidget {
             crossAxisAlignment: CrossAxisAlignment.baseline,
             textBaseline: TextBaseline.alphabetic,
             children: [
-              const Text('4.9', style: TextStyle(color: Colors.white, fontSize: 48, fontWeight: FontWeight.bold)),
+              Text('4.9', style: TextStyle(color: textColor, fontSize: 48, fontWeight: FontWeight.bold)),
               const SizedBox(width: 10),
-              Text('Basé sur 245 avis', style: TextStyle(color: Colors.grey)), // Translated
+              Text('Basé sur 245 avis', style: TextStyle(color: secondaryTextColor)),
             ],
           ),
           const SizedBox(height: 20),
           Row(
             children: [
-              Expanded(child: _buildReviewCard('Emma D.', 'Mars 2024', 'Cet événement était vraiment exceptionnel ! L\'organisation était parfaite et le personnel incroyablement serviable.')), // Translated
+              Expanded(child: _buildReviewCard('Emma D.', 'Mars 2024', 'Cet événement était vraiment exceptionnel ! L\'organisation était parfaite et le personnel incroyablement serviable.', textColor, secondaryTextColor)),
               const SizedBox(width: 15),
-              Expanded(child: _buildReviewCard('James C.', 'Juillet 2023', 'J\'ai passé un excellent moment. Les performances étaient superbes et les organisateurs ont vraiment fait du bon travail.')), // Translated
+              Expanded(child: _buildReviewCard('James C.', 'Juillet 2023', 'J\'ai passé un excellent moment. Les performances étaient superbes et les organisateurs ont vraiment fait du bon travail.', textColor, secondaryTextColor)),
             ],
           )
         ],
@@ -229,126 +257,138 @@ class EventDetailsScreen extends StatelessWidget {
     );
   }
 
-  Widget _buildReviewCard(String name, String date, String review) {
+  Widget _buildReviewCard(String name, String date, String review, Color textColor, Color secondaryTextColor) {
     return Container(
       padding: const EdgeInsets.all(15),
       decoration: BoxDecoration(
-        color: const Color(0xFF1A2A3A),
+        color: Colors.grey[50],
         borderRadius: BorderRadius.circular(10),
+        border: Border.all(color: Colors.grey[200]!)
       ),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          Text(name, style: const TextStyle(color: Colors.white, fontWeight: FontWeight.bold)),
-          Text(date, style: const TextStyle(color: Colors.grey, fontSize: 12)),
+          Text(name, style: TextStyle(color: textColor, fontWeight: FontWeight.bold)),
+          Text(date, style: TextStyle(color: secondaryTextColor, fontSize: 12)),
           const SizedBox(height: 10),
-          Text(review, style: TextStyle(color: Colors.white.withOpacity(0.9)), maxLines: 4, overflow: TextOverflow.ellipsis),
+          Text(review, style: TextStyle(color: textColor.withOpacity(0.9)), maxLines: 4, overflow: TextOverflow.ellipsis),
         ],
       ),
     );
   }
 
-  Widget _buildTicketSelectionSection() {
+  Widget _buildTicketSelectionSection(Color primaryColor, Color textColor) {
     return Padding(
       padding: const EdgeInsets.symmetric(horizontal: 20.0, vertical: 10.0),
-      child: Column(
-        children: [
-          _buildTicketRow('Entrée générale (+18)', '250', 1, isSelected: true), // Translated & adapted
-          _buildTicketRow('Pass VIP, Vue Premium (+18)', '500', 0), // Translated & adapted
-          _buildTicketRow('Package Ultra Premium (+18)', '1,200', 0), // Translated & adapted
-          _buildTicketRow('Pass Un Jour (+18)', '150', 0), // Translated & adapted
-          const SizedBox(height: 20),
-          Container(
-            padding: const EdgeInsets.all(12),
-            decoration: BoxDecoration(
-              color: Colors.yellow.withOpacity(0.1),
-              borderRadius: BorderRadius.circular(8),
-              border: Border.all(color: Colors.yellow.withOpacity(0.3)),
-            ),
-            child: Row(
-              children: [
-                const Icon(Icons.info_outline, color: Colors.yellow, size: 20),
-                const SizedBox(width: 10),
-                Expanded(
-                  child: Text(
-                    'Dépêchez-vous ! Les billets se vendent vite et la disponibilité est limitée.', // Translated
-                    style: TextStyle(color: Colors.yellow.shade700),
-                  ),
-                ),
-              ],
-            ),
-          ),
-        ],
+      child: ListView.builder(
+        shrinkWrap: true,
+        physics: const NeverScrollableScrollPhysics(),
+        itemCount: _ticketData.length,
+        itemBuilder: (context, index) {
+          final ticket = _ticketData[index];
+          return _buildTicketRow(
+            title: ticket['name'],
+            price: ticket['price'].toStringAsFixed(0),
+            quantity: ticket['quantity'],
+            onIncrement: () => _updateTicketQuantity(index, 1),
+            onDecrement: () => _updateTicketQuantity(index, -1),
+            isSelected: ticket['quantity'] > 0,
+            primaryColor: primaryColor,
+            textColor: textColor,
+          );
+        },
       ),
     );
   }
 
-  Widget _buildTicketRow(String title, String price, int quantity, {bool isSelected = false}) {
+  // New button widget with bubble effect
+  Widget _buildQuantityButton({required IconData icon, required VoidCallback onPressed, required Color iconColor}) {
+    return Material(
+      color: Colors.grey[200],
+      shape: const CircleBorder(),
+      child: InkWell(
+        customBorder: const CircleBorder(),
+        onTap: onPressed,
+        child: Container(
+          padding: const EdgeInsets.all(4),
+          child: Icon(icon, color: iconColor, size: 18),
+        ),
+      ),
+    );
+  }
+
+  Widget _buildTicketRow({
+    required String title,
+    required String price,
+    required int quantity,
+    required VoidCallback onIncrement,
+    required VoidCallback onDecrement,
+    bool isSelected = false,
+    required Color primaryColor,
+    required Color textColor,
+  }) {
     return Container(
       margin: const EdgeInsets.only(bottom: 10),
       padding: const EdgeInsets.all(15),
       decoration: BoxDecoration(
-        color: isSelected ? const Color(0xFF1E90FF) : const Color(0xFF1A2A3A),
-        borderRadius: BorderRadius.circular(10),
-      ),
+          color: Colors.white,
+          borderRadius: BorderRadius.circular(15),
+          border: Border.all(color: isSelected ? primaryColor : Colors.grey[300]!, width: 1.5)),
       child: Row(
         mainAxisAlignment: MainAxisAlignment.spaceBetween,
         children: [
           Column(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
-              Text(title, style: TextStyle(color: Colors.white, fontSize: 16, fontWeight: FontWeight.bold)),
+              Text(title, style: TextStyle(color: textColor, fontSize: 16, fontWeight: FontWeight.bold)),
               const SizedBox(height: 5),
-              Text('$price FCFA', style: const TextStyle(color: Colors.white, fontSize: 18, fontWeight: FontWeight.bold)), // Adapted currency
-              Text('incl. 1.99 FCFA de frais', style: TextStyle(color: Colors.grey[400], fontSize: 12)), // Adapted currency
+              Text('$price FCFA', style: TextStyle(color: textColor, fontSize: 18, fontWeight: FontWeight.bold)),
+              Text('1 pers', style: TextStyle(color: Colors.grey[600], fontSize: 12)),
             ],
           ),
-          Container(
-            decoration: BoxDecoration(
-              color: isSelected ? Colors.blue.shade700 : const Color(0xFF0D1B2A),
-              borderRadius: BorderRadius.circular(20),
-            ),
-            child: Row(
-              children: [
-                IconButton(icon: const Icon(Icons.remove, color: Colors.white), onPressed: () {}),
-                Text(quantity.toString(), style: const TextStyle(color: Colors.white, fontSize: 16, fontWeight: FontWeight.bold)),
-                IconButton(icon: const Icon(Icons.add, color: Colors.white), onPressed: () {}),
-              ],
-            ),
+          Row(
+            children: [
+              _buildQuantityButton(icon: Icons.remove, onPressed: onDecrement, iconColor: textColor),
+              Padding(
+                padding: const EdgeInsets.symmetric(horizontal: 12.0),
+                child: Text(quantity.toString(), style: TextStyle(color: textColor, fontSize: 18, fontWeight: FontWeight.bold)),
+              ),
+              _buildQuantityButton(icon: Icons.add, onPressed: onIncrement, iconColor: textColor),
+            ],
           )
         ],
       ),
     );
   }
 
-  Widget _buildLocationSection() {
+  Widget _buildLocationSection(Color textColor, Color secondaryTextColor) {
     return Padding(
       padding: const EdgeInsets.all(20.0),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          const Text('Localisation', style: TextStyle(color: Colors.white, fontSize: 20, fontWeight: FontWeight.bold)), // Translated
+          Text('Localisation', style: TextStyle(color: textColor, fontSize: 20, fontWeight: FontWeight.bold)),
           const SizedBox(height: 10),
-          Text('Parc de la Baie, Libreville', style: TextStyle(color: Colors.grey)), // Translated & adapted
+          Text('Parc de la Baie, Libreville', style: TextStyle(color: secondaryTextColor)),
           const SizedBox(height: 10),
           ClipRRect(
             borderRadius: BorderRadius.circular(15),
-            child: Image.asset('assets/images/map.jpg', height: 180, width: double.infinity, fit: BoxFit.cover), // Corrected path
+            child: Image.asset('assets/images/map.jpg', height: 180, width: double.infinity, fit: BoxFit.cover),
           ),
         ],
       ),
     );
   }
 
-  Widget _buildSuggestionsSection() {
+  Widget _buildSuggestionsSection(Color textColor, Color secondaryTextColor, Color primaryColor) {
     return Padding(
       padding: const EdgeInsets.symmetric(vertical: 10.0),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          const Padding(
-            padding: EdgeInsets.symmetric(horizontal: 20.0),
-            child: Text('Vous aimerez aussi', style: TextStyle(color: Colors.white, fontSize: 20, fontWeight: FontWeight.bold)), // Translated
+          Padding(
+            padding: const EdgeInsets.symmetric(horizontal: 20.0),
+            child: Text('Vous aimerez aussi', style: TextStyle(color: textColor, fontSize: 20, fontWeight: FontWeight.bold)),
           ),
           const SizedBox(height: 15),
           SizedBox(
@@ -357,8 +397,8 @@ class EventDetailsScreen extends StatelessWidget {
               scrollDirection: Axis.horizontal,
               padding: const EdgeInsets.only(left: 20),
               children: [
-                _buildSuggestionCard('assets/images/enb.jpg', 'Concert sous les pyramides', 'À partir de 50 FCFA', 'Gizeh, Caire'), // Translated & adapted
-                _buildSuggestionCard('assets/images/jazz.png', 'Festival de Jazz de Mumbai', 'À partir de 40 FCFA', 'Santorin, Grèce'), // Corrected path
+                _buildSuggestionCard('assets/images/enb.jpg', 'Concert sous les pyramides', 'À partir de 5000 FCFA', 'Gizeh, Caire', textColor, secondaryTextColor, primaryColor),
+                _buildSuggestionCard('assets/images/jazz.png', 'Festival de Jazz de Mumbai', 'À partir de 4000 FCFA', 'Santorin, Grèce', textColor, secondaryTextColor, primaryColor),
               ],
             ),
           )
@@ -367,7 +407,7 @@ class EventDetailsScreen extends StatelessWidget {
     );
   }
 
-  Widget _buildSuggestionCard(String imagePath, String title, String price, String location) {
+  Widget _buildSuggestionCard(String imagePath, String title, String price, String location, Color textColor, Color secondaryTextColor, Color primaryColor) {
     return Container(
       width: 200,
       margin: const EdgeInsets.only(right: 15),
@@ -395,7 +435,7 @@ class EventDetailsScreen extends StatelessWidget {
                 child: Container(
                    padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
                    decoration: BoxDecoration(
-                     color: const Color(0xFF1E90FF),
+                     color: primaryColor,
                      borderRadius: BorderRadius.circular(8),
                    ),
                    child: Text(price, style: const TextStyle(color: Colors.white, fontWeight: FontWeight.bold)),
@@ -404,13 +444,13 @@ class EventDetailsScreen extends StatelessWidget {
             ],
           ),
           const SizedBox(height: 10),
-          Text(title, style: const TextStyle(color: Colors.white, fontWeight: FontWeight.bold, fontSize: 16)),
+          Text(title, style: TextStyle(color: textColor, fontWeight: FontWeight.bold, fontSize: 16)),
           const SizedBox(height: 5),
           Row(
             children: [
-              const Icon(Icons.location_on, color: Colors.grey, size: 14),
+              Icon(Icons.location_on, color: secondaryTextColor, size: 14),
               const SizedBox(width: 5),
-              Text(location, style: const TextStyle(color: Colors.grey, fontSize: 12)),
+              Text(location, style: TextStyle(color: secondaryTextColor, fontSize: 12)),
             ],
           )
         ],
@@ -418,7 +458,7 @@ class EventDetailsScreen extends StatelessWidget {
     );
   }
 
-  Widget _buildBottomActionBar() {
+  Widget _buildBottomActionBar(BuildContext context, Color primaryColor, Color textColor) {
     return Positioned(
       bottom: 0,
       left: 0,
@@ -426,29 +466,34 @@ class EventDetailsScreen extends StatelessWidget {
       child: Container(
         padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 15),
         decoration: BoxDecoration(
-          color: const Color(0xFF1A2A3A),
-          border: Border(top: BorderSide(color: Colors.grey.withOpacity(0.2)))
+          color: Colors.white,
+          border: Border(top: BorderSide(color: Colors.grey[200]!))
         ),
         child: Row(
           mainAxisAlignment: MainAxisAlignment.spaceBetween,
           children: [
-            const Column(
+            Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                Text('À partir de', style: TextStyle(color: Colors.grey, fontSize: 14)), // Translated
-                Text('50 FCFA', style: TextStyle(color: Colors.white, fontSize: 20, fontWeight: FontWeight.bold)), // Adapted currency
+                Text('Total', style: TextStyle(color: Colors.grey, fontSize: 14)),
+                Text('${_totalPrice.toStringAsFixed(0)} FCFA', style: TextStyle(color: textColor, fontSize: 20, fontWeight: FontWeight.bold)),
               ],
             ),
             ElevatedButton(
-              onPressed: () {},
+              onPressed: () {
+                Navigator.push(
+                  context,
+                  MaterialPageRoute(builder: (context) => const CheckoutScreen()),
+                );
+              },
               style: ElevatedButton.styleFrom(
-                backgroundColor: const Color(0xFF1E90FF),
-                padding: const EdgeInsets.symmetric(horizontal: 50, vertical: 15),
+                backgroundColor: primaryColor,
+                padding: const EdgeInsets.symmetric(horizontal: 40, vertical: 15),
                 shape: RoundedRectangleBorder(
                   borderRadius: BorderRadius.circular(10),
                 ),
               ),
-              child: const Text('Acheter des billets', style: TextStyle(color: Colors.white, fontSize: 16)), // Translated
+              child: const Text('Acheter', style: TextStyle(color: Colors.white, fontSize: 16)),
             ),
           ],
         ),
