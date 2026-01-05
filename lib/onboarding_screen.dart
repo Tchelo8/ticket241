@@ -47,6 +47,13 @@ class _OnboardingScreenState extends State<OnboardingScreen> {
     _pageController.dispose();
     super.dispose();
   }
+  
+  void _skipOnboarding() {
+    Navigator.pushReplacement(
+      context,
+      MaterialPageRoute(builder: (context) => const StartingScreen()),
+    );
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -57,6 +64,24 @@ class _OnboardingScreenState extends State<OnboardingScreen> {
             controller: _pageController,
             children: _pages,
           ),
+          // Skip Button
+          if (!_isLastPage)
+            Positioned(
+              top: 60,
+              right: 20,
+              child: TextButton(
+                onPressed: _skipOnboarding,
+                child: const Text(
+                  'Passer',
+                  style: TextStyle(
+                    color: Color(0xFF1E90FF),
+                    fontSize: 16,
+                    fontWeight: FontWeight.bold,
+                  ),
+                ),
+              ),
+            ),
+          // Page Indicator and Next/Start Button
           Positioned(
             bottom: 40,
             left: 40,
@@ -77,11 +102,7 @@ class _OnboardingScreenState extends State<OnboardingScreen> {
                 ElevatedButton(
                   onPressed: () {
                     if (_isLastPage) {
-                      Navigator.pushReplacement(
-                        context,
-                        // Redirection vers la page de démarrage
-                        MaterialPageRoute(builder: (context) => const StartingScreen()),
-                      );
+                       _skipOnboarding(); // Same action as skipping
                     } else {
                       _pageController.nextPage(
                         duration: const Duration(milliseconds: 300),
@@ -95,7 +116,9 @@ class _OnboardingScreenState extends State<OnboardingScreen> {
                     backgroundColor: const Color(0xFF1E90FF),
                     foregroundColor: Colors.white,
                   ),
-                  child: const Icon(Icons.arrow_forward_ios, size: 20),
+                  child: _isLastPage
+                      ? const Text("Go", style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold))
+                      : const Icon(Icons.arrow_forward_ios, size: 20),
                 ),
               ],
             ),
@@ -127,6 +150,7 @@ class OnboardingPage extends StatelessWidget {
           mainAxisAlignment: MainAxisAlignment.center,
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
+            const SizedBox(height: 60), // Add space to avoid overlap with skip button
             Center(
               child: Image.asset(
                 image,
