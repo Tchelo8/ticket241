@@ -28,13 +28,23 @@ class StartingScreen extends StatelessWidget {
                 ),
               ),
               const SizedBox(height: 10),
-              const Text(
-                'Bienvenue sur Ticket241',
-                textAlign: TextAlign.center,
-                style: TextStyle(
-                  fontSize: 18,
-                  color: Colors.black54,
-                ),
+              Row(
+                mainAxisAlignment: MainAxisAlignment.center,
+                crossAxisAlignment: CrossAxisAlignment.end,
+                children: [
+                  const Text(
+                    'Bienvenue sur',
+                    style: TextStyle(
+                      fontSize: 22,
+                      color: Colors.black54,
+                    ),
+                  ),
+                  const SizedBox(width: 5), // Reduced spacing
+                  Image.asset(
+                    'assets/images/texte.png',
+                    height: 28, // Increased height
+                  ),
+                ],
               ),
               const Spacer(flex: 2),
 
@@ -81,7 +91,7 @@ class StartingScreen extends StatelessWidget {
                   ),
                   TextButton(
                     onPressed: () {
-                      context.go('/login'); // TODO: Create a signup screen
+                      context.go('/signup'); 
                     },
                     child: const Text(
                       "S'inscrire",

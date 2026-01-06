@@ -188,18 +188,21 @@ class ExplorerScreenState extends State<ExplorerScreen> {
                     overflow: TextOverflow.ellipsis,
                   ),
                   const SizedBox(height: 10),
-                  Container(
-                    padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
-                    decoration: BoxDecoration(
-                      color: const Color(0xFF1E90FF).withAlpha((255 * 0.1).round()),
-                      borderRadius: BorderRadius.circular(8),
-                    ),
-                    child: Text(
-                      '${event.price.toStringAsFixed(0)} FCFA',
-                      style: const TextStyle(
-                        color: Color(0xFF1E90FF),
-                        fontWeight: FontWeight.bold,
-                        fontSize: 11,
+                  FittedBox(
+                    fit: BoxFit.fitWidth,
+                    child: Container(
+                      padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+                      decoration: BoxDecoration(
+                        color: const Color(0xFF1E90FF).withAlpha((255 * 0.1).round()),
+                        borderRadius: BorderRadius.circular(8),
+                      ),
+                      child: Text(
+                        '${event.price.toStringAsFixed(0)} FCFA',
+                        style: const TextStyle(
+                          color: Color(0xFF1E90FF),
+                          fontWeight: FontWeight.bold,
+                          fontSize: 11,
+                        ),
                       ),
                     ),
                   ),

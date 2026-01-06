@@ -3,6 +3,7 @@ import 'package:go_router/go_router.dart';
 import 'package:myapp/main_screen.dart';
 import 'package:myapp/starting_screen.dart';
 import 'package:myapp/login_screen.dart';
+import 'package:myapp/signup_screen.dart';
 import 'package:myapp/profile_screen.dart'; // Corrected import
 import 'package:myapp/notifications_screen.dart';
 import 'package:myapp/event_details_screen.dart';
@@ -32,6 +33,10 @@ final router = GoRouter(
     GoRoute(
       path: '/login',
       builder: (context, state) => const LoginScreen(),
+    ),
+    GoRoute(
+      path: '/signup',
+      builder: (context, state) => const SignUpScreen(),
     ),
     GoRoute(
       path: '/app', // This will be the MainScreen with the bottom nav

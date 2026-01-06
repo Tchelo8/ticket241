@@ -328,24 +328,29 @@ class TicketsScreenState extends State<TicketsScreen> {
               _buildInfoChip("${ticket.ticketCount} billet${ticket.ticketCount > 1 ? 's' : ''}"),
               if (ticket.isUpcoming) _buildInfoChip("J-${ticket.daysLeft}"),
               const Spacer(),
-              ElevatedButton.icon(
-                onPressed: () {
-                  if (ticket.isUpcoming) {
-                    Navigator.push(
-                      context,
-                      MaterialPageRoute(builder: (context) => const PdfViewerScreen()),
-                    );
-                  } else {
-                    // Handle 'Laisser un avis' action
-                  }
-                },
-                icon: Icon(ticket.isUpcoming ? Icons.download_outlined : Icons.rate_review_outlined, size: 20),
-                label: Text(ticket.isUpcoming ? 'Télécharger le ticket' : 'Laisser un avis'),
-                style: ElevatedButton.styleFrom(
-                  backgroundColor: const Color(0xFF1E90FF).withAlpha((255 * 0.1).round()),
-                  foregroundColor: const Color(0xFF1E90FF),
-                  elevation: 0,
-                  shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
+              Flexible(
+                child: ElevatedButton.icon(
+                  onPressed: () {
+                    if (ticket.isUpcoming) {
+                      Navigator.push(
+                        context,
+                        MaterialPageRoute(builder: (context) => const PdfViewerScreen()),
+                      );
+                    } else {
+                      // Handle 'Laisser un avis' action
+                    }
+                  },
+                  icon: Icon(ticket.isUpcoming ? Icons.download_outlined : Icons.rate_review_outlined, size: 20),
+                  label: Text(
+                    ticket.isUpcoming ? 'Telecharger' : 'Laisser un avis',
+                    overflow: TextOverflow.ellipsis,
+                  ),
+                  style: ElevatedButton.styleFrom(
+                    backgroundColor: const Color(0xFF1E90FF).withAlpha((255 * 0.1).round()),
+                    foregroundColor: const Color(0xFF1E90FF),
+                    elevation: 0,
+                    shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
+                  ),
                 ),
               ),
               const SizedBox(width: 10),

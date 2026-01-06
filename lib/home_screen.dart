@@ -326,7 +326,7 @@ class HomeScreen extends StatelessWidget {
                   crossAxisAlignment: CrossAxisAlignment.start,
                   mainAxisAlignment: MainAxisAlignment.spaceBetween,
                   children: [
-                    Text(event.name, style: const TextStyle(fontSize: 16, fontWeight: FontWeight.bold), maxLines: 2, overflow: TextOverflow.ellipsis,),
+                    Text(event.name.length > 20 ? '${event.name.substring(0, 20)}...' : event.name, style: const TextStyle(fontSize: 16, fontWeight: FontWeight.bold), maxLines: 2, overflow: TextOverflow.ellipsis,),
                     Row(
                       children: [
                         const Icon(Icons.location_on_outlined, size: 16, color: Colors.grey),
@@ -464,7 +464,7 @@ class HomeScreen extends StatelessWidget {
                 children: [
                   Text(event.date, style: const TextStyle(fontSize: 12, color: Color(0xFF1E90FF), fontWeight: FontWeight.w600)),
                   const SizedBox(height: 8),
-                  Text(event.name, style: const TextStyle(fontSize: 17, fontWeight: FontWeight.bold), maxLines: 1, overflow: TextOverflow.ellipsis, ),
+                  Text(event.name.length > 20 ? '${event.name.substring(0, 20)}...' : event.name, style: const TextStyle(fontSize: 17, fontWeight: FontWeight.bold), maxLines: 1, overflow: TextOverflow.ellipsis, ),
                   const SizedBox(height: 12),
                   Row(
                     mainAxisAlignment: MainAxisAlignment.spaceBetween,
