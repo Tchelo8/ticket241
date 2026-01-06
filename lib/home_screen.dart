@@ -1,11 +1,35 @@
 
 import 'package:flutter/material.dart';
-import 'package:myapp/event_details_screen.dart'; // Import the new screen
-import 'package:myapp/notifications_screen.dart';
+import 'package:go_router/go_router.dart';
+import 'package:myapp/models/event_model.dart';
 import 'package:flutter_staggered_animations/flutter_staggered_animations.dart';
+import 'package:myapp/providers/favorites_provider.dart';
+import 'package:provider/provider.dart';
 
 class HomeScreen extends StatelessWidget {
   const HomeScreen({super.key});
+
+  // Dummy data - replace with your actual data source
+  static final List<Event> _upcomingEvents = [
+    Event(name: 'Concert Live Acoustique', imagePath: 'assets/images/enb.jpg', location: 'Entre Nous Bar, Angondjé', date: '29 Mars', price: 5000.0),
+    Event(name: 'Festival International de Sibang', imagePath: 'assets/images/sibang.jpg', location: 'Jardin Botanique, Libreville', date: '15 Avril', price: 10000.0),
+    Event(name: 'Concert Oiseau Rare', imagePath: 'assets/images/oiseau.jpg', location: 'Casino Croisette, LBV', date: '14 Fév', price: 15000.0),
+  ];
+
+  static final List<Event> _popularEvents = [
+    Event(name: 'Entre Nous Bar', imagePath: 'assets/images/enb.jpg', location: 'Angondjé', date: 'Tous les vendredis', price: 5000.0),
+    Event(name: 'Libreville Jazz Festival', imagePath: 'assets/images/jazz.png', location: 'Institut Français', date: '10 Jan', price: 20000.0),
+  ];
+    static final List<Event> _sportEvents = [
+    Event(name: 'CMS vs US Bitam', imagePath: 'assets/images/sibang.jpg', location: 'Stade amitié', date: '05 Mai', price: 1000.0),
+  ];
+
+      static final List<Event> _cultureEvents = [
+    Event(name: 'Concert oiseau rare', imagePath: 'assets/images/oiseau.jpg', location: 'Casino Croisette', date: '14 Fév', price: 15000.0),
+  ];
+
+
+
 
   void _showCitySelection(BuildContext context) {
     showModalBottomSheet(
@@ -43,30 +67,23 @@ class HomeScreen extends StatelessWidget {
                   ),
                 ),
                 children: [
-                  // Header
                   _buildHeader(context),
-                  // Search Bar
                   _buildSearchBar(),
                   const SizedBox(height: 24),
-                  // Upcoming Events
                   _buildSectionHeader("Événements à venir"),
                   _buildUpcomingEventsList(),
                   const SizedBox(height: 24),
-                  // Popular Now
                   _buildSectionHeader("Populaire actuellement", showSeeAll: true),
-                  _buildPopularEventsList(context, imagePath: "assets/images/enb.jpg", title: "Entre Nous Bar"), // Pass context
+                  _buildPopularEventsList(context, events: _popularEvents),
                   const SizedBox(height: 24),
-                  // "Pour vous" section
                   _buildSectionHeader("Pour vous", showSeeAll: true),
-                  _buildPopularEventsList(context, imagePath: "assets/images/enb.jpg", title: "Entre Nous Bar"), // Pass context
-                  const SizedBox(height: 24),
-                  // "Sport" section
+                  _buildPopularEventsList(context, events: _popularEvents.reversed.toList()),
+                   const SizedBox(height: 24),
                   _buildSectionHeader("Sport", showSeeAll: true),
-                  _buildPopularEventsList(context, imagePath: "assets/images/sibang.jpg", title: "CMS vs US Bitam"), // Pass context
+                  _buildPopularEventsList(context, events: _sportEvents),
                   const SizedBox(height: 24),
-                  // "Culture" section
-                  _buildSectionHeader("Culture", showSeeAll: true),
-                  _buildPopularEventsList(context, imagePath: "assets/images/oiseau.jpg", title: "Concert L'oiseau rare"), // Pass context
+                   _buildSectionHeader("Culture", showSeeAll: true),
+                  _buildPopularEventsList(context, events: _cultureEvents),
                   const SizedBox(height: 24),
                 ],
               ),
@@ -77,7 +94,6 @@ class HomeScreen extends StatelessWidget {
     );
   }
 
-  // Header Widget
   Widget _buildHeader(BuildContext context) {
     return Padding(
       padding: const EdgeInsets.symmetric(horizontal: 24.0, vertical: 16.0),
@@ -117,7 +133,7 @@ class HomeScreen extends StatelessWidget {
               shape: BoxShape.circle,
               boxShadow: [
                 BoxShadow(
-                  color: Colors.grey.withOpacity(0.2),
+                  color: Colors.grey.withAlpha((255 * 0.2).round()),
                   spreadRadius: 1,
                   blurRadius: 5,
                 )
@@ -126,10 +142,7 @@ class HomeScreen extends StatelessWidget {
             child: IconButton(
               icon: const Icon(Icons.notifications_outlined, color: Colors.black),
               onPressed: () {
-                Navigator.push(
-                  context,
-                  MaterialPageRoute(builder: (context) => const NotificationsScreen()),
-                );
+                context.push('/notifications');
               },
             ),
           ),
@@ -138,7 +151,6 @@ class HomeScreen extends StatelessWidget {
     );
   }
 
-  // Search Bar Widget
   Widget _buildSearchBar() {
     return Padding(
       padding: const EdgeInsets.symmetric(horizontal: 24.0),
@@ -157,7 +169,6 @@ class HomeScreen extends StatelessWidget {
     );
   }
 
-  // Section Header Widget
   Widget _buildSectionHeader(String title, {bool showSeeAll = false}) {
     return Padding(
       padding: const EdgeInsets.fromLTRB(24.0, 0, 8.0, 0),
@@ -185,7 +196,6 @@ class HomeScreen extends StatelessWidget {
     );
   }
 
-  // Upcoming Events List Widget
   Widget _buildUpcomingEventsList() {
     return SizedBox(
       height: 120,
@@ -193,21 +203,16 @@ class HomeScreen extends StatelessWidget {
         child: ListView.builder(
           scrollDirection: Axis.horizontal,
           physics: const BouncingScrollPhysics(),
-          itemCount: 5,
+          itemCount: _upcomingEvents.length,
           itemBuilder: (context, index) {
+            final event = _upcomingEvents[index];
             return AnimationConfiguration.staggeredList(
               position: index,
               duration: const Duration(milliseconds: 375),
               child: SlideAnimation(
                 horizontalOffset: 50.0,
                 child: FadeInAnimation(
-                  child: _buildUpcomingEventCard(
-                    image: 'assets/images/enb.jpg',
-                    title: 'ENB',
-                    location: 'LBV',
-                    date: '29',
-                    month: 'Mar',
-                  ),
+                  child: _buildUpcomingEventCard(context, event: event),
                 ),
               ),
             );
@@ -218,122 +223,164 @@ class HomeScreen extends StatelessWidget {
     );
   }
   
-  // Upcoming Event Card
-  Widget _buildUpcomingEventCard({required String image, required String title, required String location, required String date, required String month}) {
-    return Container(
-      width: 300,
-      margin: const EdgeInsets.only(right: 16),
-      decoration: BoxDecoration(
-        color: Colors.white,
-        borderRadius: BorderRadius.circular(16),
-         boxShadow: [
-            BoxShadow(
-              color: Colors.grey.withOpacity(0.15),
-              spreadRadius: 1,
-              blurRadius: 8,
-              offset: const Offset(0, 4),
-            )
-          ]
-      ),
-      child: Padding(
-        padding: const EdgeInsets.all(12.0),
-        child: Row(
-          children: [
-            Stack(
-              alignment: Alignment.center,
-              children: [
-                ClipRRect(
-                  borderRadius: BorderRadius.circular(12),
-                  child: Image.asset(image, width: 80, height: 96, fit: BoxFit.cover),
-                ),
-                Container(
-                     width: 45,
-                     height: 45,
-                     decoration: BoxDecoration(
-                       color: Colors.white.withOpacity(0.85),
-                       borderRadius: BorderRadius.circular(8),
-                     ),
-                     child: Column(
-                       mainAxisAlignment: MainAxisAlignment.center,
-                       children: [
-                         Text(date, style: const TextStyle(fontSize: 18, fontWeight: FontWeight.bold, color: Color(0xFF1E90FF))),
-                         Text(month.toUpperCase(), style: const TextStyle(fontSize: 12, fontWeight: FontWeight.bold, color: Color(0xFF1E90FF))),
-                       ]
-                     ),
-                  ),
-              ],
-            ),
-            const SizedBox(width: 12),
-            Expanded(
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                mainAxisAlignment: MainAxisAlignment.spaceBetween,
+  Widget _buildUpcomingEventCard(BuildContext context, {required Event event}) {
+     final favoritesProvider = Provider.of<FavoritesProvider>(context);
+    final isFavorite = favoritesProvider.isFavorite(event);
+
+    // Extract date and month
+    final dateParts = event.date.split(' ');
+    final date = dateParts.isNotEmpty ? dateParts[0] : '';
+    final month = dateParts.length > 1 ? dateParts[1] : '';
+
+    return GestureDetector(
+       onTap: () {
+         context.push('/details');
+       },
+      child: Container(
+        width: 300,
+        margin: const EdgeInsets.only(right: 16),
+        decoration: BoxDecoration(
+          color: Colors.white,
+          borderRadius: BorderRadius.circular(16),
+          boxShadow: [
+              BoxShadow(
+                color: Colors.grey.withAlpha((255 * 0.15).round()),
+                spreadRadius: 1,
+                blurRadius: 8,
+                offset: const Offset(0, 4),
+              )
+            ]
+        ),
+        child: Padding(
+          padding: const EdgeInsets.all(12.0),
+          child: Row(
+            children: [
+              Stack(
                 children: [
-                  Text(title, style: const TextStyle(fontSize: 16, fontWeight: FontWeight.bold), maxLines: 2, overflow: TextOverflow.ellipsis,),
-                  Row(
-                    mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                    crossAxisAlignment: CrossAxisAlignment.end,
-                    children: [
-                      Row(
-                        children: [
-                          const Icon(Icons.location_on_outlined, size: 16, color: Colors.grey),
-                          const SizedBox(width: 4),
-                          Text(location, style: const TextStyle(color: Colors.grey, fontSize: 13)),
-                        ],
-                      ),
-                       ElevatedButton(
-                         onPressed: () {},
-                         style: ElevatedButton.styleFrom(
-                           backgroundColor: const Color(0xFF1E90FF).withOpacity(0.1),
-                           foregroundColor: const Color(0xFF1E90FF),
-                           elevation: 0,
-                           padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
-                           shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)),
-                         ),
-                         child: const Text('Précommander', style: TextStyle(fontSize: 12)),
-                       )
-                    ],
+                   ClipRRect(
+                    borderRadius: BorderRadius.circular(12),
+                    child: Image.asset(event.imagePath, width: 80, height: 96, fit: BoxFit.cover),
                   ),
+                  Positioned.fill(
+                     child: ClipRRect(
+                      borderRadius: BorderRadius.circular(12),
+                       child: Container(
+                         decoration: BoxDecoration(
+                           color: Colors.black.withAlpha((255 * 0.2).round()),
+                         ),
+                       ),
+                     ),
+                   ),
+                   Positioned(
+                     top: 4,
+                     right: 4,
+                     child: GestureDetector(
+                       onTap: () {
+                         favoritesProvider.toggleFavorite(event);
+                         if (!isFavorite) {
+                           ScaffoldMessenger.of(context).showSnackBar(
+                             const SnackBar(
+                               content: Text('Ajouté aux favoris'),
+                               duration: Duration(seconds: 2),
+                             ),
+                           );
+                         }
+                       },
+                       child: Container(
+                         padding: const EdgeInsets.all(4),
+                         decoration: BoxDecoration(
+                           color: Colors.white.withAlpha((255 * 0.8).round()),
+                           shape: BoxShape.circle,
+                         ),
+                         child: Icon(
+                           isFavorite ? Icons.favorite : Icons.favorite_border,
+                           color: isFavorite ? Colors.red : Colors.black,
+                           size: 20,
+                         ),
+                       ),
+                     ),
+                   ),
+                   Align(
+                     alignment: Alignment.center,
+                     child: Container(
+                       width: 45,
+                       height: 45,
+                       decoration: BoxDecoration(
+                         color: Colors.white.withAlpha((255 * 0.85).round()),
+                         borderRadius: BorderRadius.circular(8),
+                       ),
+                       child: Column(
+                         mainAxisAlignment: MainAxisAlignment.center,
+                         children: [
+                           Text(date, style: const TextStyle(fontSize: 18, fontWeight: FontWeight.bold, color: Color(0xFF1E90FF))),
+                           Text(month.toUpperCase(), style: const TextStyle(fontSize: 12, fontWeight: FontWeight.bold, color: Color(0xFF1E90FF))),
+                         ]
+                       ),
+                    ),
+                   ),
                 ],
               ),
-            ),
-          ],
+              const SizedBox(width: 12),
+              Expanded(
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                  children: [
+                    Text(event.name, style: const TextStyle(fontSize: 16, fontWeight: FontWeight.bold), maxLines: 2, overflow: TextOverflow.ellipsis,),
+                    Row(
+                      children: [
+                        const Icon(Icons.location_on_outlined, size: 16, color: Colors.grey),
+                        const SizedBox(width: 4),
+                        Expanded(
+                          child: Text(
+                            event.location,
+                            style: const TextStyle(color: Colors.grey, fontSize: 13),
+                            overflow: TextOverflow.ellipsis,
+                          ),
+                        ),
+                      ],
+                    ),
+                    Align(
+                      alignment: Alignment.bottomRight,
+                      child: ElevatedButton(
+                        onPressed: () {},
+                        style: ElevatedButton.styleFrom(
+                          backgroundColor: const Color(0xFF1E90FF).withAlpha((255 * 0.1).round()),
+                          foregroundColor: const Color(0xFF1E90FF),
+                          elevation: 0,
+                          padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
+                          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)),
+                        ),
+                        child: const Text('Précommander', style: TextStyle(fontSize: 12)),
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+            ],
+          ),
         ),
       ),
     );
   }
 
-  // Popular Events List Widget
-  Widget _buildPopularEventsList(BuildContext context, {required String imagePath, required String title}) {
+  Widget _buildPopularEventsList(BuildContext context, {required List<Event> events}) {
     return SizedBox(
       height: 250,
       child: AnimationLimiter(
         child: ListView.builder(
           scrollDirection: Axis.horizontal,
           physics: const BouncingScrollPhysics(),
-          itemCount: 5,
+          itemCount: events.length,
           itemBuilder: (context, index) {
+            final event = events[index];
             return AnimationConfiguration.staggeredList(
               position: index,
               duration: const Duration(milliseconds: 375),
               child: SlideAnimation(
                 horizontalOffset: 50.0,
                 child: FadeInAnimation(
-                  child: GestureDetector( // Added GestureDetector for click handling
-                    onTap: () {
-                      Navigator.push(
-                        context,
-                        MaterialPageRoute(builder: (context) => const EventDetailsScreen()),
-                      );
-                    },
-                    child: _buildPopularEventCard(
-                      image: imagePath,
-                      date: '29 Mar, 2024 - 22:00',
-                      title: title,
-                      location: 'LBV',
-                      price: 'À partir de 2000 FCFA',
-                    ),
-                  ),
+                  child: _buildPopularEventCard(context, event: event),
                 ),
               ),
             );
@@ -344,67 +391,107 @@ class HomeScreen extends StatelessWidget {
     );
   }
   
-  // Popular Event Card
-  Widget _buildPopularEventCard({required String image, required String date, required String title, required String location, required String price}) {
-     return Container(
-      width: 220,
-      margin: const EdgeInsets.only(right: 16),
-      decoration: BoxDecoration(
-        color: Colors.white,
-        borderRadius: BorderRadius.circular(20),
-        boxShadow: [
-            BoxShadow(
-              color: Colors.grey.withOpacity(0.15),
-              spreadRadius: 1,
-              blurRadius: 8,
-              offset: const Offset(0, 4),
-            )
-          ]
-      ),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          ClipRRect(
-            borderRadius: const BorderRadius.only(
-              topLeft: Radius.circular(20),
-              topRight: Radius.circular(20),
-            ),
-            child: Image.asset(image, height: 120, width: double.infinity, fit: BoxFit.cover),
-          ),
-          Padding(
-            padding: const EdgeInsets.all(12.0),
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
+  Widget _buildPopularEventCard(BuildContext context, {required Event event}) {
+    final favoritesProvider = Provider.of<FavoritesProvider>(context);
+    final isFavorite = favoritesProvider.isFavorite(event);
+
+     return GestureDetector(
+      onTap: () {
+        context.push('/details');
+      },
+       child: Container(
+        width: 220,
+        margin: const EdgeInsets.only(right: 16),
+        decoration: BoxDecoration(
+          color: Colors.white,
+          borderRadius: BorderRadius.circular(20),
+          boxShadow: [
+              BoxShadow(
+                color: Colors.grey.withAlpha((255 * 0.15).round()),
+                spreadRadius: 1,
+                blurRadius: 8,
+                offset: const Offset(0, 4),
+              )
+            ]
+        ),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Stack(
               children: [
-                Text(date, style: const TextStyle(fontSize: 12, color: Color(0xFF1E90FF), fontWeight: FontWeight.w600)),
-                const SizedBox(height: 8),
-                Text(title, style: const TextStyle(fontSize: 17, fontWeight: FontWeight.bold), maxLines: 1, overflow: TextOverflow.ellipsis, ),
-                const SizedBox(height: 12),
-                Row(
-                  mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                  children: [
-                     Row(
-                      children: [
-                        const Icon(Icons.location_on_outlined, size: 16, color: Colors.grey),
-                        const SizedBox(width: 4),
-                        Text(location, style: const TextStyle(color: Colors.grey, fontSize: 12)),
-                      ],
-                    ),
-                    Container(
-                      padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+                ClipRRect(
+                  borderRadius: const BorderRadius.only(
+                    topLeft: Radius.circular(20),
+                    topRight: Radius.circular(20),
+                  ),
+                  child: Image.asset(event.imagePath, height: 120, width: double.infinity, fit: BoxFit.cover),
+                ),
+                 Positioned(
+                  top: 8,
+                  right: 8,
+                  child: GestureDetector(
+                    onTap: () {
+                      favoritesProvider.toggleFavorite(event);
+                      if (!isFavorite) {
+                        ScaffoldMessenger.of(context).showSnackBar(
+                          const SnackBar(
+                            content: Text('Ajouté aux favoris'),
+                            duration: Duration(seconds: 2),
+                          ),
+                        );
+                      }
+                    },
+                    child: Container(
+                      padding: const EdgeInsets.all(6),
                       decoration: BoxDecoration(
-                        color: const Color(0xFF1E90FF).withOpacity(0.1),
-                        borderRadius: BorderRadius.circular(8),
+                        color: Colors.white.withAlpha((255 * 0.9).round()),
+                        shape: BoxShape.circle,
                       ),
-                      child: Text(price, style: const TextStyle(color: Color(0xFF1E90FF), fontWeight: FontWeight.bold, fontSize: 11)),
-                    )
-                  ],
+                      child: Icon(
+                        isFavorite ? Icons.favorite : Icons.favorite_border,
+                        color: isFavorite ? Colors.red : Colors.black,
+                        size: 22,
+                      ),
+                    ),
+                  ),
                 ),
               ],
             ),
-          )
-        ],
-      ),
+            Padding(
+              padding: const EdgeInsets.all(12.0),
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Text(event.date, style: const TextStyle(fontSize: 12, color: Color(0xFF1E90FF), fontWeight: FontWeight.w600)),
+                  const SizedBox(height: 8),
+                  Text(event.name, style: const TextStyle(fontSize: 17, fontWeight: FontWeight.bold), maxLines: 1, overflow: TextOverflow.ellipsis, ),
+                  const SizedBox(height: 12),
+                  Row(
+                    mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                    children: [
+                       Row(
+                        children: [
+                          const Icon(Icons.location_on_outlined, size: 16, color: Colors.grey),
+                          const SizedBox(width: 4),
+                          Text(event.location, style: const TextStyle(color: Colors.grey, fontSize: 12)),
+                        ],
+                      ),
+                      Container(
+                        padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+                        decoration: BoxDecoration(
+                          color: const Color(0xFF1E90FF).withAlpha((255 * 0.1).round()),
+                          borderRadius: BorderRadius.circular(8),
+                        ),
+                        child: Text('${event.price.toStringAsFixed(0)} FCFA', style: const TextStyle(color: Color(0xFF1E90FF), fontWeight: FontWeight.bold, fontSize: 11)),
+                      )
+                    ],
+                  ),
+                ],
+              ),
+            )
+          ],
+        ),
+           ),
     );
   }
 }

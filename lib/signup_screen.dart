@@ -1,15 +1,15 @@
 
 import 'package:flutter/material.dart';
-import 'package:myapp/main_screen.dart'; // Import the MainScreen
+import 'package:go_router/go_router.dart';
 
 class SignUpScreen extends StatefulWidget {
   const SignUpScreen({super.key});
 
   @override
-  _SignUpScreenState createState() => _SignUpScreenState();
+  SignUpScreenState createState() => SignUpScreenState();
 }
 
-class _SignUpScreenState extends State<SignUpScreen> {
+class SignUpScreenState extends State<SignUpScreen> {
   bool _isPasswordVisible = false;
   bool _isConfirmPasswordVisible = false;
 
@@ -178,9 +178,7 @@ class _SignUpScreenState extends State<SignUpScreen> {
                 // SignUp Button
                 ElevatedButton(
                   onPressed: () {
-                    Navigator.of(context).pushReplacement(
-                      MaterialPageRoute(builder: (context) => const MainScreen()),
-                    );
+                    context.go('/main');
                   },
                    style: ElevatedButton.styleFrom(
                     backgroundColor: const Color(0xFF1E90FF),
@@ -189,7 +187,7 @@ class _SignUpScreenState extends State<SignUpScreen> {
                       borderRadius: BorderRadius.circular(12),
                     ),
                     elevation: 5,
-                    shadowColor: Colors.black.withOpacity(0.3),
+                    shadowColor: Colors.black.withAlpha(76),
                   ),
                   child: const Text(
                     'S\'inscrire',

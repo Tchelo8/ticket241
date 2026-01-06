@@ -1,16 +1,16 @@
 
 import 'package:flutter/material.dart';
-import 'package:myapp/starting_screen.dart'; // Changement de l'import
+import 'package:go_router/go_router.dart';
 import 'package:smooth_page_indicator/smooth_page_indicator.dart';
 
 class OnboardingScreen extends StatefulWidget {
   const OnboardingScreen({super.key});
 
   @override
-  _OnboardingScreenState createState() => _OnboardingScreenState();
+  OnboardingScreenState createState() => OnboardingScreenState();
 }
 
-class _OnboardingScreenState extends State<OnboardingScreen> {
+class OnboardingScreenState extends State<OnboardingScreen> {
   final PageController _pageController = PageController();
   bool _isLastPage = false;
 
@@ -49,10 +49,7 @@ class _OnboardingScreenState extends State<OnboardingScreen> {
   }
   
   void _skipOnboarding() {
-    Navigator.pushReplacement(
-      context,
-      MaterialPageRoute(builder: (context) => const StartingScreen()),
-    );
+    context.go('/');
   }
 
   @override

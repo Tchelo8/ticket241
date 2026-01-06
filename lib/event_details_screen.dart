@@ -1,15 +1,33 @@
 
 import 'package:flutter/material.dart';
-import 'package:myapp/checkout_screen.dart'; // Import the new screen
+import 'package:go_router/go_router.dart';
+import 'package:myapp/models/event_model.dart';
+import 'package:myapp/providers/favorites_provider.dart';
+import 'package:provider/provider.dart';
 
 class EventDetailsScreen extends StatefulWidget {
   const EventDetailsScreen({super.key});
 
   @override
-  _EventDetailsScreenState createState() => _EventDetailsScreenState();
+  EventDetailsScreenState createState() => EventDetailsScreenState();
 }
 
-class _EventDetailsScreenState extends State<EventDetailsScreen> {
+class EventDetailsScreenState extends State<EventDetailsScreen> {
+  // Main event for the details page - in a real app, this would be passed from the previous screen
+  final Event mainEvent = Event(
+    name: 'Concert sous les étoiles',
+    imagePath: 'assets/images/enb.jpg',
+    location: 'Libreville',
+    date: '15 Mars, 2025, 22:00',
+    price: 2000,
+  );
+
+  // Dummy data for suggested events
+  final List<Event> _suggestedEvents = [
+    Event(name: 'Concert sous les pyramides', imagePath: 'assets/images/enb.jpg', location: 'Gizeh, Caire', date: '10 Avril', price: 5000),
+    Event(name: 'Festival de Jazz de Mumbai', imagePath: 'assets/images/jazz.png', location: 'Santorin, Grèce', date: '25 Mai', price: 4000),
+  ];
+
   final List<Map<String, dynamic>> _ticketData = [
     {'name': 'Ticket normal', 'price': 2000.0, 'quantity': 1},
     {'name': 'Pass VIP', 'price': 5000.0, 'quantity': 0},
@@ -50,7 +68,7 @@ class _EventDetailsScreenState extends State<EventDetailsScreen> {
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                _buildHeaderImage(context),
+                _buildHeaderImage(context, mainEvent),
                 _buildEventInfo(textColor),
                 _buildAboutSection(textColor, primaryColor),
                 _buildGeneralInfoSection(textColor, secondaryTextColor),
@@ -68,11 +86,14 @@ class _EventDetailsScreenState extends State<EventDetailsScreen> {
     );
   }
 
-  Widget _buildHeaderImage(BuildContext context) {
+  Widget _buildHeaderImage(BuildContext context, Event event) {
+    final favoritesProvider = Provider.of<FavoritesProvider>(context);
+    final isFavorite = favoritesProvider.isFavorite(event);
+
     return Stack(
       children: [
         Image.asset(
-          'assets/images/enb.jpg',
+          event.imagePath,
           height: 300,
           width: double.infinity,
           fit: BoxFit.cover,
@@ -83,7 +104,7 @@ class _EventDetailsScreenState extends State<EventDetailsScreen> {
             gradient: LinearGradient(
               begin: Alignment.topCenter,
               end: Alignment.bottomCenter,
-              colors: [Colors.transparent, Colors.black.withOpacity(0.7)],
+              colors: [Colors.transparent, Colors.black.withAlpha((255 * 0.7).round())],
             ),
           ),
         ),
@@ -95,24 +116,37 @@ class _EventDetailsScreenState extends State<EventDetailsScreen> {
             mainAxisAlignment: MainAxisAlignment.spaceBetween,
             children: [
               CircleAvatar(
-                backgroundColor: Colors.black.withOpacity(0.5),
+                backgroundColor: Colors.black.withAlpha((255 * 0.5).round()),
                 child: IconButton(
                   icon: const Icon(Icons.arrow_back, color: Colors.white),
-                  onPressed: () => Navigator.of(context).pop(),
+                  onPressed: () => context.pop(),
                 ),
               ),
               Row(
                 children: [
                   CircleAvatar(
-                    backgroundColor: Colors.black.withOpacity(0.5),
+                    backgroundColor: Colors.black.withAlpha((255 * 0.5).round()),
                     child: IconButton(
-                      icon: const Icon(Icons.favorite_border, color: Colors.white),
-                      onPressed: () {},
+                      icon: Icon(
+                        isFavorite ? Icons.favorite : Icons.favorite_border,
+                        color: isFavorite ? Colors.red : Colors.white,
+                      ),
+                      onPressed: () {
+                        favoritesProvider.toggleFavorite(event);
+                        if (!isFavorite) {
+                           ScaffoldMessenger.of(context).showSnackBar(
+                             const SnackBar(
+                               content: Text('Ajouté aux favoris'),
+                               duration: Duration(seconds: 2),
+                             ),
+                           );
+                         }
+                      },
                     ),
                   ),
                   const SizedBox(width: 10),
                   CircleAvatar(
-                    backgroundColor: Colors.black.withOpacity(0.5),
+                    backgroundColor: Colors.black.withAlpha((255 * 0.5).round()),
                     child: IconButton(
                       icon: const Icon(Icons.more_horiz, color: Colors.white),
                       onPressed: () {},
@@ -130,7 +164,7 @@ class _EventDetailsScreenState extends State<EventDetailsScreen> {
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
               Text(
-                'Concert sous les étoiles',
+                event.name,
                 style: const TextStyle(
                   color: Colors.white,
                   fontSize: 28,
@@ -139,8 +173,8 @@ class _EventDetailsScreenState extends State<EventDetailsScreen> {
               ),
               const SizedBox(height: 8),
               Text(
-                '15 Mars, 2025, 22:00 • Libreville',
-                style: TextStyle(color: Colors.white.withOpacity(0.9)),
+                event.date,
+                style: TextStyle(color: Colors.white.withAlpha((255 * 0.9).round())),
               ),
             ],
           ),
@@ -149,7 +183,7 @@ class _EventDetailsScreenState extends State<EventDetailsScreen> {
     );
   }
 
-  Widget _buildEventInfo(Color textColor) {
+   Widget _buildEventInfo(Color textColor) {
     return Padding(
       padding: const EdgeInsets.all(20.0),
       child: Row(
@@ -187,7 +221,7 @@ class _EventDetailsScreenState extends State<EventDetailsScreen> {
           const SizedBox(height: 10),
           Text(
             'Le festival de musique est un événement de renommée mondiale qui a lieu chaque année dans la ville animée de Libreville. C\'est une destination incontournable pour les amateurs de musique du monde entier, attirant des dizaines de milliers de participants venus vivre son atmosphère électrisante.',
-            style: TextStyle(color: textColor.withOpacity(0.7), height: 1.5),
+            style: TextStyle(color: textColor.withAlpha((255 * 0.7).round()), height: 1.5),
           ),
           TextButton(
             onPressed: () {},
@@ -271,7 +305,7 @@ class _EventDetailsScreenState extends State<EventDetailsScreen> {
           Text(name, style: TextStyle(color: textColor, fontWeight: FontWeight.bold)),
           Text(date, style: TextStyle(color: secondaryTextColor, fontSize: 12)),
           const SizedBox(height: 10),
-          Text(review, style: TextStyle(color: textColor.withOpacity(0.9)), maxLines: 4, overflow: TextOverflow.ellipsis),
+          Text(review, style: TextStyle(color: textColor.withAlpha((255 * 0.9).round())), maxLines: 4, overflow: TextOverflow.ellipsis),
         ],
       ),
     );
@@ -301,7 +335,6 @@ class _EventDetailsScreenState extends State<EventDetailsScreen> {
     );
   }
 
-  // New button widget with bubble effect
   Widget _buildQuantityButton({required IconData icon, required VoidCallback onPressed, required Color iconColor}) {
     return Material(
       color: Colors.grey[200],
@@ -393,13 +426,14 @@ class _EventDetailsScreenState extends State<EventDetailsScreen> {
           const SizedBox(height: 15),
           SizedBox(
             height: 250,
-            child: ListView(
+            child: ListView.builder(
               scrollDirection: Axis.horizontal,
               padding: const EdgeInsets.only(left: 20),
-              children: [
-                _buildSuggestionCard('assets/images/enb.jpg', 'Concert sous les pyramides', 'À partir de 5000 FCFA', 'Gizeh, Caire', textColor, secondaryTextColor, primaryColor),
-                _buildSuggestionCard('assets/images/jazz.png', 'Festival de Jazz de Mumbai', 'À partir de 4000 FCFA', 'Santorin, Grèce', textColor, secondaryTextColor, primaryColor),
-              ],
+              itemCount: _suggestedEvents.length,
+              itemBuilder: (context, index) {
+                final event = _suggestedEvents[index];
+                return _buildSuggestionCard(context, event, textColor, secondaryTextColor, primaryColor);
+              },
             ),
           )
         ],
@@ -407,7 +441,10 @@ class _EventDetailsScreenState extends State<EventDetailsScreen> {
     );
   }
 
-  Widget _buildSuggestionCard(String imagePath, String title, String price, String location, Color textColor, Color secondaryTextColor, Color primaryColor) {
+  Widget _buildSuggestionCard(BuildContext context, Event event, Color textColor, Color secondaryTextColor, Color primaryColor) {
+    final favoritesProvider = Provider.of<FavoritesProvider>(context);
+    final isFavorite = favoritesProvider.isFavorite(event);
+
     return Container(
       width: 200,
       margin: const EdgeInsets.only(right: 15),
@@ -418,15 +455,32 @@ class _EventDetailsScreenState extends State<EventDetailsScreen> {
             children: [
               ClipRRect(
                 borderRadius: BorderRadius.circular(15),
-                child: Image.asset(imagePath, height: 150, width: 200, fit: BoxFit.cover),
+                child: Image.asset(event.imagePath, height: 150, width: 200, fit: BoxFit.cover),
               ),
               Positioned(
                 top: 10,
                 right: 10,
-                child: CircleAvatar(
-                  backgroundColor: Colors.black.withOpacity(0.5),
-                  radius: 15,
-                  child: const Icon(Icons.favorite_border, color: Colors.white, size: 18),
+                child: GestureDetector(
+                  onTap: () {
+                    favoritesProvider.toggleFavorite(event);
+                     if (!isFavorite) {
+                        ScaffoldMessenger.of(context).showSnackBar(
+                          const SnackBar(
+                            content: Text('Ajouté aux favoris'),
+                            duration: Duration(seconds: 2),
+                          ),
+                        );
+                      }
+                  },
+                  child: CircleAvatar(
+                    backgroundColor: Colors.black.withAlpha((255 * 0.5).round()),
+                    radius: 15,
+                    child: Icon(
+                      isFavorite ? Icons.favorite : Icons.favorite_border,
+                      color: isFavorite ? Colors.red : Colors.white,
+                      size: 18,
+                    ),
+                  ),
                 ),
               ),
               Positioned(
@@ -438,19 +492,19 @@ class _EventDetailsScreenState extends State<EventDetailsScreen> {
                      color: primaryColor,
                      borderRadius: BorderRadius.circular(8),
                    ),
-                   child: Text(price, style: const TextStyle(color: Colors.white, fontWeight: FontWeight.bold)),
+                   child: Text('À partir de ${event.price} FCFA', style: const TextStyle(color: Colors.white, fontWeight: FontWeight.bold)),
                 ),
               )
             ],
           ),
           const SizedBox(height: 10),
-          Text(title, style: TextStyle(color: textColor, fontWeight: FontWeight.bold, fontSize: 16)),
+          Text(event.name, style: TextStyle(color: textColor, fontWeight: FontWeight.bold, fontSize: 16)),
           const SizedBox(height: 5),
           Row(
             children: [
               Icon(Icons.location_on, color: secondaryTextColor, size: 14),
               const SizedBox(width: 5),
-              Text(location, style: TextStyle(color: secondaryTextColor, fontSize: 12)),
+              Text(event.location, style: TextStyle(color: secondaryTextColor, fontSize: 12)),
             ],
           )
         ],
@@ -481,10 +535,7 @@ class _EventDetailsScreenState extends State<EventDetailsScreen> {
             ),
             ElevatedButton(
               onPressed: () {
-                Navigator.push(
-                  context,
-                  MaterialPageRoute(builder: (context) => const CheckoutScreen()),
-                );
+                context.push('/checkout');
               },
               style: ElevatedButton.styleFrom(
                 backgroundColor: primaryColor,

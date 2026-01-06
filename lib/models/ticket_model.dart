@@ -1,23 +1,24 @@
-import 'package:flutter/material.dart';
 
-class Ticket {
-  final String title;
-  final String subtitle;
+class EventTicket {
+  final String imagePath;
+  final String eventName;
+  final String location;
   final String date;
   final String time;
-  final String seat;
-  final String ticketType;
-  final IconData icon;
-  final Color iconColor;
+  final String status; // "Paid", "Completed"
+  final int ticketCount;
+  final int daysLeft;
+  final bool isUpcoming;
 
-  Ticket({
-    required this.title,
-    required this.subtitle,
+  EventTicket({
+    required this.imagePath,
+    required this.eventName,
+    required this.location,
     required this.date,
     required this.time,
-    required this.seat,
-    required this.ticketType,
-    required this.icon,
-    required this.iconColor,
+    required this.status,
+    required this.ticketCount,
+    required this.daysLeft,
+    required this.isUpcoming,
   });
 }

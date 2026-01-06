@@ -1,201 +1,213 @@
 
 import 'package:flutter/material.dart';
+import 'package:go_router/go_router.dart';
 import 'package:myapp/models/event_model.dart';
+import 'package:myapp/providers/favorites_provider.dart';
+import 'package:provider/provider.dart';
 
 class ExplorerScreen extends StatefulWidget {
   const ExplorerScreen({super.key});
 
   @override
-  _ExplorerScreenState createState() => _ExplorerScreenState();
+  State<ExplorerScreen> createState() => ExplorerScreenState();
 }
 
-class _ExplorerScreenState extends State<ExplorerScreen> {
-  final List<Event> _events = [
-    Event(
-      imagePath: 'assets/images/enb.jpg',
-      organizer: 'Entre Nous Bar',
-      title: 'Concert Live',
-      date: 'Mar 29, 2024',
-      price: '10,000 XAF',
-    ),
-    Event(
-      imagePath: 'assets/images/oiseau.jpg',
-      organizer: 'L-Oiseau Rare',
-      title: 'Showcase Exclusif',
-      date: 'Avr 05, 2024',
-      price: '25,000 XAF',
-    ),
-    Event(
-      imagePath: 'assets/images/sibang.jpg',
-      organizer: 'US Bitam',
-      title: 'CMS vs US Bitam',
-      date: 'Avr 12, 2024',
-      price: '5,000 XAF',
-    ),
+class ExplorerScreenState extends State<ExplorerScreen> {
+    static final List<Event> _allEvents = [
+    Event(name: 'Concert Live Acoustique', imagePath: 'assets/images/enb.jpg', location: 'Entre Nous Bar, Angondjé', date: '29 Mars', price: 5000.0),
+    Event(name: 'Festival International de Sibang', imagePath: 'assets/images/sibang.jpg', location: 'Jardin Botanique, Libreville', date: '15 Avril', price: 10000.0),
+    Event(name: 'Concert Oiseau Rare', imagePath: 'assets/images/oiseau.jpg', location: 'Casino Croisette, LBV', date: '14 Fév', price: 15000.0),
+    Event(name: 'Entre Nous Bar', imagePath: 'assets/images/enb.jpg', location: 'Angondjé', date: 'Tous les vendredis', price: 5000.0),
+    Event(name: 'Libreville Jazz Festival', imagePath: 'assets/images/jazz.png', location: 'Institut Français', date: '10 Jan', price: 20000.0),
+    Event(name: 'CMS vs US Bitam', imagePath: 'assets/images/sibang.jpg', location: 'Stade de l\'amitié', date: '05 Mai', price: 1000.0),
+    Event(name: 'Concert L\'oiseau rare', imagePath: 'assets/images/oiseau.jpg', location: 'Casino Croisette', date: '14 Fév', price: 15000.0),
   ];
 
-  String _selectedCategory = "Toutes";
+  List<Event> _filteredEvents = [];
+
+  @override
+  void initState() {
+    super.initState();
+    _filteredEvents = _allEvents;
+  }
+
+  void _filterEvents(String query) {
+    final filtered = _allEvents.where((event) {
+      final eventName = event.name.toLowerCase();
+      final searchLower = query.toLowerCase();
+      return eventName.contains(searchLower);
+    }).toList();
+
+    setState(() {
+      _filteredEvents = filtered;
+    });
+  }
 
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      backgroundColor: Colors.grey[50],
+      backgroundColor: Colors.white,
       appBar: AppBar(
-        automaticallyImplyLeading: false,
-        backgroundColor: Colors.grey[50],
+        title: const Text('Explorer'),
+        backgroundColor: Colors.white,
+        foregroundColor: Colors.black,
         elevation: 0,
-        title: const Text(
-          'Explorer',
-          style: TextStyle(color: Colors.black, fontWeight: FontWeight.bold, fontSize: 28),
-        ),
       ),
-      body: Column(
-        children: [
-          _buildSearchBar(),
-          const SizedBox(height: 20),
-          _buildCategoryFilters(),
-          const SizedBox(height: 20),
-          Expanded(
-            child: _buildEventsList(),
-          ),
-        ],
+      body: Padding(
+        padding: const EdgeInsets.symmetric(horizontal: 20.0),
+        child: Column(
+          children: [
+            _buildSearchBar(),
+            const SizedBox(height: 20),
+            Expanded(
+              child: _buildEventsGrid(),
+            ),
+          ],
+        ),
       ),
     );
   }
 
   Widget _buildSearchBar() {
-    return Padding(
-      padding: const EdgeInsets.symmetric(horizontal: 20.0),
-      child: TextField(
-        decoration: InputDecoration(
-          hintText: 'Événements, concerts...',
-          prefixIcon: const Icon(Icons.search, color: Colors.grey),
-          suffixIcon: const Icon(Icons.filter_list, color: Colors.grey),
-          filled: true,
-          fillColor: Colors.white,
-          border: OutlineInputBorder(
-            borderRadius: BorderRadius.circular(15),
-            borderSide: BorderSide.none,
-          ),
+    return TextField(
+      onChanged: _filterEvents,
+      decoration: InputDecoration(
+        hintText: 'Rechercher...',
+        prefixIcon: const Icon(Icons.search, color: Colors.grey),
+        filled: true,
+        fillColor: Colors.grey[200],
+        border: OutlineInputBorder(
+          borderRadius: BorderRadius.circular(30),
+          borderSide: BorderSide.none,
         ),
       ),
     );
   }
 
-  Widget _buildCategoryFilters() {
-    final categories = ["Toutes", "Sport", "Culture", "Éducatif", "Pour vous"];
-    return SizedBox(
-      height: 40,
-      child: ListView.builder(
-        scrollDirection: Axis.horizontal,
-        itemCount: categories.length,
-        itemBuilder: (context, index) {
-          final category = categories[index];
-          final isSelected = category == _selectedCategory;
-          return Padding(
-            padding: EdgeInsets.only(left: index == 0 ? 20.0 : 10.0, right: index == categories.length - 1 ? 20.0 : 0),
-            child: ChoiceChip(
-              label: Text(category),
-              selected: isSelected,
-              onSelected: (selected) {
-                setState(() {
-                  _selectedCategory = category;
-                });
-              },
-              backgroundColor: Colors.white,
-              selectedColor: const Color(0xFF1E90FF),
-              labelStyle: TextStyle(
-                color: isSelected ? Colors.white : Colors.black,
-                fontWeight: FontWeight.bold,
-              ),
-              shape: RoundedRectangleBorder(
-                borderRadius: BorderRadius.circular(10),
-                side: BorderSide(color: Colors.transparent)
-              ),
-               elevation: 3,
-            ),
-          );
-        },
+  Widget _buildEventsGrid() {
+    return GridView.builder(
+      gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
+        crossAxisCount: 2,
+        crossAxisSpacing: 15,
+        mainAxisSpacing: 15,
+        childAspectRatio: 0.75,
       ),
-    );
-  }
-
-
-  Widget _buildEventsList() {
-    return ListView.builder(
-      itemCount: _events.length,
-      padding: const EdgeInsets.symmetric(horizontal: 20),
+      itemCount: _filteredEvents.length,
       itemBuilder: (context, index) {
-        return _buildEventCard(_events[index]);
+        final event = _filteredEvents[index];
+        return _buildEventCard(context, event: event);
       },
     );
   }
 
-  Widget _buildEventCard(Event event) {
-    return Container(
-      margin: const EdgeInsets.only(bottom: 20),
-      decoration: BoxDecoration(
-        color: Colors.white,
-        borderRadius: BorderRadius.circular(20),
-        boxShadow: [
-          BoxShadow(
-            color: Colors.grey.withOpacity(0.15),
-            spreadRadius: 2,
-            blurRadius: 10,
-            offset: const Offset(0, 5),
-          ),
-        ],
-      ),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          ClipRRect(
-            borderRadius: const BorderRadius.only(
-              topLeft: Radius.circular(20),
-              topRight: Radius.circular(20),
-            ),
-            child: Image.asset(
-              event.imagePath,
-              height: 180,
-              width: double.infinity,
-              fit: BoxFit.cover,
-            ),
-          ),
-          Padding(
-            padding: const EdgeInsets.all(15.0),
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
+  Widget _buildEventCard(BuildContext context, {required Event event}) {
+    final favoritesProvider = Provider.of<FavoritesProvider>(context);
+    final isFavorite = favoritesProvider.isFavorite(event);
+
+    return GestureDetector(
+      onTap: () {
+        context.push('/details');
+      },
+      child: Container(
+        decoration: BoxDecoration(
+          color: Colors.white,
+          borderRadius: BorderRadius.circular(20),
+          boxShadow: [
+            BoxShadow(
+              color: Colors.grey.withAlpha((255 * 0.15).round()),
+              spreadRadius: 1,
+              blurRadius: 8,
+              offset: const Offset(0, 4),
+            )
+          ],
+        ),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Stack(
               children: [
-                Text(
-                  event.organizer,
-                  style: TextStyle(color: Colors.grey[600], fontSize: 14, fontWeight: FontWeight.w500),
+                ClipRRect(
+                  borderRadius: const BorderRadius.only(
+                    topLeft: Radius.circular(20),
+                    topRight: Radius.circular(20),
+                  ),
+                  child: Image.asset(
+                    event.imagePath,
+                    height: 120,
+                    width: double.infinity,
+                    fit: BoxFit.cover,
+                  ),
                 ),
-                const SizedBox(height: 5),
-                Text(
-                  event.title,
-                  style: const TextStyle(fontSize: 20, fontWeight: FontWeight.bold),
-                ),
-                const SizedBox(height: 15),
-                Row(
-                  mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                  children: [
-                     Row(
-                      children: [
-                        Icon(Icons.calendar_today, color: Colors.grey[500], size: 16),
-                        const SizedBox(width: 5),
-                        Text(event.date, style: TextStyle(color: Colors.grey[700], fontWeight: FontWeight.w600)),
-                      ],
+                Positioned(
+                  top: 8,
+                  right: 8,
+                  child: GestureDetector(
+                    onTap: () {
+                      favoritesProvider.toggleFavorite(event);
+                       if (!isFavorite) {
+                        ScaffoldMessenger.of(context).showSnackBar(
+                          const SnackBar(
+                            content: Text('Ajouté aux favoris'),
+                            duration: Duration(seconds: 2),
+                          ),
+                        );
+                      }
+                    },
+                    child: Container(
+                      padding: const EdgeInsets.all(6),
+                      decoration: BoxDecoration(
+                        color: Colors.white.withAlpha((255 * 0.9).round()),
+                        shape: BoxShape.circle,
+                      ),
+                      child: Icon(
+                        isFavorite ? Icons.favorite : Icons.favorite_border,
+                        color: isFavorite ? Colors.red : Colors.black,
+                        size: 22,
+                      ),
                     ),
-                    Text(
-                      'À partir de ${event.price}',
-                       style: const TextStyle(color:  Color(0xFF1E90FF), fontWeight: FontWeight.bold, fontSize: 16),
-                    ),
-                  ],
+                  ),
                 ),
               ],
             ),
-          )
-        ],
+            Padding(
+              padding: const EdgeInsets.all(12.0),
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Text(
+                    event.name,
+                    style: const TextStyle(fontSize: 16, fontWeight: FontWeight.bold),
+                    maxLines: 1,
+                    overflow: TextOverflow.ellipsis,
+                  ),
+                  const SizedBox(height: 5),
+                  Text(
+                    event.location,
+                    style: const TextStyle(color: Colors.grey, fontSize: 12),
+                     maxLines: 1,
+                    overflow: TextOverflow.ellipsis,
+                  ),
+                  const SizedBox(height: 10),
+                  Container(
+                    padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+                    decoration: BoxDecoration(
+                      color: const Color(0xFF1E90FF).withAlpha((255 * 0.1).round()),
+                      borderRadius: BorderRadius.circular(8),
+                    ),
+                    child: Text(
+                      '${event.price.toStringAsFixed(0)} FCFA',
+                      style: const TextStyle(
+                        color: Color(0xFF1E90FF),
+                        fontWeight: FontWeight.bold,
+                        fontSize: 11,
+                      ),
+                    ),
+                  ),
+                ],
+              ),
+            )
+          ],
+        ),
       ),
     );
   }

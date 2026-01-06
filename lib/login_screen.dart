@@ -1,15 +1,15 @@
 
 import 'package:flutter/material.dart';
-import 'package:myapp/main_screen.dart'; // Import the MainScreen
+import 'package:go_router/go_router.dart';
 
 class LoginScreen extends StatefulWidget {
   const LoginScreen({super.key});
 
   @override
-  _LoginScreenState createState() => _LoginScreenState();
+  LoginScreenState createState() => LoginScreenState();
 }
 
-class _LoginScreenState extends State<LoginScreen> {
+class LoginScreenState extends State<LoginScreen> {
   bool _isPasswordVisible = false;
 
   @override
@@ -21,7 +21,7 @@ class _LoginScreenState extends State<LoginScreen> {
         elevation: 0,
         leading: IconButton(
           icon: const Icon(Icons.arrow_back, color: Colors.black),
-          onPressed: () => Navigator.of(context).pop(),
+          onPressed: () => context.go('/'),
         ),
       ),
       body: SafeArea(
@@ -119,9 +119,7 @@ class _LoginScreenState extends State<LoginScreen> {
               // Login Button
               ElevatedButton(
                 onPressed: () {
-                   Navigator.of(context).pushReplacement(
-                        MaterialPageRoute(builder: (context) => const MainScreen()),
-                      );
+                   context.go('/app');
                 },
                 style: ElevatedButton.styleFrom(
                   backgroundColor: const Color(0xFF1E90FF),
@@ -130,7 +128,7 @@ class _LoginScreenState extends State<LoginScreen> {
                     borderRadius: BorderRadius.circular(12),
                   ),
                    elevation: 5,
-                   shadowColor: Colors.black.withOpacity(0.3)
+                   shadowColor: Colors.black.withAlpha((255 * 0.3).round()),
                 ),
                 child: const Text(
                   'Se connecter',

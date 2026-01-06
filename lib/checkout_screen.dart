@@ -1,17 +1,17 @@
 
 import 'package:flutter/material.dart';
-import 'package:myapp/success_screen.dart';
+import 'package:go_router/go_router.dart';
 
 class CheckoutScreen extends StatefulWidget {
   const CheckoutScreen({super.key});
 
   @override
-  _CheckoutScreenState createState() => _CheckoutScreenState();
+  CheckoutScreenState createState() => CheckoutScreenState();
 }
 
 enum PaymentMethod { airtel, moov }
 
-class _CheckoutScreenState extends State<CheckoutScreen> {
+class CheckoutScreenState extends State<CheckoutScreen> {
   PaymentMethod? _selectedPaymentMethod = PaymentMethod.airtel;
   bool _isProcessing = false; // To track loading state
 
@@ -24,10 +24,9 @@ class _CheckoutScreenState extends State<CheckoutScreen> {
 
     // Simulate network request
     Future.delayed(const Duration(seconds: 3), () {
+      if (!mounted) return;
       // Navigate to success screen
-      Navigator.of(context).pushReplacement(
-        MaterialPageRoute(builder: (context) => const SuccessScreen()),
-      );
+      context.go('/success');
     });
   }
 

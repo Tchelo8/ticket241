@@ -1,8 +1,6 @@
 
 import 'package:flutter/material.dart';
-import 'package:myapp/location_screen.dart';
-import 'package:myapp/onboarding_screen.dart';
-import 'package:myapp/tickets_screen.dart'; 
+import 'package:go_router/go_router.dart';
 
 class ProfileScreen extends StatelessWidget {
   const ProfileScreen({super.key});
@@ -50,11 +48,7 @@ class ProfileScreen extends StatelessWidget {
                   Expanded(
                     child: ElevatedButton(
                       onPressed: () {
-                        // Navigate to Onboarding and remove all previous routes
-                        Navigator.of(context).pushAndRemoveUntil(
-                          MaterialPageRoute(builder: (context) => const OnboardingScreen()),
-                          (Route<dynamic> route) => false,
-                        );
+                        context.go('/');
                       },
                       style: ElevatedButton.styleFrom(
                         backgroundColor: Colors.redAccent,
@@ -117,14 +111,14 @@ class ProfileScreen extends StatelessWidget {
             icon: Icons.local_activity_outlined,
             title: 'Mes Billets',
             onTap: () {
-              Navigator.push(context, MaterialPageRoute(builder: (context) => const TicketsScreen()));
+              context.push('/tickets');
             },
           ),
           _buildProfileMenuItem(
             icon: Icons.location_on_outlined,
             title: 'Adresses',
             onTap: () {
-              Navigator.push(context, MaterialPageRoute(builder: (context) => const LocationScreen()));
+              context.push('/location');
             },
           ),
            _buildProfileMenuItem(
@@ -163,7 +157,7 @@ class ProfileScreen extends StatelessWidget {
       children: [
         CircleAvatar(
           radius: 50,
-          backgroundColor: const Color(0xFF1E90FF).withOpacity(0.15),
+          backgroundColor: const Color(0xFF1E90FF).withAlpha((255 * 0.15).round()),
           child: Text(
             initials,
             style: const TextStyle(

@@ -4,10 +4,10 @@ class BouncingDotsIndicator extends StatefulWidget {
   const BouncingDotsIndicator({super.key});
 
   @override
-  _BouncingDotsIndicatorState createState() => _BouncingDotsIndicatorState();
+  BouncingDotsIndicatorState createState() => BouncingDotsIndicatorState();
 }
 
-class _BouncingDotsIndicatorState extends State<BouncingDotsIndicator>
+class BouncingDotsIndicatorState extends State<BouncingDotsIndicator>
     with TickerProviderStateMixin {
   late AnimationController _leftDotController;
   late AnimationController _rightDotController;

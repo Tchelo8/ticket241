@@ -1,15 +1,15 @@
 
 class Event {
+  final String name;
   final String imagePath;
-  final String organizer;
-  final String title;
+  final String location;
   final String date;
-  final String price;
+  final double price;
 
   Event({
+    required this.name,
     required this.imagePath,
-    required this.organizer,
-    required this.title,
+    required this.location,
     required this.date,
     required this.price,
   });

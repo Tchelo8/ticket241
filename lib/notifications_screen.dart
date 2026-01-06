@@ -1,5 +1,6 @@
 
 import 'package:flutter/material.dart';
+import 'package:go_router/go_router.dart';
 import 'package:lottie/lottie.dart';
 
 class NotificationsScreen extends StatelessWidget {
@@ -9,6 +10,10 @@ class NotificationsScreen extends StatelessWidget {
   Widget build(BuildContext context) {
     return Scaffold(
       appBar: AppBar(
+        leading: IconButton(
+          icon: const Icon(Icons.arrow_back, color: Colors.black),
+          onPressed: () => context.go('/app'),
+        ),
         title: const Text(
           'Notifications',
           style: TextStyle(fontWeight: FontWeight.bold),

@@ -1,7 +1,6 @@
 
 import 'package:flutter/material.dart';
-import 'package:myapp/login_screen.dart'; // Import the new LoginScreen
-import 'package:myapp/signup_screen.dart'; // Import the SignUpScreen
+import 'package:go_router/go_router.dart';
 
 class StartingScreen extends StatelessWidget {
   const StartingScreen({super.key});
@@ -54,9 +53,7 @@ class StartingScreen extends StatelessWidget {
               // "Continue with number" Button
               ElevatedButton(
                 onPressed: () {
-                   Navigator.of(context).push(
-                        MaterialPageRoute(builder: (context) => const LoginScreen()),
-                      );
+                   context.go('/login');
                 },
                 style: ElevatedButton.styleFrom(
                   backgroundColor: const Color(0xFF1E90FF),
@@ -65,7 +62,7 @@ class StartingScreen extends StatelessWidget {
                     borderRadius: BorderRadius.circular(12),
                   ),
                   elevation: 5,
-                  shadowColor: Colors.black.withOpacity(0.3)
+                  shadowColor: Colors.black.withAlpha((255 * 0.3).round()),
                 ),
                 child: const Text(
                   'Continuer avec le numéro',
@@ -84,9 +81,7 @@ class StartingScreen extends StatelessWidget {
                   ),
                   TextButton(
                     onPressed: () {
-                      Navigator.of(context).push(
-                        MaterialPageRoute(builder: (context) => const SignUpScreen()),
-                      );
+                      context.go('/login'); // TODO: Create a signup screen
                     },
                     child: const Text(
                       "S'inscrire",
