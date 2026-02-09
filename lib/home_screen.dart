@@ -5,9 +5,17 @@ import 'package:myapp/models/event_model.dart';
 import 'package:flutter_staggered_animations/flutter_staggered_animations.dart';
 import 'package:myapp/providers/favorites_provider.dart';
 import 'package:provider/provider.dart';
+import 'package:myapp/city_selection_popup.dart';
 
-class HomeScreen extends StatelessWidget {
+class HomeScreen extends StatefulWidget {
   const HomeScreen({super.key});
+
+  @override
+  State<HomeScreen> createState() => _HomeScreenState();
+}
+
+class _HomeScreenState extends State<HomeScreen> {
+  String _selectedCity = 'Libreville';
 
   // Dummy data - replace with your actual data source
   static final List<Event> _upcomingEvents = [
@@ -31,22 +39,29 @@ class HomeScreen extends StatelessWidget {
 
 
 
-  void _showCitySelection(BuildContext context) {
-    showModalBottomSheet(
+  void _showCitySelection(BuildContext context) async {
+    final result = await showModalBottomSheet<String>(
       context: context,
+      isScrollControlled: true,
+      backgroundColor: Colors.transparent,
       builder: (context) {
-        return Container(
-          height: 250,
-          color: Colors.white,
-          child: const Center(
-            child: Text(
-              'Sélection de la ville (Design à venir)',
-              style: TextStyle(fontSize: 18),
-            ),
-          ),
+        return DraggableScrollableSheet(
+          initialChildSize: 0.6,
+          minChildSize: 0.4,
+          maxChildSize: 0.8,
+          expand: false,
+          builder: (context, scrollController) {
+            return const CitySelectionPopup();
+          },
         );
       },
     );
+
+    if (result != null) {
+      setState(() {
+        _selectedCity = result;
+      });
+    }
   }
 
   @override
@@ -110,18 +125,18 @@ class HomeScreen extends StatelessWidget {
                   style: TextStyle(color: Colors.grey[600], fontSize: 14),
                 ),
                 const SizedBox(height: 4),
-                const Row(
+                Row(
                   children: [
                     Text(
-                      'Libreville',
-                      style: TextStyle(
+                      _selectedCity,
+                      style: const TextStyle(
                         fontSize: 20,
                         fontWeight: FontWeight.bold,
                         color: Colors.black87,
                       ),
                     ),
-                    SizedBox(width: 8),
-                    Icon(Icons.expand_more, color: Colors.black87),
+                    const SizedBox(width: 8),
+                    const Icon(Icons.expand_more, color: Colors.black87),
                   ],
                 ),
               ],
@@ -224,9 +239,6 @@ class HomeScreen extends StatelessWidget {
   }
   
   Widget _buildUpcomingEventCard(BuildContext context, {required Event event}) {
-     final favoritesProvider = Provider.of<FavoritesProvider>(context);
-    final isFavorite = favoritesProvider.isFavorite(event);
-
     // Extract date and month
     final dateParts = event.date.split(' ');
     final date = dateParts.isNotEmpty ? dateParts[0] : '';
@@ -256,6 +268,7 @@ class HomeScreen extends StatelessWidget {
           child: Row(
             children: [
               Stack(
+                alignment: Alignment.center,
                 children: [
                    ClipRRect(
                     borderRadius: BorderRadius.circular(12),
@@ -271,53 +284,21 @@ class HomeScreen extends StatelessWidget {
                        ),
                      ),
                    ),
-                   Positioned(
-                     top: 4,
-                     right: 4,
-                     child: GestureDetector(
-                       onTap: () {
-                         favoritesProvider.toggleFavorite(event);
-                         if (!isFavorite) {
-                           ScaffoldMessenger.of(context).showSnackBar(
-                             const SnackBar(
-                               content: Text('Ajouté aux favoris'),
-                               duration: Duration(seconds: 2),
-                             ),
-                           );
-                         }
-                       },
-                       child: Container(
-                         padding: const EdgeInsets.all(4),
-                         decoration: BoxDecoration(
-                           color: Colors.white.withAlpha((255 * 0.8).round()),
-                           shape: BoxShape.circle,
-                         ),
-                         child: Icon(
-                           isFavorite ? Icons.favorite : Icons.favorite_border,
-                           color: isFavorite ? Colors.red : Colors.black,
-                           size: 20,
-                         ),
-                       ),
+                   Container(
+                     width: 45,
+                     height: 45,
+                     decoration: BoxDecoration(
+                       color: Colors.white.withAlpha((255 * 0.85).round()),
+                       borderRadius: BorderRadius.circular(8),
                      ),
-                   ),
-                   Align(
-                     alignment: Alignment.center,
-                     child: Container(
-                       width: 45,
-                       height: 45,
-                       decoration: BoxDecoration(
-                         color: Colors.white.withAlpha((255 * 0.85).round()),
-                         borderRadius: BorderRadius.circular(8),
-                       ),
-                       child: Column(
-                         mainAxisAlignment: MainAxisAlignment.center,
-                         children: [
-                           Text(date, style: const TextStyle(fontSize: 18, fontWeight: FontWeight.bold, color: Color(0xFF1E90FF))),
-                           Text(month.toUpperCase(), style: const TextStyle(fontSize: 12, fontWeight: FontWeight.bold, color: Color(0xFF1E90FF))),
-                         ]
-                       ),
-                    ),
-                   ),
+                     child: Column(
+                       mainAxisAlignment: MainAxisAlignment.center,
+                       children: [
+                         Text(date, style: const TextStyle(fontSize: 18, fontWeight: FontWeight.bold, color: Color(0xFF1E90FF))),
+                         Text(month.toUpperCase(), style: const TextStyle(fontSize: 12, fontWeight: FontWeight.bold, color: Color(0xFF1E90FF))),
+                       ]
+                     ),
+                  ),
                 ],
               ),
               const SizedBox(width: 12),
@@ -348,10 +329,10 @@ class HomeScreen extends StatelessWidget {
                           backgroundColor: const Color(0xFF1E90FF).withAlpha((255 * 0.1).round()),
                           foregroundColor: const Color(0xFF1E90FF),
                           elevation: 0,
-                          padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
+                          padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
                           shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)),
                         ),
-                        child: const Text('Précommander', style: TextStyle(fontSize: 12)),
+                        child: const Text('Précommander', style: TextStyle(fontSize: 11)),
                       ),
                     ),
                   ],

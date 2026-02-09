@@ -72,7 +72,6 @@ class EventDetailsScreenState extends State<EventDetailsScreen> {
                 _buildEventInfo(textColor),
                 _buildAboutSection(textColor, primaryColor),
                 _buildGeneralInfoSection(textColor, secondaryTextColor),
-                _buildReviewsSection(textColor, secondaryTextColor),
                 _buildTicketSelectionSection(primaryColor, textColor),
                 _buildLocationSection(textColor, secondaryTextColor),
                 _buildSuggestionsSection(textColor, secondaryTextColor, primaryColor),
@@ -258,54 +257,6 @@ class EventDetailsScreenState extends State<EventDetailsScreen> {
           Icon(icon, color: iconColor, size: 20),
           const SizedBox(width: 15),
           Expanded(child: Text(text, style: TextStyle(color: textColor, fontSize: 15))),
-        ],
-      ),
-    );
-  }
-
-  Widget _buildReviewsSection(Color textColor, Color secondaryTextColor) {
-    return Padding(
-      padding: const EdgeInsets.all(20.0),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          Row(
-            crossAxisAlignment: CrossAxisAlignment.baseline,
-            textBaseline: TextBaseline.alphabetic,
-            children: [
-              Text('4.9', style: TextStyle(color: textColor, fontSize: 48, fontWeight: FontWeight.bold)),
-              const SizedBox(width: 10),
-              Text('Basé sur 245 avis', style: TextStyle(color: secondaryTextColor)),
-            ],
-          ),
-          const SizedBox(height: 20),
-          Row(
-            children: [
-              Expanded(child: _buildReviewCard('Emma D.', 'Mars 2024', 'Cet événement était vraiment exceptionnel ! L\'organisation était parfaite et le personnel incroyablement serviable.', textColor, secondaryTextColor)),
-              const SizedBox(width: 15),
-              Expanded(child: _buildReviewCard('James C.', 'Juillet 2023', 'J\'ai passé un excellent moment. Les performances étaient superbes et les organisateurs ont vraiment fait du bon travail.', textColor, secondaryTextColor)),
-            ],
-          )
-        ],
-      ),
-    );
-  }
-
-  Widget _buildReviewCard(String name, String date, String review, Color textColor, Color secondaryTextColor) {
-    return Container(
-      padding: const EdgeInsets.all(15),
-      decoration: BoxDecoration(
-        color: Colors.grey[50],
-        borderRadius: BorderRadius.circular(10),
-        border: Border.all(color: Colors.grey[200]!)
-      ),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          Text(name, style: TextStyle(color: textColor, fontWeight: FontWeight.bold)),
-          Text(date, style: TextStyle(color: secondaryTextColor, fontSize: 12)),
-          const SizedBox(height: 10),
-          Text(review, style: TextStyle(color: textColor.withAlpha((255 * 0.9).round())), maxLines: 4, overflow: TextOverflow.ellipsis),
         ],
       ),
     );

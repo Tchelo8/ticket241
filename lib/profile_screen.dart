@@ -3,7 +3,9 @@ import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
 
 class ProfileScreen extends StatelessWidget {
-  const ProfileScreen({super.key});
+  final void Function(int)? onTabSelected;
+
+  const ProfileScreen({super.key, this.onTabSelected});
 
   // Function to show the logout confirmation sheet
   void _showLogoutConfirmation(BuildContext context) {
@@ -105,13 +107,15 @@ class ProfileScreen extends StatelessWidget {
           _buildProfileMenuItem(
             icon: Icons.person_outline,
             title: 'Modifier le Profil',
-            onTap: () {},
+            onTap: () {
+              context.push('/edit-profile');
+            },
           ),
           _buildProfileMenuItem(
             icon: Icons.local_activity_outlined,
             title: 'Mes Billets',
             onTap: () {
-              context.push('/tickets');
+              onTabSelected?.call(3); // 3 is the index for Tickets
             },
           ),
           _buildProfileMenuItem(

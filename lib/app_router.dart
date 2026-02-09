@@ -7,12 +7,12 @@ import 'package:myapp/signup_screen.dart';
 import 'package:myapp/profile_screen.dart'; // Corrected import
 import 'package:myapp/notifications_screen.dart';
 import 'package:myapp/event_details_screen.dart';
-import 'package:myapp/tickets_screen.dart';
 import 'package:myapp/location_screen.dart';
 import 'package:myapp/onboarding_screen.dart';
 import 'package:myapp/splash_screen.dart';
 import 'package:myapp/checkout_screen.dart';
 import 'package:myapp/success_screen.dart';
+import 'package:myapp/edit_profile_screen.dart';
 
 // GoRouter configuration
 final router = GoRouter(
@@ -46,6 +46,10 @@ final router = GoRouter(
       path: '/profile', // Corrected path
       builder: (context, state) => const ProfileScreen(), // Corrected Widget
     ),
+    GoRoute(
+      path: '/edit-profile',
+      builder: (context, state) => const EditProfileScreen(),
+    ),
      GoRoute(
       path: '/notifications',
       builder: (context, state) => const NotificationsScreen(),
@@ -53,10 +57,6 @@ final router = GoRouter(
     GoRoute(
       path: '/details',
       builder: (context, state) => const EventDetailsScreen(),
-    ),
-     GoRoute(
-      path: '/tickets',
-      builder: (context, state) => const TicketsScreen(),
     ),
      GoRoute(
       path: '/location',
