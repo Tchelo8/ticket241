@@ -176,21 +176,38 @@ class EditProfileScreen extends StatelessWidget {
                 context.pop();
               },
               style: ElevatedButton.styleFrom(
+                backgroundColor: const Color(0xFF1E90FF),
+                padding: const EdgeInsets.symmetric(vertical: 18),
+                shape: RoundedRectangleBorder(
+                  borderRadius: BorderRadius.circular(12),
+                ),
+                elevation: 5,
+                shadowColor: Colors.black.withAlpha((255 * 0.3).round()),
                 minimumSize: const Size(double.infinity, 50),
-                shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
               ),
-              child: const Text('Sauvegarder les modifications'),
+              child: const Text(
+                'Sauvegarder les modifications',
+                style: TextStyle(fontSize: 18, fontWeight: FontWeight.w600, color: Colors.white),
+              ),
             ),
             const SizedBox(height: 20),
 
             // Delete Account Button
-            Center(
-              child: TextButton(
-                onPressed: () => _showDeleteConfirmation(context),
-                child: const Text(
-                  'Supprimer le compte',
-                  style: TextStyle(color: Colors.redAccent, fontWeight: FontWeight.w600),
+            ElevatedButton(
+              onPressed: () => _showDeleteConfirmation(context),
+              style: ElevatedButton.styleFrom(
+                backgroundColor: Colors.red,
+                padding: const EdgeInsets.symmetric(vertical: 18),
+                shape: RoundedRectangleBorder(
+                  borderRadius: BorderRadius.circular(12),
                 ),
+                elevation: 5,
+                shadowColor: Colors.red.withAlpha((255 * 0.3).round()),
+                minimumSize: const Size(double.infinity, 50),
+              ),
+              child: const Text(
+                'Supprimer le compte',
+                style: TextStyle(fontSize: 18, fontWeight: FontWeight.w600, color: Colors.white),
               ),
             ),
           ],

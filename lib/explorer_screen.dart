@@ -14,33 +14,52 @@ class ExplorerScreen extends StatefulWidget {
 
 class ExplorerScreenState extends State<ExplorerScreen> {
     static final List<Event> _allEvents = [
-    Event(name: 'Concert Live Acoustique', imagePath: 'assets/images/enb.jpg', location: 'Entre Nous Bar, Angondjé', date: '29 Mars', price: 5000.0),
-    Event(name: 'Festival International de Sibang', imagePath: 'assets/images/sibang.jpg', location: 'Jardin Botanique, Libreville', date: '15 Avril', price: 10000.0),
-    Event(name: 'Concert Oiseau Rare', imagePath: 'assets/images/oiseau.jpg', location: 'Casino Croisette, LBV', date: '14 Fév', price: 15000.0),
-    Event(name: 'Entre Nous Bar', imagePath: 'assets/images/enb.jpg', location: 'Angondjé', date: 'Tous les vendredis', price: 5000.0),
-    Event(name: 'Libreville Jazz Festival', imagePath: 'assets/images/jazz.png', location: 'Institut Français', date: '10 Jan', price: 20000.0),
-    Event(name: 'CMS vs US Bitam', imagePath: 'assets/images/sibang.jpg', location: 'Stade de l\'amitié', date: '05 Mai', price: 1000.0),
-    Event(name: 'Concert L\'oiseau rare', imagePath: 'assets/images/oiseau.jpg', location: 'Casino Croisette', date: '14 Fév', price: 15000.0),
+    Event(name: 'Concert Live Acoustique', imagePath: 'assets/images/enb.jpg', location: 'Entre Nous Bar, Angondjé', date: '29 Mars', price: 5000.0, category: 'Concert'),
+    Event(name: 'Festival International de Sibang', imagePath: 'assets/images/sibang.jpg', location: 'Jardin Botanique, Libreville', date: '15 Avril', price: 10000.0, category: 'Festival'),
+    Event(name: 'Concert Oiseau Rare', imagePath: 'assets/images/oiseau.jpg', location: 'Casino Croisette, LBV', date: '14 Fév', price: 15000.0, category: 'Concert'),
+    Event(name: 'Entre Nous Bar', imagePath: 'assets/images/enb.jpg', location: 'Angondjé', date: 'Tous les vendredis', price: 5000.0, category: 'Soirée'),
+    Event(name: 'Libreville Jazz Festival', imagePath: 'assets/images/jazz.png', location: 'Institut Français', date: '10 Jan', price: 20000.0, category: 'Festival'),
+    Event(name: 'CMS vs US Bitam', imagePath: 'assets/images/sibang.jpg', location: 'Stade de l\'amitié', date: '05 Mai', price: 1000.0, category: 'Sport'),
+    Event(name: 'Concert L\'oiseau rare', imagePath: 'assets/images/oiseau.jpg', location: 'Casino Croisette', date: '14 Fév', price: 15000.0, category: 'Concert'),
+  ];
+
+  final List<Map<String, String>> _categories = [
+    {'name': 'Concert', 'image': 'assets/images/jazz.png'},
+    {'name': 'Sport', 'image': 'assets/images/sibang.jpg'},
+    {'name': 'Festival', 'image': 'assets/images/enb.jpg'},
+    {'name': 'Soirée', 'image': 'assets/images/oiseau.jpg'},
+    {'name': 'Théâtre', 'image': 'assets/images/party.png'},
   ];
 
   List<Event> _filteredEvents = [];
+  String _selectedCategory = 'Concert';
+  String _searchQuery = '';
 
   @override
   void initState() {
     super.initState();
-    _filteredEvents = _allEvents;
+    _applyFilters();
   }
 
-  void _filterEvents(String query) {
-    final filtered = _allEvents.where((event) {
-      final eventName = event.name.toLowerCase();
-      final searchLower = query.toLowerCase();
-      return eventName.contains(searchLower);
-    }).toList();
-
+  void _applyFilters() {
     setState(() {
-      _filteredEvents = filtered;
+      _filteredEvents = _allEvents.where((event) {
+        final categoryMatch = event.category == _selectedCategory;
+        final queryMatch = _searchQuery.isEmpty ||
+            event.name.toLowerCase().contains(_searchQuery.toLowerCase());
+        return categoryMatch && queryMatch;
+      }).toList();
     });
+  }
+
+  void _onCategorySelected(String category) {
+    _selectedCategory = category;
+    _applyFilters();
+  }
+
+  void _onSearchChanged(String query) {
+    _searchQuery = query;
+    _applyFilters();
   }
 
   @override
@@ -59,6 +78,8 @@ class ExplorerScreenState extends State<ExplorerScreen> {
           children: [
             _buildSearchBar(),
             const SizedBox(height: 20),
+            _buildCategoryList(),
+            const SizedBox(height: 20),
             Expanded(
               child: _buildEventsGrid(),
             ),
@@ -70,7 +91,7 @@ class ExplorerScreenState extends State<ExplorerScreen> {
 
   Widget _buildSearchBar() {
     return TextField(
-      onChanged: _filterEvents,
+      onChanged: _onSearchChanged,
       decoration: InputDecoration(
         hintText: 'Rechercher...',
         prefixIcon: const Icon(Icons.search, color: Colors.grey),
@@ -83,6 +104,74 @@ class ExplorerScreenState extends State<ExplorerScreen> {
       ),
     );
   }
+
+  Widget _buildCategoryList() {
+    return SizedBox(
+      height: 100,
+      child: ListView.builder(
+        scrollDirection: Axis.horizontal,
+        itemCount: _categories.length,
+        itemBuilder: (context, index) {
+          final category = _categories[index];
+          return _buildCategoryCard(category['name']!, category['image']!);
+        },
+      ),
+    );
+  }
+
+  Widget _buildCategoryCard(String name, String image) {
+    final isSelected = _selectedCategory == name;
+    return GestureDetector(
+      onTap: () => _onCategorySelected(name),
+      child: Container(
+        width: 80,
+        margin: const EdgeInsets.only(right: 10),
+        decoration: BoxDecoration(
+          color: isSelected ? const Color(0xFF1E90FF) : Colors.white,
+          borderRadius: BorderRadius.circular(15),
+          border: Border.all(
+            color: isSelected ? const Color(0xFF1E90FF) : Colors.grey[300]!,
+            width: 1.5,
+          ),
+           boxShadow: isSelected
+              ? [
+                  BoxShadow(
+                    color: const Color(0xFF1E90FF).withOpacity(0.3),
+                    spreadRadius: 2,
+                    blurRadius: 5,
+                    offset: const Offset(0, 3),
+                  )
+                ]
+              : [],
+        ),
+        child: Column(
+          mainAxisAlignment: MainAxisAlignment.center,
+          children: [
+            ClipRRect(
+              borderRadius: BorderRadius.circular(10),
+              child: Image.asset(
+                image,
+                height: 40,
+                width: 40,
+                fit: BoxFit.cover,
+              ),
+            ),
+            const SizedBox(height: 8),
+            Text(
+              name,
+              style: TextStyle(
+                color: isSelected ? Colors.white : Colors.black87,
+                fontWeight: FontWeight.w600,
+                fontSize: 12,
+              ),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+
+
 
   Widget _buildEventsGrid() {
     return GridView.builder(

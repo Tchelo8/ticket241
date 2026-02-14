@@ -30,6 +30,50 @@ class CheckoutScreenState extends State<CheckoutScreen> {
     });
   }
 
+  // Function to show the ticket options sheet
+  void _showTicketOptions(BuildContext context, String ticketTitle) {
+    showModalBottomSheet(
+      context: context,
+      shape: const RoundedRectangleBorder(
+        borderRadius: BorderRadius.vertical(top: Radius.circular(25.0)),
+      ),
+      builder: (context) {
+        return Container(
+          padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 20),
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              Text(
+                ticketTitle,
+                style: const TextStyle(fontSize: 22, fontWeight: FontWeight.bold),
+                textAlign: TextAlign.center,
+              ),
+              const SizedBox(height: 24),
+              ListTile(
+                leading: const Icon(Icons.delete_outline, color: Colors.redAccent),
+                title: const Text('Retirer du ticket', style: TextStyle(color: Colors.redAccent)),
+                onTap: () {
+                  // Add logic to remove the ticket here
+                  Navigator.pop(context);
+                  // You might want to show a confirmation or update the state
+                },
+              ),
+              const Divider(),
+              ListTile(
+                leading: const Icon(Icons.cancel_outlined),
+                title: const Text('Annuler'),
+                onTap: () {
+                  Navigator.pop(context); // Dismiss the sheet
+                },
+              ),
+            ],
+          ),
+        );
+      },
+    );
+  }
+
+
   @override
   Widget build(BuildContext context) {
     final primaryColor = const Color(0xFF1E90FF);
@@ -50,12 +94,7 @@ class CheckoutScreenState extends State<CheckoutScreen> {
           'Paiement',
           style: TextStyle(fontWeight: FontWeight.bold, color: textColor),
         ),
-        actions: [
-          IconButton(
-            icon: Icon(Icons.more_vert, color: textColor),
-            onPressed: () {},
-          ),
-        ],
+        // The actions property has been removed to delete the three-dot icon
       ),
       body: SingleChildScrollView(
         child: Padding(
@@ -267,7 +306,10 @@ class CheckoutScreenState extends State<CheckoutScreen> {
               _buildTicketDetail('Siège', seat, textColor, secondaryTextColor, isLast: true),
             ],
           ),
-          Icon(Icons.more_vert, color: secondaryTextColor),
+          IconButton(
+            icon: Icon(Icons.more_vert, color: secondaryTextColor),
+            onPressed: () => _showTicketOptions(context, title),
+          ),
         ],
       ),
     );

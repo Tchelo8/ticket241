@@ -20,12 +20,13 @@ class EventDetailsScreenState extends State<EventDetailsScreen> {
     location: 'Libreville',
     date: '15 Mars, 2025, 22:00',
     price: 2000,
+    category: 'Concert',
   );
 
   // Dummy data for suggested events
   final List<Event> _suggestedEvents = [
-    Event(name: 'Concert sous les pyramides', imagePath: 'assets/images/enb.jpg', location: 'Gizeh, Caire', date: '10 Avril', price: 5000),
-    Event(name: 'Festival de Jazz de Mumbai', imagePath: 'assets/images/jazz.png', location: 'Santorin, Grèce', date: '25 Mai', price: 4000),
+    Event(name: 'Concert sous les pyramides', imagePath: 'assets/images/enb.jpg', location: 'Gizeh, Caire', date: '10 Avril', price: 5000, category: 'Concert'),
+    Event(name: 'Festival de Jazz de Mumbai', imagePath: 'assets/images/jazz.png', location: 'Santorin, Grèce', date: '25 Mai', price: 4000, category: 'Festival'),
   ];
 
   final List<Map<String, dynamic>> _ticketData = [

@@ -61,7 +61,7 @@ class LoginScreenState extends State<LoginScreen> {
       }
     } catch (e) {
       setState(() {
-        _errorMessage = 'Impossible de se connecter au serveur. Veuillez vérifier votre connexion ou la configuration de URL de base.';
+        _errorMessage = 'Impossible de se connecter au serveur. Veuillez réesayer plus tard.';
       });
     } finally {
       setState(() {

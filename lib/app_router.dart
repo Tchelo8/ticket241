@@ -1,6 +1,7 @@
 
 import 'package:go_router/go_router.dart';
 import 'package:myapp/main_screen.dart';
+import 'package:myapp/otp_verification_screen.dart';
 import 'package:myapp/starting_screen.dart';
 import 'package:myapp/login_screen.dart';
 import 'package:myapp/signup_screen.dart';
@@ -37,6 +38,10 @@ final router = GoRouter(
     GoRoute(
       path: '/signup',
       builder: (context, state) => const SignUpScreen(),
+    ),
+    GoRoute(
+      path: '/otp',
+      builder: (context, state) => const OtpVerificationScreen(),
     ),
     GoRoute(
       path: '/app', // This will be the MainScreen with the bottom nav

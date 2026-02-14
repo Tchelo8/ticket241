@@ -25,15 +25,18 @@ class MainScreenState extends State<MainScreen> {
   @override
   Widget build(BuildContext context) {
     final List<Widget> screens = [
-      const HomeScreen(),
+      HomeScreen(onNavigate: _onTabTapped),
       const ExplorerScreen(),
-      const FavoritesScreen(), // Add the new screen to the list
-      const TicketsScreen(),
+      const FavoritesScreen(),
+      TicketsScreen(onNavigate: _onTabTapped),
       ProfileScreen(onTabSelected: _onTabTapped), // Pass the callback
     ];
 
     return Scaffold(
-      body: screens[_currentIndex],
+      body: IndexedStack(
+        index: _currentIndex,
+        children: screens,
+      ),
       bottomNavigationBar: BottomNavigationBar(
         currentIndex: _currentIndex,
         onTap: _onTabTapped,

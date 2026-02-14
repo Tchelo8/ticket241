@@ -178,7 +178,7 @@ class SignUpScreenState extends State<SignUpScreen> {
                 // SignUp Button
                 ElevatedButton(
                   onPressed: () {
-                    context.go('/main');
+                    context.go('/otp');
                   },
                    style: ElevatedButton.styleFrom(
                     backgroundColor: const Color(0xFF1E90FF),

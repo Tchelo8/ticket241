@@ -1,6 +1,6 @@
 import 'package:flutter/material.dart';
+import 'package:go_router/go_router.dart';
 import 'package:lottie/lottie.dart';
-import 'package:myapp/tickets_screen.dart'; // Assuming this is the correct path
 
 class SuccessScreen extends StatefulWidget {
   const SuccessScreen({super.key});
@@ -57,10 +57,7 @@ class _SuccessScreenState extends State<SuccessScreen> {
                 child: ElevatedButton(
                   onPressed: () {
                     // Navigate to the tickets screen
-                    Navigator.of(context).pushAndRemoveUntil(
-                      MaterialPageRoute(builder: (context) => const TicketsScreen()),
-                      (Route<dynamic> route) => false, // Removes all previous routes
-                    );
+                    context.go('/');
                   },
                   style: ElevatedButton.styleFrom(
                     backgroundColor: const Color(0xFF1E90FF),

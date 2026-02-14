@@ -8,7 +8,8 @@ import 'package:provider/provider.dart';
 import 'package:myapp/city_selection_popup.dart';
 
 class HomeScreen extends StatefulWidget {
-  const HomeScreen({super.key});
+  final Function(int) onNavigate;
+  const HomeScreen({super.key, required this.onNavigate});
 
   @override
   State<HomeScreen> createState() => _HomeScreenState();
@@ -19,21 +20,21 @@ class _HomeScreenState extends State<HomeScreen> {
 
   // Dummy data - replace with your actual data source
   static final List<Event> _upcomingEvents = [
-    Event(name: 'Concert Live Acoustique', imagePath: 'assets/images/enb.jpg', location: 'Entre Nous Bar, Angondjé', date: '29 Mars', price: 5000.0),
-    Event(name: 'Festival International de Sibang', imagePath: 'assets/images/sibang.jpg', location: 'Jardin Botanique, Libreville', date: '15 Avril', price: 10000.0),
-    Event(name: 'Concert Oiseau Rare', imagePath: 'assets/images/oiseau.jpg', location: 'Casino Croisette, LBV', date: '14 Fév', price: 15000.0),
+    Event(name: 'Concert Live Acoustique', imagePath: 'assets/images/enb.jpg', location: 'Entre Nous Bar, Angondjé', date: '29 Mars', price: 5000.0, category: 'Concert'),
+    Event(name: 'Festival International de Sibang', imagePath: 'assets/images/sibang.jpg', location: 'Jardin Botanique, Libreville', date: '15 Avril', price: 10000.0, category: 'Festival'),
+    Event(name: 'Concert Oiseau Rare', imagePath: 'assets/images/oiseau.jpg', location: 'Casino Croisette, LBV', date: '14 Fév', price: 15000.0, category: 'Concert'),
   ];
 
   static final List<Event> _popularEvents = [
-    Event(name: 'Entre Nous Bar', imagePath: 'assets/images/enb.jpg', location: 'Angondjé', date: 'Tous les vendredis', price: 5000.0),
-    Event(name: 'Libreville Jazz Festival', imagePath: 'assets/images/jazz.png', location: 'Institut Français', date: '10 Jan', price: 20000.0),
+    Event(name: 'Entre Nous Bar', imagePath: 'assets/images/enb.jpg', location: 'Angondjé', date: 'Tous les vendredis', price: 5000.0, category: 'Soirée'),
+    Event(name: 'Libreville Jazz Festival', imagePath: 'assets/images/jazz.png', location: 'Institut Français', date: '10 Jan', price: 20000.0, category: 'Festival'),
   ];
     static final List<Event> _sportEvents = [
-    Event(name: 'CMS vs US Bitam', imagePath: 'assets/images/sibang.jpg', location: 'Stade amitié', date: '05 Mai', price: 1000.0),
+    Event(name: 'CMS vs US Bitam', imagePath: 'assets/images/sibang.jpg', location: 'Stade amitié', date: '05 Mai', price: 1000.0, category: 'Sport'),
   ];
 
       static final List<Event> _cultureEvents = [
-    Event(name: 'Concert oiseau rare', imagePath: 'assets/images/oiseau.jpg', location: 'Casino Croisette', date: '14 Fév', price: 15000.0),
+    Event(name: 'Concert oiseau rare', imagePath: 'assets/images/oiseau.jpg', location: 'Casino Croisette', date: '14 Fév', price: 15000.0, category: 'Concert'),
   ];
 
 
@@ -170,6 +171,10 @@ class _HomeScreenState extends State<HomeScreen> {
     return Padding(
       padding: const EdgeInsets.symmetric(horizontal: 24.0),
       child: TextField(
+        readOnly: true, // Make the search bar read-only
+        onTap: () {
+          widget.onNavigate(1); // Navigate to the Explorer screen (index 1)
+        },
         decoration: InputDecoration(
           hintText: 'Rechercher des événements...',
           prefixIcon: const Icon(Icons.search, color: Colors.grey),
@@ -200,7 +205,7 @@ class _HomeScreenState extends State<HomeScreen> {
           ),
           if (showSeeAll)
             TextButton(
-              onPressed: () {},
+              onPressed: () => widget.onNavigate(1),
               child: const Text(
                 'Voir tout',
                 style: TextStyle(color: Color(0xFF1E90FF), fontWeight: FontWeight.w600),
@@ -303,39 +308,47 @@ class _HomeScreenState extends State<HomeScreen> {
               ),
               const SizedBox(width: 12),
               Expanded(
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                  children: [
-                    Text(event.name.length > 20 ? '${event.name.substring(0, 20)}...' : event.name, style: const TextStyle(fontSize: 16, fontWeight: FontWeight.bold), maxLines: 2, overflow: TextOverflow.ellipsis,),
-                    Row(
-                      children: [
-                        const Icon(Icons.location_on_outlined, size: 16, color: Colors.grey),
-                        const SizedBox(width: 4),
-                        Expanded(
-                          child: Text(
-                            event.location,
-                            style: const TextStyle(color: Colors.grey, fontSize: 13),
-                            overflow: TextOverflow.ellipsis,
-                          ),
-                        ),
-                      ],
-                    ),
-                    Align(
-                      alignment: Alignment.bottomRight,
-                      child: ElevatedButton(
-                        onPressed: () {},
-                        style: ElevatedButton.styleFrom(
-                          backgroundColor: const Color(0xFF1E90FF).withAlpha((255 * 0.1).round()),
-                          foregroundColor: const Color(0xFF1E90FF),
-                          elevation: 0,
-                          padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
-                          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)),
-                        ),
-                        child: const Text('Précommander', style: TextStyle(fontSize: 11)),
+                child: SingleChildScrollView(
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Text(
+                        event.name.length > 20 ? '${event.name.substring(0, 20)}...' : event.name,
+                        style: const TextStyle(fontSize: 16, fontWeight: FontWeight.bold),
+                        maxLines: 2,
+                        overflow: TextOverflow.ellipsis,
                       ),
-                    ),
-                  ],
+                      const SizedBox(height: 8),
+                      Row(
+                        children: [
+                          const Icon(Icons.location_on_outlined, size: 16, color: Colors.grey),
+                          const SizedBox(width: 4),
+                          Expanded(
+                            child: Text(
+                              event.location,
+                              style: const TextStyle(color: Colors.grey, fontSize: 13),
+                              overflow: TextOverflow.ellipsis,
+                            ),
+                          ),
+                        ],
+                      ),
+                      const SizedBox(height: 8),
+                      Align(
+                        alignment: Alignment.bottomRight,
+                        child: ElevatedButton(
+                          onPressed: () {},
+                          style: ElevatedButton.styleFrom(
+                            backgroundColor: const Color(0xFF1E90FF).withAlpha((255 * 0.1).round()),
+                            foregroundColor: const Color(0xFF1E90FF),
+                            elevation: 0,
+                            padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
+                            shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)),
+                          ),
+                          child: const Text('Précommander', style: TextStyle(fontSize: 11)),
+                        ),
+                      ),
+                    ],
+                  ),
                 ),
               ),
             ],

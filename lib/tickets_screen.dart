@@ -1,11 +1,15 @@
 
 import 'package:flutter/material.dart';
 import 'package:flutter_staggered_animations/flutter_staggered_animations.dart';
+import 'package:go_router/go_router.dart';
+import 'package:lottie/lottie.dart';
 import 'package:myapp/models/ticket_model.dart';
 import 'package:myapp/pdf_viewer_screen.dart';
 
 class TicketsScreen extends StatefulWidget {
-  const TicketsScreen({super.key});
+  final Function(int) onNavigate;
+
+  const TicketsScreen({super.key, required this.onNavigate});
 
   @override
   TicketsScreenState createState() => TicketsScreenState();
@@ -15,50 +19,50 @@ class TicketsScreenState extends State<TicketsScreen> {
   bool _isUpcoming = true;
 
   final List<EventTicket> _tickets = [
-    EventTicket(
-      imagePath: 'assets/images/enb.jpg',
-      eventName: 'Concert Live Acoustique',
-      location: 'Entre Nous Bar, Angondjé',
-      date: '29 Mars 2024',
-      time: '22:00',
-      status: 'Payé',
-      ticketCount: 1,
-      daysLeft: 3,
-      isUpcoming: true,
-    ),
-    EventTicket(
-      imagePath: 'assets/images/sibang.jpg',
-      eventName: 'Festival International de Sibang',
-      location: 'Jardin Botanique, Libreville',
-      date: '15 Avril 2024',
-      time: '09:00',
-      status: 'Payé',
-      ticketCount: 2,
-      daysLeft: 20,
-      isUpcoming: true,
-    ),
-    EventTicket(
-      imagePath: 'assets/images/oiseau.jpg',
-      eventName: 'Concert Oiseau Rare',
-      location: 'Casino Croisette, LBV',
-      date: '14 Fév 2024',
-      time: '20:00',
-      status: 'Terminé',
-      ticketCount: 2,
-      daysLeft: 0,
-      isUpcoming: false,
-    ),
-    EventTicket(
-      imagePath: 'assets/images/jazz.png',
-      eventName: 'Libreville Jazz Festival',
-      location: 'Institut Français, LBV',
-      date: '10 Jan 2024',
-      time: '19:00',
-      status: 'Terminé',
-      ticketCount: 1,
-      daysLeft: 0,
-      isUpcoming: false,
-    ),
+    // EventTicket(
+    //   imagePath: 'assets/images/enb.jpg',
+    //   eventName: 'Concert Live Acoustique',
+    //   location: 'Entre Nous Bar, Angondjé',
+    //   date: '29 Mars 2024',
+    //   time: '22:00',
+    //   status: 'Payé',
+    //   ticketCount: 1,
+    //   daysLeft: 3,
+    //   isUpcoming: true,
+    // ),
+    // EventTicket(
+    //   imagePath: 'assets/images/sibang.jpg',
+    //   eventName: 'Festival International de Sibang',
+    //   location: 'Jardin Botanique, Libreville',
+    //   date: '15 Avril 2024',
+    //   time: '09:00',
+    //   status: 'Payé',
+    //   ticketCount: 2,
+    //   daysLeft: 20,
+    //   isUpcoming: true,
+    // ),
+    // EventTicket(
+    //   imagePath: 'assets/images/oiseau.jpg',
+    //   eventName: 'Concert Oiseau Rare',
+    //   location: 'Casino Croisette, LBV',
+    //   date: '14 Fév 2024',
+    //   time: '20:00',
+    //   status: 'Terminé',
+    //   ticketCount: 2,
+    //   daysLeft: 0,
+    //   isUpcoming: false,
+    // ),
+    // EventTicket(
+    //   imagePath: 'assets/images/jazz.png',
+    //   eventName: 'Libreville Jazz Festival',
+    //   location: 'Institut Français, LBV',
+    //   date: '10 Jan 2024',
+    //   time: '19:00',
+    //   status: 'Terminé',
+    //   ticketCount: 1,
+    //   daysLeft: 0,
+    //   isUpcoming: false,
+    // ),
   ];
 
   @override
@@ -91,8 +95,8 @@ class TicketsScreenState extends State<TicketsScreen> {
                   return FadeTransition(opacity: animation, child: child);
                 },
                 child: _isUpcoming
-                    ? _buildTicketList(upcomingTickets, key: const ValueKey("upcoming"))
-                    : _buildTicketList(pastTickets, key: const ValueKey("past")),
+                    ? (upcomingTickets.isEmpty ? _buildEmptyState() : _buildTicketList(upcomingTickets, key: const ValueKey("upcoming")))
+                    : (pastTickets.isEmpty ? _buildEmptyState() : _buildTicketList(pastTickets, key: const ValueKey("past"))),
               ),
             ),
           ],
@@ -100,6 +104,45 @@ class TicketsScreenState extends State<TicketsScreen> {
       ),
     );
   }
+
+  Widget _buildEmptyState() {
+    return Center(
+      child: Column(
+        mainAxisAlignment: MainAxisAlignment.center,
+        children: [
+          Lottie.asset(
+            'assets/animations/ticket.json', // Corrected animation name
+            width: 200,
+            height: 200,
+            fit: BoxFit.contain,
+          ),
+          const SizedBox(height: 20),
+          const Text(
+            'Aucun billet pour le moment',
+            style: TextStyle(fontSize: 18, fontWeight: FontWeight.w600, color: Colors.black54),
+          ),
+          const SizedBox(height: 10),
+          const Text(
+            'Il semble que vous n\'ayez pas encore de billets. Explorez les événements pour en trouver !',
+            textAlign: TextAlign.center,
+            style: TextStyle(fontSize: 14, color: Colors.black45),
+          ),
+          const SizedBox(height: 20),
+          ElevatedButton(
+            onPressed: () => widget.onNavigate(0),
+            style: ElevatedButton.styleFrom(
+              backgroundColor: const Color(0xFF1E90FF),
+              shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
+              padding: const EdgeInsets.symmetric(horizontal: 30, vertical: 12),
+            ),
+            child: const Text('Explorer les événements', style: TextStyle(color: Colors.white)),
+          ),
+        ],
+      ),
+    );
+  }
+
+
 
   void _showOptionsBottomSheet(BuildContext context, EventTicket ticket) {
     showModalBottomSheet(
