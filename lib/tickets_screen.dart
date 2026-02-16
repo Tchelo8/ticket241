@@ -111,7 +111,7 @@ class TicketsScreenState extends State<TicketsScreen> {
         mainAxisAlignment: MainAxisAlignment.center,
         children: [
           Lottie.asset(
-            'assets/animations/ticket.json', // Corrected animation name
+            'assets/animations/Tickets.json', // Corrected animation name
             width: 200,
             height: 200,
             fit: BoxFit.contain,
