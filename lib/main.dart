@@ -4,8 +4,7 @@ import 'package:myapp/app_router.dart';
 import 'package:myapp/providers/favorites_provider.dart';
 import 'package:provider/provider.dart';
 import 'package:shared_preferences/shared_preferences.dart';
-import 'package:myapp/onboarding_screen.dart';
-import 'package:myapp/starting_screen.dart';
+
 
 Future<void> main() async {
   WidgetsFlutterBinding.ensureInitialized();
@@ -22,15 +21,17 @@ class MyApp extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final appRouter = AppRouter(onboardingCompleted: onboardingCompleted);
+
     return ChangeNotifierProvider(
       create: (context) => FavoritesProvider(),
-      child: MaterialApp(
+      child: MaterialApp.router(
         title: 'Ticket241',
         debugShowCheckedModeBanner: false,
         theme: ThemeData(
           colorScheme: ColorScheme.fromSeed(seedColor: const Color(0xFF1E90FF)),
         ),
-        home: onboardingCompleted ? const StartingScreen() : const OnboardingScreen(),
+        routerConfig: appRouter.router,
       ),
     );
   }
