@@ -4,7 +4,6 @@ import 'package:flutter_staggered_animations/flutter_staggered_animations.dart';
 import 'package:go_router/go_router.dart';
 import 'package:lottie/lottie.dart';
 import 'package:myapp/models/ticket_model.dart';
-import 'package:myapp/pdf_viewer_screen.dart';
 
 class TicketsScreen extends StatefulWidget {
   final Function(int) onNavigate;
@@ -177,7 +176,7 @@ class TicketsScreenState extends State<TicketsScreen> {
           leading: const Icon(Icons.replay, color: Colors.black87),
           title: const Text('Commander à nouveau'),
           onTap: () {
-            Navigator.pop(context);
+            context.pop();
             // Add re-order logic here
           },
         ),
@@ -185,7 +184,7 @@ class TicketsScreenState extends State<TicketsScreen> {
           leading: Icon(Icons.cancel_outlined, color: Colors.red.shade700),
           title: Text('Annuler la réservation', style: TextStyle(color: Colors.red.shade700)),
           onTap: () {
-            Navigator.pop(context);
+            context.pop();
             // Add cancellation logic here
           },
         ),
@@ -196,7 +195,7 @@ class TicketsScreenState extends State<TicketsScreen> {
           leading: const Icon(Icons.download_outlined, color: Colors.black87),
           title: const Text('Télécharger le reçu'),
           onTap: () {
-            Navigator.pop(context);
+            context.pop();
             // Add download logic here
           },
         ),
@@ -204,7 +203,7 @@ class TicketsScreenState extends State<TicketsScreen> {
           leading: const Icon(Icons.archive_outlined, color: Colors.black87),
           title: const Text('Archiver'),
           onTap: () {
-            Navigator.pop(context);
+            context.pop();
             // Add archive logic here
           },
         ),
@@ -216,7 +215,7 @@ class TicketsScreenState extends State<TicketsScreen> {
       ListTile(
         leading: const Icon(Icons.close, color: Colors.black87),
         title: const Text('Fermer'),
-        onTap: () => Navigator.pop(context),
+        onTap: () => context.pop(),
       ),
     ]);
 
@@ -375,10 +374,7 @@ class TicketsScreenState extends State<TicketsScreen> {
                 child: ElevatedButton.icon(
                   onPressed: () {
                     if (ticket.isUpcoming) {
-                      Navigator.push(
-                        context,
-                        MaterialPageRoute(builder: (context) => const PdfViewerScreen()),
-                      );
+                      context.push('/pdf-viewer');
                     } else {
                       // Handle 'Laisser un avis' action
                     }

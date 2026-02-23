@@ -14,14 +14,18 @@ import 'package:myapp/splash_screen.dart';
 import 'package:myapp/checkout_screen.dart';
 import 'package:myapp/success_screen.dart';
 import 'package:myapp/edit_profile_screen.dart';
+import 'package:myapp/providers/auth_provider.dart';
 
 class AppRouter {
   final bool onboardingCompleted;
+  final AuthProvider authProvider; // 1. Accept the AuthProvider
   late final GoRouter router;
 
-  AppRouter({required this.onboardingCompleted}) {
+  AppRouter({required this.onboardingCompleted, required this.authProvider}) {
     router = GoRouter(
       initialLocation: '/splash',
+      // 2. Pass the authProvider directly as the refreshListenable
+      refreshListenable: authProvider,
       routes: [
         GoRoute(
           path: '/splash',
@@ -81,27 +85,40 @@ class AppRouter {
         ),
       ],
       redirect: (context, state) {
-        // If the app is still initializing (showing splash), don't redirect.
-        if (state.matchedLocation == '/splash') {
+        // 3. Use the authProvider field directly for redirection logic
+        final isAuthenticated = authProvider.isAuthenticated;
+        final location = state.matchedLocation;
+
+        // Handle Onboarding (Highest Priority)
+        final onOnboarding = location == '/onboarding';
+        if (!onboardingCompleted) {
+          return onOnboarding ? null : '/onboarding'; // Force to onboarding
+        }
+        if (onboardingCompleted && onOnboarding) {
+          return '/'; // Already onboarded, send to starting page
+        }
+
+        // Splash screen is handled implicitly.
+        if (location == '/splash') {
           return null;
         }
 
-        // Check if the user is on the onboarding path.
-        final onOnboarding = state.matchedLocation == '/onboarding';
+        // Handle Authentication
+        final isAuthenticating = location == '/login' || location == '/signup' || location == '/';
+        final privateRoutes = [
+          '/app', '/profile', '/edit-profile', '/notifications', 
+          '/details', '/location', '/checkout', '/success'
+        ];
 
-        // If onboarding is complete, but the user is trying to access the onboarding screen,
-        // redirect them to the starting screen.
-        if (onboardingCompleted && onOnboarding) {
-          return '/';
+        if (!isAuthenticated && privateRoutes.contains(location)) {
+          return '/'; // Redirect to starting page to let them login/signup
         }
 
-        // If onboarding is NOT complete, and the user is NOT on the onboarding screen,
-        // redirect them to the onboarding screen.
-        if (!onboardingCompleted && !onOnboarding) {
-          return '/onboarding';
+        if (isAuthenticated && isAuthenticating) {
+          return '/app'; // If user IS authenticated and tries to access public-only pages, redirect into app.
         }
 
-        // Otherwise, no redirection is needed.
+        // No redirect needed
         return null;
       },
     );
