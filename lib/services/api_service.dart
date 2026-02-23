@@ -131,4 +131,25 @@ class ApiService {
   
   Future<ApiResponse<T>> delete<T>(String endpoint) =>
     _request<T>(endpoint, method: 'DELETE');
+
+
+  /// Récupère la liste des villes actives depuis l'API.
+  Future<ApiResponse<List<String>>> getActiveCities() {
+    return get<List<String>>(
+      '/api/events/cities/get/all/active',
+      fromJson: (json) {
+        if (json is List) {
+          return List<String>.from(json.map((item) {
+            if (item is Map<String, dynamic> && item.containsKey('name')) {
+              return item['name'].toString();
+            } else if (item is String) {
+              return item;
+            }
+            return '';
+          })).where((name) => name.isNotEmpty).toList();
+        }
+        throw const FormatException('Réponse invalide, une liste de villes était attendue.');
+      },
+    );
+  }
 }
