@@ -63,6 +63,7 @@ class AuthProvider with ChangeNotifier {
 
       if (_token != null && _user != null) {
         await _saveSession(_token!, _user!);
+        notifyListeners(); // Notifie les auditeurs du changement d'état
       }
     } else {
       // L'API a retourné une erreur (ex: mauvais identifiants)

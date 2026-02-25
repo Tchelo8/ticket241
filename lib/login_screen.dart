@@ -33,14 +33,12 @@ class _LoginScreenState extends State<LoginScreen> {
 
     final authProvider = Provider.of<AuthProvider>(context, listen: false);
     
-    // La logique de connexion est maintenant dans le provider
     final apiResponse = await authProvider.login(
       _phoneController.text,
       _passwordController.text,
     );
 
-    // On vérifie la réponse de l'API directement ici
-    if (mounted) { // Vérifie si le widget est toujours dans l'arbre
+    if (mounted) {
       if (apiResponse.success) {
         Fluttertoast.showToast(
           msg: "Connexion réussie !",
@@ -49,10 +47,9 @@ class _LoginScreenState extends State<LoginScreen> {
           backgroundColor: Colors.green,
           textColor: Colors.white,
         );
-        // Redirection vers la page principale
-        context.go('/app');
+        // La redirection est maintenant gérée automatiquement par GoRouter
+        // grâce au refreshListenable. Plus besoin de context.go() ici.
       } else {
-        // Affiche le message d'erreur renvoyé par l'API
         Fluttertoast.showToast(
           msg: apiResponse.error ?? "Une erreur inconnue est survenue.",
           toastLength: Toast.LENGTH_LONG,
@@ -66,7 +63,6 @@ class _LoginScreenState extends State<LoginScreen> {
 
   @override
   Widget build(BuildContext context) {
-    // On écoute le AuthProvider pour afficher un indicateur de chargement
     final authProvider = context.watch<AuthProvider>();
 
     return Scaffold(
@@ -149,7 +145,6 @@ class _LoginScreenState extends State<LoginScreen> {
                     },
                   ),
                   const SizedBox(height: 20),
-                  // On affiche soit le bouton, soit un indicateur de chargement
                   authProvider.isLoading
                       ? const Center(child: CircularProgressIndicator())
                       : ElevatedButton(
@@ -169,7 +164,6 @@ class _LoginScreenState extends State<LoginScreen> {
                   const SizedBox(height: 20),
                   TextButton(
                     onPressed: () {
-                      // Logique pour le mot de passe oublié
                     },
                     child: const Text(
                       'Mot de passe oublié ?',
