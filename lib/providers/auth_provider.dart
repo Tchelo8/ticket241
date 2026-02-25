@@ -38,10 +38,6 @@ class AuthProvider with ChangeNotifier {
       _user = jsonDecode(userDataString);
     }
 
-    // Idéalement, ici, vous devriez faire un appel API pour valider le token
-    // Par exemple: GET /api/auth/me. Si l'appel réussit, l'utilisateur est connecté.
-    // Pour l'instant, on considère que si le token est présent, c'est bon.
-    
     _setLoading(false);
     notifyListeners();
   }
@@ -51,24 +47,24 @@ class AuthProvider with ChangeNotifier {
     _setLoading(true);
 
     final response = await _apiService.post(
-      '/api/auth/login/structure', // Assurez-vous que l'endpoint est correct
+      '/api/auth/login/structure',
       body: {'phone': phone, 'password': password},
     );
 
     if (response.success && response.data != null) {
-      // Suppose que la réponse contient {"token": "...", "user": {...}}
       final responseData = response.data as Map<String, dynamic>;
+      
+      // On extrait le token de la réponse
       _token = responseData['token'];
-      _user = responseData['user'];
+      
+      // La réponse entière (moins le token peut-être, mais c'est ok) est l'objet utilisateur
+      _user = responseData; 
 
       if (_token != null && _user != null) {
-        await _saveSession(_token!, _user!);
-        notifyListeners(); // Notifie les auditeurs du changement d'état
+        await _saveSession(_token!, _user!); // On sauvegarde la session
+        notifyListeners(); // On notifie les listeners que l'état a changé !
       }
-    } else {
-      // L'API a retourné une erreur (ex: mauvais identifiants)
-      // L'erreur sera déjà dans `response.error`
-    }
+    } 
 
     _setLoading(false);
     return response; // On retourne la réponse complète à l'UI
