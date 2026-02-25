@@ -50,7 +50,7 @@ class _LoginScreenState extends State<LoginScreen> {
           textColor: Colors.white,
         );
         // Redirection vers la page principale
-        context.go('/main');
+        context.go('/app');
       } else {
         // Affiche le message d'erreur renvoyé par l'API
         Fluttertoast.showToast(
