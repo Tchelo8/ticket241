@@ -47,7 +47,7 @@ class AuthProvider with ChangeNotifier {
     _setLoading(true);
 
     final response = await _apiService.post(
-      '/api/auth/login/structure',
+      '/api/auth/login',
       body: {'phone': phone, 'password': password},
     );
 
@@ -57,7 +57,7 @@ class AuthProvider with ChangeNotifier {
       // On extrait le token de la réponse
       _token = responseData['token'];
       
-      // La réponse entière (moins le token peut-être, mais c'est ok) est l'objet utilisateur
+      // La réponse entière est l'objet utilisateur
       _user = responseData; 
 
       if (_token != null && _user != null) {
