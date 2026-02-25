@@ -2,6 +2,7 @@
 import 'package:flutter/material.dart';
 import 'package:fluttertoast/fluttertoast.dart';
 import 'package:go_router/go_router.dart';
+import 'package:lottie/lottie.dart';
 import 'package:myapp/providers/auth_provider.dart';
 import 'package:provider/provider.dart';
 
@@ -41,8 +42,6 @@ class _LoginScreenState extends State<LoginScreen> {
     // On vérifie la réponse de l'API directement ici
     if (mounted) { // Vérifie si le widget est toujours dans l'arbre
       if (apiResponse.success) {
-        // La navigation est gérée par le AppRouter qui écoute AuthProvider
-        // Donc pas besoin de context.go('/') ici, c'est automatique !
         Fluttertoast.showToast(
           msg: "Connexion réussie !",
           toastLength: Toast.LENGTH_SHORT,
@@ -50,6 +49,8 @@ class _LoginScreenState extends State<LoginScreen> {
           backgroundColor: Colors.green,
           textColor: Colors.white,
         );
+        // Redirection vers la page principale
+        context.go('/main');
       } else {
         // Affiche le message d'erreur renvoyé par l'API
         Fluttertoast.showToast(
@@ -80,6 +81,11 @@ class _LoginScreenState extends State<LoginScreen> {
                 mainAxisAlignment: MainAxisAlignment.center,
                 crossAxisAlignment: CrossAxisAlignment.stretch,
                 children: [
+                  Lottie.asset(
+                    'assets/animations/Login.json',
+                    height: 200,
+                  ),
+                  const SizedBox(height: 20),
                   const Text(
                     'Content de te revoir',
                     textAlign: TextAlign.center,
@@ -169,20 +175,6 @@ class _LoginScreenState extends State<LoginScreen> {
                       'Mot de passe oublié ?',
                       style: TextStyle(color: Color(0xFF1E90FF)),
                     ),
-                  ),
-                  const SizedBox(height: 20),
-                  Row(
-                    mainAxisAlignment: MainAxisAlignment.center,
-                    children: [
-                      const Text("Tu n'as pas de compte ?"),
-                      TextButton(
-                        onPressed: () => context.go('/register'),
-                        child: const Text(
-                          'Inscris-toi',
-                          style: TextStyle(color: Color(0xFF1E90FF)),
-                        ),
-                      ),
-                    ],
                   ),
                 ],
               ),
