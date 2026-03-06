@@ -1,9 +1,9 @@
-
 import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
 import 'package:myapp/models/event_model.dart';
 import 'package:myapp/providers/favorites_provider.dart';
 import 'package:provider/provider.dart';
+import 'package:myapp/services/api_service.dart';
 
 class ExplorerScreen extends StatefulWidget {
   const ExplorerScreen({super.key});
@@ -13,38 +13,45 @@ class ExplorerScreen extends StatefulWidget {
 }
 
 class ExplorerScreenState extends State<ExplorerScreen> {
-    static final List<Event> _allEvents = [
-    Event(name: 'Concert Live Acoustique', imagePath: 'assets/images/enb.jpg', location: 'Entre Nous Bar, Angondjé', date: '29 Mars', price: 5000.0, category: 'Concert'),
-    Event(name: 'Festival International de Sibang', imagePath: 'assets/images/sibang.jpg', location: 'Jardin Botanique, Libreville', date: '15 Avril', price: 10000.0, category: 'Festival'),
-    Event(name: 'Concert Oiseau Rare', imagePath: 'assets/images/oiseau.jpg', location: 'Casino Croisette, LBV', date: '14 Fév', price: 15000.0, category: 'Concert'),
-    Event(name: 'Entre Nous Bar', imagePath: 'assets/images/enb.jpg', location: 'Angondjé', date: 'Tous les vendredis', price: 5000.0, category: 'Soirée'),
-    Event(name: 'Libreville Jazz Festival', imagePath: 'assets/images/jazz.png', location: 'Institut Français', date: '10 Jan', price: 20000.0, category: 'Festival'),
-    Event(name: 'CMS vs US Bitam', imagePath: 'assets/images/sibang.jpg', location: 'Stade de l\'amitié', date: '05 Mai', price: 1000.0, category: 'Sport'),
-    Event(name: 'Concert L\'oiseau rare', imagePath: 'assets/images/oiseau.jpg', location: 'Casino Croisette', date: '14 Fév', price: 15000.0, category: 'Concert'),
-  ];
+  final ApiService _apiService = ApiService();
+  List<Event> _allEvents = [];
+  bool _isLoading = true;
 
   final List<Map<String, String>> _categories = [
-    {'name': 'Concert', 'image': 'assets/images/jazz.png'},
-    {'name': 'Sport', 'image': 'assets/images/sibang.jpg'},
-    {'name': 'Festival', 'image': 'assets/images/enb.jpg'},
-    {'name': 'Soirée', 'image': 'assets/images/oiseau.jpg'},
-    {'name': 'Théâtre', 'image': 'assets/images/party.png'},
+    {'name': 'CONCERT', 'image': 'assets/images/jazz.png'},
+    {'name': 'SPORT', 'image': 'assets/images/sibang.jpg'},
+    {'name': 'FESTIVAL', 'image': 'assets/images/enb.jpg'},
+    {'name': 'SOIRÉE', 'image': 'assets/images/oiseau.jpg'},
+    {'name': 'THÉÂTRE', 'image': 'assets/images/party.png'},
   ];
 
   List<Event> _filteredEvents = [];
-  String _selectedCategory = 'Concert';
+  String _selectedCategory = 'CONCERT';
   String _searchQuery = '';
 
   @override
   void initState() {
     super.initState();
-    _applyFilters();
+    _fetchEvents();
+  }
+
+  Future<void> _fetchEvents() async {
+    final response = await _apiService.getEvents();
+    if (mounted) {
+      setState(() {
+        if (response.success && response.data != null) {
+          _allEvents = response.data!;
+        }
+        _isLoading = false;
+        _applyFilters();
+      });
+    }
   }
 
   void _applyFilters() {
     setState(() {
       _filteredEvents = _allEvents.where((event) {
-        final categoryMatch = event.category == _selectedCategory;
+        final categoryMatch = event.category.toUpperCase() == _selectedCategory.toUpperCase();
         final queryMatch = _searchQuery.isEmpty ||
             event.name.toLowerCase().contains(_searchQuery.toLowerCase());
         return categoryMatch && queryMatch;
@@ -81,7 +88,9 @@ class ExplorerScreenState extends State<ExplorerScreen> {
             _buildCategoryList(),
             const SizedBox(height: 20),
             Expanded(
-              child: _buildEventsGrid(),
+              child: _isLoading
+                  ? const Center(child: CircularProgressIndicator())
+                  : _buildEventsGrid(),
             ),
           ],
         ),
@@ -120,7 +129,7 @@ class ExplorerScreenState extends State<ExplorerScreen> {
   }
 
   Widget _buildCategoryCard(String name, String image) {
-    final isSelected = _selectedCategory == name;
+    final isSelected = _selectedCategory.toUpperCase() == name.toUpperCase();
     return GestureDetector(
       onTap: () => _onCategorySelected(name),
       child: Container(
@@ -133,10 +142,10 @@ class ExplorerScreenState extends State<ExplorerScreen> {
             color: isSelected ? const Color(0xFF1E90FF) : Colors.grey[300]!,
             width: 1.5,
           ),
-           boxShadow: isSelected
+          boxShadow: isSelected
               ? [
                   BoxShadow(
-                    color: const Color(0xFF1E90FF).withOpacity(0.3),
+                    color: const Color(0xFF1E90FF).withValues(alpha: 0.3),
                     spreadRadius: 2,
                     blurRadius: 5,
                     offset: const Offset(0, 3),
@@ -162,8 +171,9 @@ class ExplorerScreenState extends State<ExplorerScreen> {
               style: TextStyle(
                 color: isSelected ? Colors.white : Colors.black87,
                 fontWeight: FontWeight.w600,
-                fontSize: 12,
+                fontSize: 10,
               ),
+              textAlign: TextAlign.center,
             ),
           ],
         ),
@@ -171,9 +181,10 @@ class ExplorerScreenState extends State<ExplorerScreen> {
     );
   }
 
-
-
   Widget _buildEventsGrid() {
+    if (_filteredEvents.isEmpty) {
+      return const Center(child: Text("Aucun événement trouvé"));
+    }
     return GridView.builder(
       gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
         crossAxisCount: 2,
@@ -203,7 +214,7 @@ class ExplorerScreenState extends State<ExplorerScreen> {
           borderRadius: BorderRadius.circular(20),
           boxShadow: [
             BoxShadow(
-              color: Colors.grey.withAlpha((255 * 0.15).round()),
+              color: Colors.grey.withValues(alpha: 0.15),
               spreadRadius: 1,
               blurRadius: 8,
               offset: const Offset(0, 4),
@@ -220,11 +231,16 @@ class ExplorerScreenState extends State<ExplorerScreen> {
                     topLeft: Radius.circular(20),
                     topRight: Radius.circular(20),
                   ),
-                  child: Image.asset(
-                    event.imagePath,
+                  child: Image.network(
+                    event.coverImageUrl,
                     height: 120,
                     width: double.infinity,
                     fit: BoxFit.cover,
+                    errorBuilder: (context, error, stackTrace) => Container(
+                      height: 120,
+                      color: Colors.grey[300],
+                      child: const Icon(Icons.broken_image, color: Colors.grey),
+                    ),
                   ),
                 ),
                 Positioned(
@@ -233,7 +249,7 @@ class ExplorerScreenState extends State<ExplorerScreen> {
                   child: GestureDetector(
                     onTap: () {
                       favoritesProvider.toggleFavorite(event);
-                       if (!isFavorite) {
+                      if (!isFavorite) {
                         ScaffoldMessenger.of(context).showSnackBar(
                           const SnackBar(
                             content: Text('Ajouté aux favoris'),
@@ -245,7 +261,7 @@ class ExplorerScreenState extends State<ExplorerScreen> {
                     child: Container(
                       padding: const EdgeInsets.all(6),
                       decoration: BoxDecoration(
-                        color: Colors.white.withAlpha((255 * 0.9).round()),
+                        color: Colors.white.withValues(alpha: 0.9),
                         shape: BoxShape.circle,
                       ),
                       child: Icon(
@@ -265,15 +281,15 @@ class ExplorerScreenState extends State<ExplorerScreen> {
                 children: [
                   Text(
                     event.name,
-                    style: const TextStyle(fontSize: 16, fontWeight: FontWeight.bold),
+                    style: const TextStyle(fontSize: 14, fontWeight: FontWeight.bold),
                     maxLines: 1,
                     overflow: TextOverflow.ellipsis,
                   ),
                   const SizedBox(height: 5),
                   Text(
-                    event.location,
-                    style: const TextStyle(color: Colors.grey, fontSize: 12),
-                     maxLines: 1,
+                    event.venueName,
+                    style: const TextStyle(color: Colors.grey, fontSize: 11),
+                    maxLines: 1,
                     overflow: TextOverflow.ellipsis,
                   ),
                   const SizedBox(height: 10),
@@ -282,15 +298,15 @@ class ExplorerScreenState extends State<ExplorerScreen> {
                     child: Container(
                       padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
                       decoration: BoxDecoration(
-                        color: const Color(0xFF1E90FF).withAlpha((255 * 0.1).round()),
+                        color: const Color(0xFF1E90FF).withValues(alpha: 0.1),
                         borderRadius: BorderRadius.circular(8),
                       ),
                       child: Text(
-                        '${event.price.toStringAsFixed(0)} FCFA',
+                        '${event.minPrice.toStringAsFixed(0)} FCFA',
                         style: const TextStyle(
                           color: Color(0xFF1E90FF),
                           fontWeight: FontWeight.bold,
-                          fontSize: 11,
+                          fontSize: 10,
                         ),
                       ),
                     ),

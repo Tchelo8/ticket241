@@ -1,4 +1,3 @@
-
 import 'package:go_router/go_router.dart';
 import 'package:myapp/main_screen.dart';
 import 'package:myapp/otp_verification_screen.dart';
@@ -15,6 +14,7 @@ import 'package:myapp/checkout_screen.dart';
 import 'package:myapp/success_screen.dart';
 import 'package:myapp/edit_profile_screen.dart';
 import 'package:myapp/providers/auth_provider.dart';
+import 'package:myapp/models/event_model.dart';
 
 class AppRouter {
   final bool onboardingCompleted;
@@ -69,7 +69,10 @@ class AppRouter {
         ),
         GoRoute(
           path: '/details',
-          builder: (context, state) => const EventDetailsScreen(),
+          builder: (context, state) {
+            final event = state.extra as Event;
+            return EventDetailsScreen(event: event);
+          },
         ),
         GoRoute(
           path: '/location',

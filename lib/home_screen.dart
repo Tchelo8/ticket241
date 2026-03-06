@@ -1,11 +1,12 @@
-
 import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
 import 'package:myapp/models/event_model.dart';
 import 'package:flutter_staggered_animations/flutter_staggered_animations.dart';
 import 'package:myapp/providers/favorites_provider.dart';
+import 'package:myapp/services/api_service.dart';
 import 'package:provider/provider.dart';
 import 'package:myapp/city_selection_popup.dart';
+import 'package:intl/intl.dart';
 
 class HomeScreen extends StatefulWidget {
   final Function(int) onNavigate;
@@ -17,28 +18,156 @@ class HomeScreen extends StatefulWidget {
 
 class _HomeScreenState extends State<HomeScreen> {
   String _selectedCity = 'Libreville';
+  final ApiService _apiService = ApiService();
+  List<Event> _events = [];
+  bool _isLoading = true;
 
-  // Dummy data - replace with your actual data source
+  // Dummy data
   static final List<Event> _upcomingEvents = [
-    Event(name: 'Concert Live Acoustique', imagePath: 'assets/images/enb.jpg', location: 'Entre Nous Bar, Angondjé', date: '29 Mars', price: 5000.0, category: 'Concert'),
-    Event(name: 'Festival International de Sibang', imagePath: 'assets/images/sibang.jpg', location: 'Jardin Botanique, Libreville', date: '15 Avril', price: 10000.0, category: 'Festival'),
-    Event(name: 'Concert Oiseau Rare', imagePath: 'assets/images/oiseau.jpg', location: 'Casino Croisette, LBV', date: '14 Fév', price: 15000.0, category: 'Concert'),
+    Event(
+        id: 0,
+        slug: 'upcoming-1',
+        name: 'Concert Live Acoustique',
+        coverImageUrl: 'assets/images/enb.jpg',
+        venueName: 'Entre Nous Bar, Angondjé',
+        startDate: DateTime(2025, 3, 29),
+        minPrice: 5000.0,
+        category: 'Concert',
+        cityId: 1,
+        cityName: 'Libreville',
+        cityCountry: 'Gabon',
+        soldSeats: 0,
+        availableSeats: 100,
+        maxPrice: 5000.0,
+        isFeatured: false,
+        isPromoted: false,
+        viewCount: 0,
+        isSaleOpen: true,
+        isPastEvent: false,
+        isSoldOut: false),
+    Event(
+        id: 0,
+        slug: 'upcoming-2',
+        name: 'Festival International de Sibang',
+        coverImageUrl: 'assets/images/sibang.jpg',
+        venueName: 'Jardin Botanique, Libreville',
+        startDate: DateTime(2025, 4, 15),
+        minPrice: 10000.0,
+        category: 'Festival',
+        cityId: 1,
+        cityName: 'Libreville',
+        cityCountry: 'Gabon',
+        soldSeats: 0,
+        availableSeats: 100,
+        maxPrice: 10000.0,
+        isFeatured: false,
+        isPromoted: false,
+        viewCount: 0,
+        isSaleOpen: true,
+        isPastEvent: false,
+        isSoldOut: false),
+    Event(
+        id: 0,
+        slug: 'upcoming-3',
+        name: 'Concert Oiseau Rare',
+        coverImageUrl: 'assets/images/oiseau.jpg',
+        venueName: 'Casino Croisette, LBV',
+        startDate: DateTime(2025, 2, 14),
+        minPrice: 15000.0,
+        category: 'Concert',
+        cityId: 1,
+        cityName: 'Libreville',
+        cityCountry: 'Gabon',
+        soldSeats: 0,
+        availableSeats: 100,
+        maxPrice: 15000.0,
+        isFeatured: false,
+        isPromoted: false,
+        viewCount: 0,
+        isSaleOpen: true,
+        isPastEvent: false,
+        isSoldOut: false),
   ];
 
-  static final List<Event> _popularEvents = [
-    Event(name: 'Entre Nous Bar', imagePath: 'assets/images/enb.jpg', location: 'Angondjé', date: 'Tous les vendredis', price: 5000.0, category: 'Soirée'),
-    Event(name: 'Libreville Jazz Festival', imagePath: 'assets/images/jazz.png', location: 'Institut Français', date: '10 Jan', price: 20000.0, category: 'Festival'),
+  static final List<Event> _sportEvents = [
+    Event(
+        id: 0,
+        slug: 'sport-1',
+        name: 'CMS vs US Bitam',
+        coverImageUrl: 'assets/images/sibang.jpg',
+        venueName: 'Stade amitié',
+        startDate: DateTime(2025, 5, 5),
+        minPrice: 1000.0,
+        category: 'Sport',
+        cityId: 1,
+        cityName: 'Libreville',
+        cityCountry: 'Gabon',
+        soldSeats: 0,
+        availableSeats: 100,
+        maxPrice: 1000.0,
+        isFeatured: false,
+        isPromoted: false,
+        viewCount: 0,
+        isSaleOpen: true,
+        isPastEvent: false,
+        isSoldOut: false),
   ];
-    static final List<Event> _sportEvents = [
-    Event(name: 'CMS vs US Bitam', imagePath: 'assets/images/sibang.jpg', location: 'Stade amitié', date: '05 Mai', price: 1000.0, category: 'Sport'),
+
+  static final List<Event> _cultureEvents = [
+    Event(
+        id: 0,
+        slug: 'culture-1',
+        name: 'Concert oiseau rare',
+        coverImageUrl: 'assets/images/oiseau.jpg',
+        venueName: 'Casino Croisette',
+        startDate: DateTime(2025, 2, 14),
+        minPrice: 15000.0,
+        category: 'Concert',
+        cityId: 1,
+        cityName: 'Libreville',
+        cityCountry: 'Gabon',
+        soldSeats: 0,
+        availableSeats: 100,
+        maxPrice: 15000.0,
+        isFeatured: false,
+        isPromoted: false,
+        viewCount: 0,
+        isSaleOpen: true,
+        isPastEvent: false,
+        isSoldOut: false),
   ];
 
-      static final List<Event> _cultureEvents = [
-    Event(name: 'Concert oiseau rare', imagePath: 'assets/images/oiseau.jpg', location: 'Casino Croisette', date: '14 Fév', price: 15000.0, category: 'Concert'),
-  ];
+  @override
+  void initState() {
+    super.initState();
+    _fetchEvents();
+  }
 
+  Future<void> _fetchEvents() async {
+    setState(() {
+      _isLoading = true;
+    });
+    final response = await _apiService.getEvents();
+    if (response.success && response.data != null) {
+      setState(() {
+        _events = response.data!;
+        _isLoading = false;
+      });
+    } else {
+      setState(() {
+        _isLoading = false;
+      });
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(content: Text(response.error ?? 'Erreur lors du chargement des événements')),
+        );
+      }
+    }
+  }
 
-
+  String _formatDate(DateTime date) {
+    return DateFormat('dd MMM', 'fr_FR').format(date);
+  }
 
   void _showCitySelection(BuildContext context) async {
     final result = await showModalBottomSheet<String>(
@@ -67,41 +196,55 @@ class _HomeScreenState extends State<HomeScreen> {
 
   @override
   Widget build(BuildContext context) {
+    final popularEvents = _events;
+
     return Scaffold(
       backgroundColor: Colors.grey[100],
       body: SafeArea(
-        child: SingleChildScrollView(
-          child: AnimationLimiter(
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: AnimationConfiguration.toStaggeredList(
-                duration: const Duration(milliseconds: 375),
-                childAnimationBuilder: (widget) => SlideAnimation(
-                  verticalOffset: 50.0,
-                  child: FadeInAnimation(
-                    child: widget,
+        child: RefreshIndicator(
+          onRefresh: _fetchEvents,
+          child: SingleChildScrollView(
+            physics: const AlwaysScrollableScrollPhysics(),
+            child: AnimationLimiter(
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: AnimationConfiguration.toStaggeredList(
+                  duration: const Duration(milliseconds: 375),
+                  childAnimationBuilder: (widget) => SlideAnimation(
+                    verticalOffset: 50.0,
+                    child: FadeInAnimation(
+                      child: widget,
+                    ),
                   ),
+                  children: [
+                    _buildHeader(context),
+                    _buildSearchBar(),
+                    const SizedBox(height: 24),
+                    _buildSectionHeader("Événements à venir"),
+                    _buildUpcomingEventsList(_upcomingEvents),
+                    const SizedBox(height: 24),
+                    _buildSectionHeader("Populaire actuellement", showSeeAll: true),
+                    if (_isLoading)
+                      const Center(
+                        child: Padding(
+                          padding: EdgeInsets.all(32.0),
+                          child: CircularProgressIndicator(),
+                        ),
+                      )
+                    else
+                      _buildPopularEventsList(context, events: popularEvents),
+                    const SizedBox(height: 24),
+                    _buildSectionHeader("Pour vous", showSeeAll: true),
+                    _buildPopularEventsList(context, events: _upcomingEvents.reversed.toList()),
+                    const SizedBox(height: 24),
+                    _buildSectionHeader("Sport", showSeeAll: true),
+                    _buildPopularEventsList(context, events: _sportEvents),
+                    const SizedBox(height: 24),
+                    _buildSectionHeader("Culture", showSeeAll: true),
+                    _buildPopularEventsList(context, events: _cultureEvents),
+                    const SizedBox(height: 24),
+                  ],
                 ),
-                children: [
-                  _buildHeader(context),
-                  _buildSearchBar(),
-                  const SizedBox(height: 24),
-                  _buildSectionHeader("Événements à venir"),
-                  _buildUpcomingEventsList(),
-                  const SizedBox(height: 24),
-                  _buildSectionHeader("Populaire actuellement", showSeeAll: true),
-                  _buildPopularEventsList(context, events: _popularEvents),
-                  const SizedBox(height: 24),
-                  _buildSectionHeader("Pour vous", showSeeAll: true),
-                  _buildPopularEventsList(context, events: _popularEvents.reversed.toList()),
-                   const SizedBox(height: 24),
-                  _buildSectionHeader("Sport", showSeeAll: true),
-                  _buildPopularEventsList(context, events: _sportEvents),
-                  const SizedBox(height: 24),
-                   _buildSectionHeader("Culture", showSeeAll: true),
-                  _buildPopularEventsList(context, events: _cultureEvents),
-                  const SizedBox(height: 24),
-                ],
               ),
             ),
           ),
@@ -145,16 +288,15 @@ class _HomeScreenState extends State<HomeScreen> {
           ),
           Container(
             decoration: BoxDecoration(
-              color: Colors.white,
-              shape: BoxShape.circle,
-              boxShadow: [
-                BoxShadow(
-                  color: Colors.grey.withAlpha((255 * 0.2).round()),
-                  spreadRadius: 1,
-                  blurRadius: 5,
-                )
-              ]
-            ),
+                color: Colors.white,
+                shape: BoxShape.circle,
+                boxShadow: [
+                  BoxShadow(
+                    color: Colors.grey.withAlpha((255 * 0.2).round()),
+                    spreadRadius: 1,
+                    blurRadius: 5,
+                  )
+                ]),
             child: IconButton(
               icon: const Icon(Icons.notifications_outlined, color: Colors.black),
               onPressed: () {
@@ -171,9 +313,9 @@ class _HomeScreenState extends State<HomeScreen> {
     return Padding(
       padding: const EdgeInsets.symmetric(horizontal: 24.0),
       child: TextField(
-        readOnly: true, // Make the search bar read-only
+        readOnly: true,
         onTap: () {
-          widget.onNavigate(1); // Navigate to the Explorer screen (index 1)
+          widget.onNavigate(1);
         },
         decoration: InputDecoration(
           hintText: 'Rechercher des événements...',
@@ -216,16 +358,16 @@ class _HomeScreenState extends State<HomeScreen> {
     );
   }
 
-  Widget _buildUpcomingEventsList() {
+  Widget _buildUpcomingEventsList(List<Event> events) {
     return SizedBox(
       height: 120,
       child: AnimationLimiter(
         child: ListView.builder(
           scrollDirection: Axis.horizontal,
           physics: const BouncingScrollPhysics(),
-          itemCount: _upcomingEvents.length,
+          itemCount: events.length,
           itemBuilder: (context, index) {
-            final event = _upcomingEvents[index];
+            final event = events[index];
             return AnimationConfiguration.staggeredList(
               position: index,
               duration: const Duration(milliseconds: 375),
@@ -242,32 +384,31 @@ class _HomeScreenState extends State<HomeScreen> {
       ),
     );
   }
-  
+
   Widget _buildUpcomingEventCard(BuildContext context, {required Event event}) {
-    // Extract date and month
-    final dateParts = event.date.split(' ');
-    final date = dateParts.isNotEmpty ? dateParts[0] : '';
+    final formattedDate = event.startDate != null ? _formatDate(event.startDate!) : '';
+    final dateParts = formattedDate.split(' ');
+    final day = dateParts.isNotEmpty ? dateParts[0] : '';
     final month = dateParts.length > 1 ? dateParts[1] : '';
 
     return GestureDetector(
-       onTap: () {
-         context.push('/details');
-       },
+      onTap: () {
+        context.push('/details', extra: event);
+      },
       child: Container(
         width: 300,
         margin: const EdgeInsets.only(right: 16),
         decoration: BoxDecoration(
-          color: Colors.white,
-          borderRadius: BorderRadius.circular(16),
-          boxShadow: [
+            color: Colors.white,
+            borderRadius: BorderRadius.circular(16),
+            boxShadow: [
               BoxShadow(
                 color: Colors.grey.withAlpha((255 * 0.15).round()),
                 spreadRadius: 1,
                 blurRadius: 8,
                 offset: const Offset(0, 4),
               )
-            ]
-        ),
+            ]),
         child: Padding(
           padding: const EdgeInsets.all(12.0),
           child: Row(
@@ -275,34 +416,36 @@ class _HomeScreenState extends State<HomeScreen> {
               Stack(
                 alignment: Alignment.center,
                 children: [
-                   ClipRRect(
+                  ClipRRect(
                     borderRadius: BorderRadius.circular(12),
-                    child: Image.asset(event.imagePath, width: 80, height: 96, fit: BoxFit.cover),
+                    child: event.coverImageUrl != null && event.coverImageUrl!.startsWith('assets/')
+                        ? Image.asset(event.coverImageUrl!, width: 80, height: 96, fit: BoxFit.cover)
+                        : (event.coverImageUrl != null
+                            ? Image.network(event.coverImageUrl!,
+                                width: 80, height: 96, fit: BoxFit.cover, errorBuilder: (context, error, stackTrace) => const Icon(Icons.broken_image, size: 40))
+                            : Container(width: 80, height: 96, color: Colors.grey[300], child: const Icon(Icons.image))),
                   ),
                   Positioned.fill(
-                     child: ClipRRect(
+                    child: ClipRRect(
                       borderRadius: BorderRadius.circular(12),
-                       child: Container(
-                         decoration: BoxDecoration(
-                           color: Colors.black.withAlpha((255 * 0.2).round()),
-                         ),
-                       ),
-                     ),
-                   ),
-                   Container(
-                     width: 45,
-                     height: 45,
-                     decoration: BoxDecoration(
-                       color: Colors.white.withAlpha((255 * 0.85).round()),
-                       borderRadius: BorderRadius.circular(8),
-                     ),
-                     child: Column(
-                       mainAxisAlignment: MainAxisAlignment.center,
-                       children: [
-                         Text(date, style: const TextStyle(fontSize: 18, fontWeight: FontWeight.bold, color: Color(0xFF1E90FF))),
-                         Text(month.toUpperCase(), style: const TextStyle(fontSize: 12, fontWeight: FontWeight.bold, color: Color(0xFF1E90FF))),
-                       ]
-                     ),
+                      child: Container(
+                        decoration: BoxDecoration(
+                          color: Colors.black.withAlpha((255 * 0.2).round()),
+                        ),
+                      ),
+                    ),
+                  ),
+                  Container(
+                    width: 45,
+                    height: 45,
+                    decoration: BoxDecoration(
+                      color: Colors.white.withAlpha((255 * 0.85).round()),
+                      borderRadius: BorderRadius.circular(8),
+                    ),
+                    child: Column(mainAxisAlignment: MainAxisAlignment.center, children: [
+                      Text(day, style: const TextStyle(fontSize: 18, fontWeight: FontWeight.bold, color: Color(0xFF1E90FF))),
+                      Text(month.toUpperCase(), style: const TextStyle(fontSize: 12, fontWeight: FontWeight.bold, color: Color(0xFF1E90FF))),
+                    ]),
                   ),
                 ],
               ),
@@ -325,7 +468,7 @@ class _HomeScreenState extends State<HomeScreen> {
                           const SizedBox(width: 4),
                           Expanded(
                             child: Text(
-                              event.location,
+                              event.venueName ?? '',
                               style: const TextStyle(color: Colors.grey, fontSize: 13),
                               overflow: TextOverflow.ellipsis,
                             ),
@@ -384,30 +527,30 @@ class _HomeScreenState extends State<HomeScreen> {
       ),
     );
   }
-  
+
   Widget _buildPopularEventCard(BuildContext context, {required Event event}) {
     final favoritesProvider = Provider.of<FavoritesProvider>(context);
     final isFavorite = favoritesProvider.isFavorite(event);
+    final formattedDate = event.startDate != null ? _formatDate(event.startDate!) : '';
 
-     return GestureDetector(
+    return GestureDetector(
       onTap: () {
-        context.push('/details');
+        context.push('/details', extra: event);
       },
-       child: Container(
+      child: Container(
         width: 220,
         margin: const EdgeInsets.only(right: 16),
         decoration: BoxDecoration(
-          color: Colors.white,
-          borderRadius: BorderRadius.circular(20),
-          boxShadow: [
+            color: Colors.white,
+            borderRadius: BorderRadius.circular(20),
+            boxShadow: [
               BoxShadow(
                 color: Colors.grey.withAlpha((255 * 0.15).round()),
                 spreadRadius: 1,
                 blurRadius: 8,
                 offset: const Offset(0, 4),
               )
-            ]
-        ),
+            ]),
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
@@ -418,9 +561,14 @@ class _HomeScreenState extends State<HomeScreen> {
                     topLeft: Radius.circular(20),
                     topRight: Radius.circular(20),
                   ),
-                  child: Image.asset(event.imagePath, height: 120, width: double.infinity, fit: BoxFit.cover),
+                  child: event.coverImageUrl != null && event.coverImageUrl!.startsWith('assets/')
+                      ? Image.asset(event.coverImageUrl!, height: 120, width: double.infinity, fit: BoxFit.cover)
+                      : (event.coverImageUrl != null
+                          ? Image.network(event.coverImageUrl!,
+                              height: 120, width: double.infinity, fit: BoxFit.cover, errorBuilder: (context, error, stackTrace) => const Icon(Icons.broken_image, size: 50))
+                          : Container(height: 120, width: double.infinity, color: Colors.grey[300], child: const Icon(Icons.image))),
                 ),
-                 Positioned(
+                Positioned(
                   top: 8,
                   right: 8,
                   child: GestureDetector(
@@ -456,18 +604,26 @@ class _HomeScreenState extends State<HomeScreen> {
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
-                  Text(event.date, style: const TextStyle(fontSize: 12, color: Color(0xFF1E90FF), fontWeight: FontWeight.w600)),
+                  Text(formattedDate, style: const TextStyle(fontSize: 12, color: Color(0xFF1E90FF), fontWeight: FontWeight.w600)),
                   const SizedBox(height: 8),
-                  Text(event.name.length > 20 ? '${event.name.substring(0, 20)}...' : event.name, style: const TextStyle(fontSize: 17, fontWeight: FontWeight.bold), maxLines: 1, overflow: TextOverflow.ellipsis, ),
+                  Text(
+                    event.name.length > 20 ? '${event.name.substring(0, 20)}...' : event.name,
+                    style: const TextStyle(fontSize: 17, fontWeight: FontWeight.bold),
+                    maxLines: 1,
+                    overflow: TextOverflow.ellipsis,
+                  ),
                   const SizedBox(height: 12),
                   Row(
                     mainAxisAlignment: MainAxisAlignment.spaceBetween,
                     children: [
-                       Row(
+                      Row(
                         children: [
                           const Icon(Icons.location_on_outlined, size: 16, color: Colors.grey),
                           const SizedBox(width: 4),
-                          Text(event.location, style: const TextStyle(color: Colors.grey, fontSize: 12)),
+                          SizedBox(
+                            width: 80,
+                            child: Text(event.venueName ?? '', style: const TextStyle(color: Colors.grey, fontSize: 12), overflow: TextOverflow.ellipsis),
+                          ),
                         ],
                       ),
                       Container(
@@ -476,7 +632,7 @@ class _HomeScreenState extends State<HomeScreen> {
                           color: const Color(0xFF1E90FF).withAlpha((255 * 0.1).round()),
                           borderRadius: BorderRadius.circular(8),
                         ),
-                        child: Text('${event.price.toStringAsFixed(0)} FCFA', style: const TextStyle(color: Color(0xFF1E90FF), fontWeight: FontWeight.bold, fontSize: 11)),
+                        child: Text('${event.minPrice?.toStringAsFixed(0) ?? '0'} FCFA', style: const TextStyle(color: Color(0xFF1E90FF), fontWeight: FontWeight.bold, fontSize: 11)),
                       )
                     ],
                   ),
@@ -485,7 +641,7 @@ class _HomeScreenState extends State<HomeScreen> {
             )
           ],
         ),
-           ),
+      ),
     );
   }
 }

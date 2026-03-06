@@ -1,9 +1,9 @@
-
 import 'dart:convert';
 import 'package:flutter/foundation.dart';
 import 'package:flutter_dotenv/flutter_dotenv.dart';
 import 'package:http/http.dart' as http;
 import 'package:shared_preferences/shared_preferences.dart';
+import '../models/event_model.dart';
 
 /// Un modèle de classe pour encapsuler les réponses de l'API de manière structurée.
 class ApiResponse<T> {
@@ -149,6 +149,20 @@ class ApiService {
           })).where((name) => name.isNotEmpty).toList();
         }
         throw const FormatException('Réponse invalide, une liste de villes était attendue.');
+      },
+    );
+  }
+
+  /// Récupère la liste des événements depuis l'API.
+  Future<ApiResponse<List<Event>>> getEvents() {
+    return get<List<Event>>(
+      '/api/events/all',
+      fromJson: (json) {
+        if (json is Map<String, dynamic> && json.containsKey('content')) {
+          final List content = json['content'];
+          return content.map((item) => Event.fromJson(item)).toList();
+        }
+        throw const FormatException('Réponse invalide, un champ "content" était attendu.');
       },
     );
   }
