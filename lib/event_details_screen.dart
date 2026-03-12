@@ -1,42 +1,85 @@
-
 import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
 import 'package:myapp/models/event_model.dart';
 import 'package:myapp/providers/favorites_provider.dart';
 import 'package:provider/provider.dart';
+import 'package:intl/intl.dart';
 
 class EventDetailsScreen extends StatefulWidget {
-  const EventDetailsScreen({super.key});
+  final Event event;
+  const EventDetailsScreen({super.key, required this.event});
 
   @override
   EventDetailsScreenState createState() => EventDetailsScreenState();
 }
 
 class EventDetailsScreenState extends State<EventDetailsScreen> {
-  // Main event for the details page - in a real app, this would be passed from the previous screen
-  final Event mainEvent = Event(
-    name: 'Concert sous les étoiles',
-    imagePath: 'assets/images/enb.jpg',
-    location: 'Libreville',
-    date: '15 Mars, 2025, 22:00',
-    price: 2000,
-    category: 'Concert',
-  );
+  late List<Map<String, dynamic>> _ticketData;
+  double _totalPrice = 0.0;
 
   // Dummy data for suggested events
   final List<Event> _suggestedEvents = [
-    Event(name: 'Concert sous les pyramides', imagePath: 'assets/images/enb.jpg', location: 'Gizeh, Caire', date: '10 Avril', price: 5000, category: 'Concert'),
-    Event(name: 'Festival de Jazz de Mumbai', imagePath: 'assets/images/jazz.png', location: 'Santorin, Grèce', date: '25 Mai', price: 4000, category: 'Festival'),
+    Event(
+        id: 101,
+        slug: 'suggested-1',
+        name: 'Concert sous les pyramides',
+        coverImageUrl: 'assets/images/enb.jpg',
+        venueName: 'Gizeh, Caire',
+        startDate: DateTime(2025, 4, 10),
+        minPrice: 5000,
+        maxPrice: 15000,
+        category: 'Concert',
+        cityId: 1,
+        cityName: 'Le Caire',
+        cityCountry: 'Égypte',
+        availableSeats: 50,
+        soldSeats: 10,
+        viewCount: 120,
+        isFeatured: true,
+        isPromoted: false,
+        isSaleOpen: true,
+        isPastEvent: false,
+        isSoldOut: false),
+    Event(
+        id: 102,
+        slug: 'suggested-2',
+        name: 'Festival de Jazz de Mumbai',
+        coverImageUrl: 'assets/images/jazz.png',
+        venueName: 'Santorin, Grèce',
+        startDate: DateTime(2025, 5, 25),
+        minPrice: 4000,
+        maxPrice: 12000,
+        category: 'Festival',
+        cityId: 2,
+        cityName: 'Santorin',
+        cityCountry: 'Grèce',
+        availableSeats: 30,
+        soldSeats: 5,
+        viewCount: 85,
+        isFeatured: false,
+        isPromoted: true,
+        isSaleOpen: true,
+        isPastEvent: false,
+        isSoldOut: false),
   ];
 
-  final List<Map<String, dynamic>> _ticketData = [
-    {'name': 'Ticket normal', 'price': 2000.0, 'quantity': 1},
-    {'name': 'Pass VIP', 'price': 5000.0, 'quantity': 0},
-    {'name': 'Pass VVIP', 'price': 10000.0, 'quantity': 0},
-    {'name': 'Pass Terminus', 'price': 1500.0, 'quantity': 0},
-  ];
+  @override
+  void initState() {
+    super.initState();
+    // Dynamically generate placeholder ticket types based on event prices
+    double minPrice = widget.event.minPrice;
+    double maxPrice = widget.event.maxPrice;
 
-  double _totalPrice = 2000.0;
+    if (maxPrice <= minPrice) {
+      maxPrice = minPrice * 2;
+    }
+
+    _ticketData = [
+      {'name': 'Ticket Standard', 'price': minPrice, 'quantity': 1},
+      {'name': 'Pass VIP', 'price': maxPrice, 'quantity': 0},
+    ];
+    _calculateTotal();
+  }
 
   void _updateTicketQuantity(int index, int change) {
     setState(() {
@@ -50,9 +93,13 @@ class EventDetailsScreenState extends State<EventDetailsScreen> {
   void _calculateTotal() {
     double total = 0;
     for (var ticket in _ticketData) {
-      total += ticket['quantity'] * ticket['price'];
+      total += ticket['quantity'] * (ticket['price'] as double);
     }
     _totalPrice = total;
+  }
+
+  String _formatDate(DateTime date) {
+    return DateFormat('dd MMMM yyyy, HH:mm', 'fr_FR').format(date);
   }
 
   @override
@@ -69,7 +116,7 @@ class EventDetailsScreenState extends State<EventDetailsScreen> {
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                _buildHeaderImage(context, mainEvent),
+                _buildHeaderImage(context, widget.event),
                 _buildEventInfo(textColor),
                 _buildAboutSection(textColor, primaryColor),
                 _buildGeneralInfoSection(textColor, secondaryTextColor),
@@ -90,14 +137,32 @@ class EventDetailsScreenState extends State<EventDetailsScreen> {
     final favoritesProvider = Provider.of<FavoritesProvider>(context);
     final isFavorite = favoritesProvider.isFavorite(event);
 
-    return Stack(
-      children: [
-        Image.asset(
-          event.imagePath,
+    Widget imageWidget;
+    if (event.coverImageUrl.startsWith('assets/')) {
+      imageWidget = Image.asset(
+        event.coverImageUrl,
+        height: 300,
+        width: double.infinity,
+        fit: BoxFit.cover,
+      );
+    } else {
+      imageWidget = Image.network(
+        event.coverImageUrl,
+        height: 300,
+        width: double.infinity,
+        fit: BoxFit.cover,
+        errorBuilder: (context, error, stackTrace) => Image.asset(
+          'assets/images/enb.jpg',
           height: 300,
           width: double.infinity,
           fit: BoxFit.cover,
         ),
+      );
+    }
+
+    return Stack(
+      children: [
+        imageWidget,
         Container(
           height: 300,
           decoration: BoxDecoration(
@@ -134,13 +199,13 @@ class EventDetailsScreenState extends State<EventDetailsScreen> {
                       onPressed: () {
                         favoritesProvider.toggleFavorite(event);
                         if (!isFavorite) {
-                           ScaffoldMessenger.of(context).showSnackBar(
-                             const SnackBar(
-                               content: Text('Ajouté aux favoris'),
-                               duration: Duration(seconds: 2),
-                             ),
-                           );
-                         }
+                          ScaffoldMessenger.of(context).showSnackBar(
+                            const SnackBar(
+                              content: Text('Ajouté aux favoris'),
+                              duration: Duration(seconds: 2),
+                            ),
+                          );
+                        }
                       },
                     ),
                   ),
@@ -160,6 +225,7 @@ class EventDetailsScreenState extends State<EventDetailsScreen> {
         Positioned(
           bottom: 20,
           left: 20,
+          right: 20,
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
@@ -173,7 +239,7 @@ class EventDetailsScreenState extends State<EventDetailsScreen> {
               ),
               const SizedBox(height: 8),
               Text(
-                event.date,
+                _formatDate(event.startDate),
                 style: TextStyle(color: Colors.white.withAlpha((255 * 0.9).round())),
               ),
             ],
@@ -183,26 +249,27 @@ class EventDetailsScreenState extends State<EventDetailsScreen> {
     );
   }
 
-   Widget _buildEventInfo(Color textColor) {
+  Widget _buildEventInfo(Color textColor) {
     return Padding(
       padding: const EdgeInsets.all(20.0),
       child: Row(
         children: [
-          const CircleAvatar(
-            backgroundImage: AssetImage('assets/images/oiseau.jpg'),
+          CircleAvatar(
+            backgroundColor: Colors.grey[200],
             radius: 25,
+            child: const Icon(Icons.business, color: Color(0xFF1E90FF)),
           ),
           const SizedBox(width: 15),
           Column(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
               Text(
-                'Entre Nous Bar',
+                widget.event.venueName,
                 style: TextStyle(color: textColor, fontSize: 16, fontWeight: FontWeight.bold),
               ),
-              const Text(
-                '30+ événements', // Changed as requested
-                style: TextStyle(color: Colors.grey, fontSize: 14),
+              Text(
+                '${widget.event.cityName}, ${widget.event.cityCountry}',
+                style: const TextStyle(color: Colors.grey, fontSize: 14),
               ),
             ],
           ),
@@ -212,6 +279,9 @@ class EventDetailsScreenState extends State<EventDetailsScreen> {
   }
 
   Widget _buildAboutSection(Color textColor, Color primaryColor) {
+    const defaultDescription =
+        "Le festival de musique est un événement de renommée mondiale qui a lieu chaque année dans la ville animée de Libreville. C'est une destination incontournable pour les amateurs de musique du monde entier, attirant des dizaines de milliers de participants venus vivre son atmosphère électrisante.";
+
     return Padding(
       padding: const EdgeInsets.symmetric(horizontal: 20.0),
       child: Column(
@@ -220,7 +290,7 @@ class EventDetailsScreenState extends State<EventDetailsScreen> {
           Text('À propos', style: TextStyle(color: textColor, fontSize: 20, fontWeight: FontWeight.bold)),
           const SizedBox(height: 10),
           Text(
-            'Le festival de musique est un événement de renommée mondiale qui a lieu chaque année dans la ville animée de Libreville. C\'est une destination incontournable pour les amateurs de musique du monde entier, attirant des dizaines de milliers de participants venus vivre son atmosphère électrisante.',
+            'Rejoignez-nous pour ${widget.event.name} à ${widget.event.venueName}. Profitez d\'une expérience exceptionnelle dans la catégorie ${widget.event.category}. Places disponibles : ${widget.event.availableSeats}.\n\n$defaultDescription',
             style: TextStyle(color: textColor.withAlpha((255 * 0.7).round()), height: 1.5),
           ),
           TextButton(
@@ -240,11 +310,10 @@ class EventDetailsScreenState extends State<EventDetailsScreen> {
         children: [
           Text('Informations générales', style: TextStyle(color: textColor, fontSize: 20, fontWeight: FontWeight.bold)),
           const SizedBox(height: 15),
-          _buildInfoRow(Icons.calendar_today, 'Date: Dimanche & Jeudi (sélectionnez la date ci-dessous)', secondaryTextColor, textColor),
-          _buildInfoRow(Icons.access_time, 'Heure: 15:30', secondaryTextColor, textColor),
-          _buildInfoRow(Icons.hourglass_bottom, 'Durée: 3.5 heures', secondaryTextColor, textColor),
-          _buildInfoRow(Icons.location_on, 'Lieu de rendez-vous: L\'horloge Suisse sur la place...', secondaryTextColor, textColor),
-          _buildInfoRow(Icons.person, 'Âge requis: 18+ avec pièce d\'identité valide', secondaryTextColor, textColor),
+          _buildInfoRow(Icons.calendar_today, 'Date: ${DateFormat('EEEE dd MMMM', 'fr_FR').format(widget.event.startDate)}', secondaryTextColor, textColor),
+          _buildInfoRow(Icons.access_time, 'Heure: ${DateFormat('HH:mm').format(widget.event.startDate)}', secondaryTextColor, textColor),
+          _buildInfoRow(Icons.location_on, 'Lieu: ${widget.event.venueName}, ${widget.event.cityName}', secondaryTextColor, textColor),
+          _buildInfoRow(Icons.event_seat, 'Places restantes: ${widget.event.availableSeats}', secondaryTextColor, textColor),
         ],
       ),
     );
@@ -274,7 +343,7 @@ class EventDetailsScreenState extends State<EventDetailsScreen> {
           final ticket = _ticketData[index];
           return _buildTicketRow(
             title: ticket['name'],
-            price: ticket['price'].toStringAsFixed(0),
+            price: (ticket['price'] as double).toStringAsFixed(0),
             quantity: ticket['quantity'],
             onIncrement: () => _updateTicketQuantity(index, 1),
             onDecrement: () => _updateTicketQuantity(index, -1),
@@ -354,7 +423,7 @@ class EventDetailsScreenState extends State<EventDetailsScreen> {
         children: [
           Text('Localisation', style: TextStyle(color: textColor, fontSize: 20, fontWeight: FontWeight.bold)),
           const SizedBox(height: 10),
-          Text('Parc de la Baie, Libreville', style: TextStyle(color: secondaryTextColor)),
+          Text('${widget.event.venueName}, ${widget.event.cityName}', style: TextStyle(color: secondaryTextColor)),
           const SizedBox(height: 10),
           ClipRRect(
             borderRadius: BorderRadius.circular(15),
@@ -397,6 +466,29 @@ class EventDetailsScreenState extends State<EventDetailsScreen> {
     final favoritesProvider = Provider.of<FavoritesProvider>(context);
     final isFavorite = favoritesProvider.isFavorite(event);
 
+    Widget imageWidget;
+    if (event.coverImageUrl.startsWith('assets/')) {
+      imageWidget = Image.asset(
+        event.coverImageUrl,
+        height: 150,
+        width: 200,
+        fit: BoxFit.cover,
+      );
+    } else {
+      imageWidget = Image.network(
+        event.coverImageUrl,
+        height: 150,
+        width: 200,
+        fit: BoxFit.cover,
+        errorBuilder: (context, error, stackTrace) => Image.asset(
+          'assets/images/enb.jpg',
+          height: 150,
+          width: 200,
+          fit: BoxFit.cover,
+        ),
+      );
+    }
+
     return Container(
       width: 200,
       margin: const EdgeInsets.only(right: 15),
@@ -407,7 +499,7 @@ class EventDetailsScreenState extends State<EventDetailsScreen> {
             children: [
               ClipRRect(
                 borderRadius: BorderRadius.circular(15),
-                child: Image.asset(event.imagePath, height: 150, width: 200, fit: BoxFit.cover),
+                child: imageWidget,
               ),
               Positioned(
                 top: 10,
@@ -415,14 +507,14 @@ class EventDetailsScreenState extends State<EventDetailsScreen> {
                 child: GestureDetector(
                   onTap: () {
                     favoritesProvider.toggleFavorite(event);
-                     if (!isFavorite) {
-                        ScaffoldMessenger.of(context).showSnackBar(
-                          const SnackBar(
-                            content: Text('Ajouté aux favoris'),
-                            duration: Duration(seconds: 2),
-                          ),
-                        );
-                      }
+                    if (!isFavorite) {
+                      ScaffoldMessenger.of(context).showSnackBar(
+                        const SnackBar(
+                          content: Text('Ajouté aux favoris'),
+                          duration: Duration(seconds: 2),
+                        ),
+                      );
+                    }
                   },
                   child: CircleAvatar(
                     backgroundColor: Colors.black.withAlpha((255 * 0.5).round()),
@@ -439,12 +531,12 @@ class EventDetailsScreenState extends State<EventDetailsScreen> {
                 bottom: 10,
                 left: 10,
                 child: Container(
-                   padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
-                   decoration: BoxDecoration(
-                     color: primaryColor,
-                     borderRadius: BorderRadius.circular(8),
-                   ),
-                   child: Text('À partir de ${event.price} FCFA', style: const TextStyle(color: Colors.white, fontWeight: FontWeight.bold)),
+                  padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+                  decoration: BoxDecoration(
+                    color: primaryColor,
+                    borderRadius: BorderRadius.circular(8),
+                  ),
+                  child: Text('À partir de ${event.minPrice.toStringAsFixed(0)} FCFA', style: const TextStyle(color: Colors.white, fontWeight: FontWeight.bold)),
                 ),
               )
             ],
@@ -456,7 +548,7 @@ class EventDetailsScreenState extends State<EventDetailsScreen> {
             children: [
               Icon(Icons.location_on, color: secondaryTextColor, size: 14),
               const SizedBox(width: 5),
-              Text(event.location, style: TextStyle(color: secondaryTextColor, fontSize: 12)),
+              Text(event.venueName, style: TextStyle(color: secondaryTextColor, fontSize: 12)),
             ],
           )
         ],
@@ -481,14 +573,14 @@ class EventDetailsScreenState extends State<EventDetailsScreen> {
             Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                Text('Total', style: TextStyle(color: Colors.grey, fontSize: 14)),
+                const Text('Total', style: TextStyle(color: Colors.grey, fontSize: 14)),
                 Text('${_totalPrice.toStringAsFixed(0)} FCFA', style: TextStyle(color: textColor, fontSize: 20, fontWeight: FontWeight.bold)),
               ],
             ),
             ElevatedButton(
-              onPressed: () {
+              onPressed: _totalPrice > 0 ? () {
                 context.push('/checkout');
-              },
+              } : null,
               style: ElevatedButton.styleFrom(
                 backgroundColor: primaryColor,
                 padding: const EdgeInsets.symmetric(horizontal: 40, vertical: 15),

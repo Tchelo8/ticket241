@@ -1,11 +1,47 @@
 
 import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
+import 'package:provider/provider.dart';
+import 'package:myapp/providers/auth_provider.dart';
 
-class EditProfileScreen extends StatelessWidget {
+class EditProfileScreen extends StatefulWidget {
   const EditProfileScreen({super.key});
 
-  // Function to show the delete account confirmation sheet
+  @override
+  State<EditProfileScreen> createState() => _EditProfileScreenState();
+}
+
+class _EditProfileScreenState extends State<EditProfileScreen> {
+  late final TextEditingController _firstNameController;
+  late final TextEditingController _lastNameController;
+  late final TextEditingController _emailController;
+  late final TextEditingController _phoneController;
+
+  @override
+  void initState() {
+    super.initState();
+    // On accède au provider sans écouter les changements, car on n'a besoin des données qu'une seule fois.
+    final authProvider = Provider.of<AuthProvider>(context, listen: false);
+    final user = authProvider.user;
+
+    // On initialise les contrôleurs avec les données de l'utilisateur.
+    _firstNameController = TextEditingController(text: user?['firstName'] ?? '');
+    _lastNameController = TextEditingController(text: user?['lastName'] ?? '');
+    _emailController = TextEditingController(text: user?['email'] ?? '');
+    _phoneController = TextEditingController(text: user?['phone'] ?? '');
+  }
+
+  @override
+  void dispose() {
+    // On n'oublie pas de libérer les ressources des contrôleurs.
+    _firstNameController.dispose();
+    _lastNameController.dispose();
+    _emailController.dispose();
+    _phoneController.dispose();
+    super.dispose();
+  }
+
+  // La fonction pour afficher la confirmation de suppression reste la même.
   void _showDeleteConfirmation(BuildContext context) {
     showModalBottomSheet(
       context: context,
@@ -33,7 +69,7 @@ class EditProfileScreen extends StatelessWidget {
                 children: [
                   Expanded(
                     child: OutlinedButton(
-                      onPressed: () => Navigator.pop(context), // Dismiss the sheet
+                      onPressed: () => Navigator.pop(context), 
                       style: OutlinedButton.styleFrom(
                         padding: const EdgeInsets.symmetric(vertical: 14),
                         side: BorderSide(color: Colors.grey[300]!),
@@ -48,8 +84,8 @@ class EditProfileScreen extends StatelessWidget {
                   Expanded(
                     child: ElevatedButton(
                       onPressed: () {
-                        // Add account deletion logic here
-                        context.go('/'); // Navigate to a safe screen after deletion
+                        // Logique de suppression de compte
+                        context.go('/');
                       },
                       style: ElevatedButton.styleFrom(
                         backgroundColor: Colors.redAccent,
@@ -90,7 +126,7 @@ class EditProfileScreen extends StatelessWidget {
             ),
             const SizedBox(height: 8),
             TextField(
-              controller: TextEditingController(text: 'Henoc'),
+              controller: _firstNameController,
               decoration: InputDecoration(
                 hintText: 'Prénom',
                 prefixIcon: Icon(Icons.person_outline, color: Colors.grey[600]),
@@ -111,7 +147,7 @@ class EditProfileScreen extends StatelessWidget {
             ),
             const SizedBox(height: 8),
             TextField(
-              controller: TextEditingController(text: 'Bessa'),
+              controller: _lastNameController,
               decoration: InputDecoration(
                 hintText: 'Nom',
                 prefixIcon: Icon(Icons.person_outline, color: Colors.grey[600]),
@@ -132,7 +168,7 @@ class EditProfileScreen extends StatelessWidget {
             ),
             const SizedBox(height: 8),
             TextField(
-              controller: TextEditingController(text: 'henocbessa@gmail.com'),
+              controller: _emailController,
               keyboardType: TextInputType.emailAddress,
               decoration: InputDecoration(
                 hintText: 'Adresse e-mail',
@@ -154,7 +190,7 @@ class EditProfileScreen extends StatelessWidget {
             ),
             const SizedBox(height: 8),
             TextField(
-              controller: TextEditingController(text: '+225 0102030405'),
+              controller: _phoneController,
               keyboardType: TextInputType.phone,
               decoration: InputDecoration(
                 hintText: 'Numéro de téléphone',
@@ -172,7 +208,8 @@ class EditProfileScreen extends StatelessWidget {
             // Save Button
             ElevatedButton(
               onPressed: () {
-                // Add save logic here
+                // Ajoutez ici la logique de sauvegarde des modifications
+                // Vous pouvez récupérer les nouvelles valeurs avec _firstNameController.text, etc.
                 context.pop();
               },
               style: ElevatedButton.styleFrom(

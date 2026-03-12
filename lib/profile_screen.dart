@@ -1,6 +1,8 @@
 
 import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
+import 'package:myapp/providers/auth_provider.dart';
+import 'package:provider/provider.dart';
 
 class ProfileScreen extends StatelessWidget {
   final void Function(int)? onTabSelected;
@@ -50,7 +52,7 @@ class ProfileScreen extends StatelessWidget {
                   Expanded(
                     child: ElevatedButton(
                       onPressed: () {
-                        context.go('/');
+                         Provider.of<AuthProvider>(context, listen: false).logout();
                       },
                       style: ElevatedButton.styleFrom(
                         backgroundColor: Colors.redAccent,
@@ -87,6 +89,11 @@ class ProfileScreen extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    // Access the auth provider
+    final authProvider = Provider.of<AuthProvider>(context);
+    final user = authProvider.user;
+    final fullName = user != null ? '${user['firstName']} ${user['lastName']}' : 'Utilisateur Anonyme';
+
     return Scaffold(
       backgroundColor: Colors.grey[50],
       appBar: AppBar(
@@ -102,7 +109,7 @@ class ProfileScreen extends StatelessWidget {
         padding: const EdgeInsets.symmetric(horizontal: 16.0),
         children: [
           const SizedBox(height: 20),
-          _buildProfileHeader(),
+          _buildProfileHeader(fullName),
           const SizedBox(height: 30),
           _buildProfileMenuItem(
             icon: Icons.person_outline,
@@ -153,8 +160,7 @@ class ProfileScreen extends StatelessWidget {
   }
 
   // Widget for the profile header
-  Widget _buildProfileHeader() {
-    const String fullName = 'Henoc Bessa';
+  Widget _buildProfileHeader(String fullName) {
     final String initials = _getInitials(fullName);
 
     return Column(
@@ -172,9 +178,9 @@ class ProfileScreen extends StatelessWidget {
           ),
         ),
         const SizedBox(height: 16),
-        const Text(
+        Text(
           fullName,
-          style: TextStyle(fontSize: 24, fontWeight: FontWeight.bold),
+          style: const TextStyle(fontSize: 24, fontWeight: FontWeight.bold),
         ),
       ],
     );

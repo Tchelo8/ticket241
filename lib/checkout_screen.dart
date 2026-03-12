@@ -88,7 +88,7 @@ class CheckoutScreenState extends State<CheckoutScreen> {
         elevation: 0,
         leading: IconButton(
           icon: Icon(Icons.arrow_back, color: textColor),
-          onPressed: () => Navigator.of(context).pop(),
+          onPressed: () => context.pop(),
         ),
         title: Text(
           'Paiement',
