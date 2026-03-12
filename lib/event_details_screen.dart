@@ -17,14 +17,66 @@ class EventDetailsScreenState extends State<EventDetailsScreen> {
   late List<Map<String, dynamic>> _ticketData;
   double _totalPrice = 0.0;
 
+  // Dummy data for suggested events
+  final List<Event> _suggestedEvents = [
+    Event(
+        id: 101,
+        slug: 'suggested-1',
+        name: 'Concert sous les pyramides',
+        coverImageUrl: 'assets/images/enb.jpg',
+        venueName: 'Gizeh, Caire',
+        startDate: DateTime(2025, 4, 10),
+        minPrice: 5000,
+        maxPrice: 15000,
+        category: 'Concert',
+        cityId: 1,
+        cityName: 'Le Caire',
+        cityCountry: 'Égypte',
+        availableSeats: 50,
+        soldSeats: 10,
+        viewCount: 120,
+        isFeatured: true,
+        isPromoted: false,
+        isSaleOpen: true,
+        isPastEvent: false,
+        isSoldOut: false),
+    Event(
+        id: 102,
+        slug: 'suggested-2',
+        name: 'Festival de Jazz de Mumbai',
+        coverImageUrl: 'assets/images/jazz.png',
+        venueName: 'Santorin, Grèce',
+        startDate: DateTime(2025, 5, 25),
+        minPrice: 4000,
+        maxPrice: 12000,
+        category: 'Festival',
+        cityId: 2,
+        cityName: 'Santorin',
+        cityCountry: 'Grèce',
+        availableSeats: 30,
+        soldSeats: 5,
+        viewCount: 85,
+        isFeatured: false,
+        isPromoted: true,
+        isSaleOpen: true,
+        isPastEvent: false,
+        isSoldOut: false),
+  ];
+
   @override
   void initState() {
     super.initState();
     // Dynamically generate placeholder ticket types based on event prices
+    double minPrice = widget.event.minPrice;
+    double maxPrice = widget.event.maxPrice;
+
+    if (maxPrice <= minPrice) {
+      maxPrice = minPrice * 2;
+    }
+
     _ticketData = [
-      {'name': 'Ticket Standard', 'price': widget.event.minPrice, 'quantity': 1},
-      if (widget.event.maxPrice > widget.event.minPrice)
-        {'name': 'Pass VIP', 'price': widget.event.maxPrice, 'quantity': 0},
+      {'name': 'Ticket Standard', 'price': minPrice, 'quantity': 1},
+      {'name': 'Pass VIP', 'price': maxPrice, 'quantity': 0},
     ];
     _calculateTotal();
   }
@@ -70,6 +122,7 @@ class EventDetailsScreenState extends State<EventDetailsScreen> {
                 _buildGeneralInfoSection(textColor, secondaryTextColor),
                 _buildTicketSelectionSection(primaryColor, textColor),
                 _buildLocationSection(textColor, secondaryTextColor),
+                _buildSuggestionsSection(textColor, secondaryTextColor, primaryColor),
                 const SizedBox(height: 100),
               ],
             ),
@@ -84,19 +137,32 @@ class EventDetailsScreenState extends State<EventDetailsScreen> {
     final favoritesProvider = Provider.of<FavoritesProvider>(context);
     final isFavorite = favoritesProvider.isFavorite(event);
 
-    return Stack(
-      children: [
-        Image.network(
-          event.coverImageUrl,
+    Widget imageWidget;
+    if (event.coverImageUrl.startsWith('assets/')) {
+      imageWidget = Image.asset(
+        event.coverImageUrl,
+        height: 300,
+        width: double.infinity,
+        fit: BoxFit.cover,
+      );
+    } else {
+      imageWidget = Image.network(
+        event.coverImageUrl,
+        height: 300,
+        width: double.infinity,
+        fit: BoxFit.cover,
+        errorBuilder: (context, error, stackTrace) => Image.asset(
+          'assets/images/enb.jpg',
           height: 300,
           width: double.infinity,
           fit: BoxFit.cover,
-          errorBuilder: (context, error, stackTrace) => Container(
-            height: 300,
-            color: Colors.grey[300],
-            child: const Icon(Icons.image_not_supported, size: 50),
-          ),
         ),
+      );
+    }
+
+    return Stack(
+      children: [
+        imageWidget,
         Container(
           height: 300,
           decoration: BoxDecoration(
@@ -213,6 +279,9 @@ class EventDetailsScreenState extends State<EventDetailsScreen> {
   }
 
   Widget _buildAboutSection(Color textColor, Color primaryColor) {
+    const defaultDescription =
+        "Le festival de musique est un événement de renommée mondiale qui a lieu chaque année dans la ville animée de Libreville. C'est une destination incontournable pour les amateurs de musique du monde entier, attirant des dizaines de milliers de participants venus vivre son atmosphère électrisante.";
+
     return Padding(
       padding: const EdgeInsets.symmetric(horizontal: 20.0),
       child: Column(
@@ -221,7 +290,7 @@ class EventDetailsScreenState extends State<EventDetailsScreen> {
           Text('À propos', style: TextStyle(color: textColor, fontSize: 20, fontWeight: FontWeight.bold)),
           const SizedBox(height: 10),
           Text(
-            'Rejoignez-nous pour ${widget.event.name} à ${widget.event.venueName}. Profitez d\'une expérience exceptionnelle dans la catégorie ${widget.event.category}. Places disponibles : ${widget.event.availableSeats}.',
+            'Rejoignez-nous pour ${widget.event.name} à ${widget.event.venueName}. Profitez d\'une expérience exceptionnelle dans la catégorie ${widget.event.category}. Places disponibles : ${widget.event.availableSeats}.\n\n$defaultDescription',
             style: TextStyle(color: textColor.withAlpha((255 * 0.7).round()), height: 1.5),
           ),
           TextButton(
@@ -360,6 +429,128 @@ class EventDetailsScreenState extends State<EventDetailsScreen> {
             borderRadius: BorderRadius.circular(15),
             child: Image.asset('assets/images/map.jpg', height: 180, width: double.infinity, fit: BoxFit.cover),
           ),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildSuggestionsSection(Color textColor, Color secondaryTextColor, Color primaryColor) {
+    return Padding(
+      padding: const EdgeInsets.symmetric(vertical: 10.0),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Padding(
+            padding: const EdgeInsets.symmetric(horizontal: 20.0),
+            child: Text('Vous aimerez aussi', style: TextStyle(color: textColor, fontSize: 20, fontWeight: FontWeight.bold)),
+          ),
+          const SizedBox(height: 15),
+          SizedBox(
+            height: 250,
+            child: ListView.builder(
+              scrollDirection: Axis.horizontal,
+              padding: const EdgeInsets.only(left: 20),
+              itemCount: _suggestedEvents.length,
+              itemBuilder: (context, index) {
+                final event = _suggestedEvents[index];
+                return _buildSuggestionCard(context, event, textColor, secondaryTextColor, primaryColor);
+              },
+            ),
+          )
+        ],
+      ),
+    );
+  }
+
+  Widget _buildSuggestionCard(BuildContext context, Event event, Color textColor, Color secondaryTextColor, Color primaryColor) {
+    final favoritesProvider = Provider.of<FavoritesProvider>(context);
+    final isFavorite = favoritesProvider.isFavorite(event);
+
+    Widget imageWidget;
+    if (event.coverImageUrl.startsWith('assets/')) {
+      imageWidget = Image.asset(
+        event.coverImageUrl,
+        height: 150,
+        width: 200,
+        fit: BoxFit.cover,
+      );
+    } else {
+      imageWidget = Image.network(
+        event.coverImageUrl,
+        height: 150,
+        width: 200,
+        fit: BoxFit.cover,
+        errorBuilder: (context, error, stackTrace) => Image.asset(
+          'assets/images/enb.jpg',
+          height: 150,
+          width: 200,
+          fit: BoxFit.cover,
+        ),
+      );
+    }
+
+    return Container(
+      width: 200,
+      margin: const EdgeInsets.only(right: 15),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Stack(
+            children: [
+              ClipRRect(
+                borderRadius: BorderRadius.circular(15),
+                child: imageWidget,
+              ),
+              Positioned(
+                top: 10,
+                right: 10,
+                child: GestureDetector(
+                  onTap: () {
+                    favoritesProvider.toggleFavorite(event);
+                    if (!isFavorite) {
+                      ScaffoldMessenger.of(context).showSnackBar(
+                        const SnackBar(
+                          content: Text('Ajouté aux favoris'),
+                          duration: Duration(seconds: 2),
+                        ),
+                      );
+                    }
+                  },
+                  child: CircleAvatar(
+                    backgroundColor: Colors.black.withAlpha((255 * 0.5).round()),
+                    radius: 15,
+                    child: Icon(
+                      isFavorite ? Icons.favorite : Icons.favorite_border,
+                      color: isFavorite ? Colors.red : Colors.white,
+                      size: 18,
+                    ),
+                  ),
+                ),
+              ),
+              Positioned(
+                bottom: 10,
+                left: 10,
+                child: Container(
+                  padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+                  decoration: BoxDecoration(
+                    color: primaryColor,
+                    borderRadius: BorderRadius.circular(8),
+                  ),
+                  child: Text('À partir de ${event.minPrice.toStringAsFixed(0)} FCFA', style: const TextStyle(color: Colors.white, fontWeight: FontWeight.bold)),
+                ),
+              )
+            ],
+          ),
+          const SizedBox(height: 10),
+          Text(event.name, style: TextStyle(color: textColor, fontWeight: FontWeight.bold, fontSize: 16)),
+          const SizedBox(height: 5),
+          Row(
+            children: [
+              Icon(Icons.location_on, color: secondaryTextColor, size: 14),
+              const SizedBox(width: 5),
+              Text(event.venueName, style: TextStyle(color: secondaryTextColor, fontSize: 12)),
+            ],
+          )
         ],
       ),
     );
