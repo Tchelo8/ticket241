@@ -1,9 +1,18 @@
 
 import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
+import 'package:myapp/models/event_model.dart';
+import 'package:myapp/models/ticket_model.dart';
 
 class CheckoutScreen extends StatefulWidget {
-  const CheckoutScreen({super.key});
+  final Event event;
+  final List<EventTicket> tickets;
+
+  const CheckoutScreen({
+    super.key,
+    required this.event,
+    required this.tickets,
+  });
 
   @override
   CheckoutScreenState createState() => CheckoutScreenState();
@@ -12,25 +21,46 @@ class CheckoutScreen extends StatefulWidget {
 enum PaymentMethod { airtel, moov }
 
 class CheckoutScreenState extends State<CheckoutScreen> {
+  final _formKey = GlobalKey<FormState>();
+  final _nameController = TextEditingController();
+  final _phoneController = TextEditingController();
+
   PaymentMethod? _selectedPaymentMethod = PaymentMethod.airtel;
-  bool _isProcessing = false; // To track loading state
+  bool _isProcessing = false;
+  bool _agreedToTerms = false;
 
-  void _processPayment() {
-    if (_isProcessing) return; // Prevent multiple clicks
-
-    setState(() {
-      _isProcessing = true;
-    });
-
-    // Simulate network request
-    Future.delayed(const Duration(seconds: 3), () {
-      if (!mounted) return;
-      // Navigate to success screen
-      context.go('/success');
-    });
+  @override
+  void dispose() {
+    _nameController.dispose();
+    _phoneController.dispose();
+    super.dispose();
   }
 
-  // Function to show the ticket options sheet
+  void _processPayment() {
+    if (_isProcessing) return;
+
+    if (_formKey.currentState!.validate()) {
+      if (!_agreedToTerms) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(
+            content: Text('Veuillez accepter les conditions pour continuer.'),
+            backgroundColor: Colors.red,
+          ),
+        );
+        return;
+      }
+
+      setState(() {
+        _isProcessing = true;
+      });
+
+      Future.delayed(const Duration(seconds: 3), () {
+        if (!mounted) return;
+        context.go('/success');
+      });
+    }
+  }
+
   void _showTicketOptions(BuildContext context, String ticketTitle) {
     showModalBottomSheet(
       context: context,
@@ -53,9 +83,7 @@ class CheckoutScreenState extends State<CheckoutScreen> {
                 leading: const Icon(Icons.delete_outline, color: Colors.redAccent),
                 title: const Text('Retirer du ticket', style: TextStyle(color: Colors.redAccent)),
                 onTap: () {
-                  // Add logic to remove the ticket here
                   Navigator.pop(context);
-                  // You might want to show a confirmation or update the state
                 },
               ),
               const Divider(),
@@ -63,7 +91,7 @@ class CheckoutScreenState extends State<CheckoutScreen> {
                 leading: const Icon(Icons.cancel_outlined),
                 title: const Text('Annuler'),
                 onTap: () {
-                  Navigator.pop(context); // Dismiss the sheet
+                  Navigator.pop(context);
                 },
               ),
             ],
@@ -72,7 +100,6 @@ class CheckoutScreenState extends State<CheckoutScreen> {
       },
     );
   }
-
 
   @override
   Widget build(BuildContext context) {
@@ -94,91 +121,95 @@ class CheckoutScreenState extends State<CheckoutScreen> {
           'Paiement',
           style: TextStyle(fontWeight: FontWeight.bold, color: textColor),
         ),
-        // The actions property has been removed to delete the three-dot icon
       ),
       body: SingleChildScrollView(
         child: Padding(
           padding: const EdgeInsets.all(16.0),
-          child: Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              _buildEventHeader(textColor, secondaryTextColor!),
-              const SizedBox(height: 24),
-              _buildInfoCards(textColor, secondaryTextColor, cardBackgroundColor!),
-              const SizedBox(height: 24),
-              Text(
-                'Billets sélectionnés 3',
-                style: TextStyle(
-                  color: textColor,
-                  fontSize: 20,
-                  fontWeight: FontWeight.bold,
+          child: Form(
+            key: _formKey,
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                _buildEventHeader(textColor, secondaryTextColor!),
+                const SizedBox(height: 24),
+                _buildInfoCards(textColor, secondaryTextColor, cardBackgroundColor!),
+                const SizedBox(height: 24),
+                Text(
+                  'Billets sélectionnés ${widget.tickets.length}',
+                  style: TextStyle(
+                    color: textColor,
+                    fontSize: 20,
+                    fontWeight: FontWeight.bold,
+                  ),
                 ),
-              ),
-              const SizedBox(height: 16),
-              _buildTicketCard(
-                title: 'Admission Générale (+18)',
-                price: '2500 FCFA',
-                fee: 'incl. 100 FCFA de frais',
-                gate: '12',
-                row: '06',
-                seat: '56',
-                textColor: textColor,
-                secondaryTextColor: secondaryTextColor,
-                cardBackgroundColor: cardBackgroundColor,
-              ),
-              _buildTicketCard(
-                title: 'Pass Ultra Premium (+18)',
-                price: '12000 FCFA',
-                fee: 'incl. 500 FCFA de frais',
-                gate: '02',
-                row: '01',
-                seat: '15',
-                 textColor: textColor,
-                secondaryTextColor: secondaryTextColor,
-                cardBackgroundColor: cardBackgroundColor,
-              ),
-              _buildTicketCard(
-                title: 'Pass VIP, Vue Premium (+18)',
-                price: '5000 FCFA',
-                fee: 'incl. 200 FCFA de frais',
-                gate: '07',
-                row: '08',
-                seat: '25',
-                 textColor: textColor,
-                secondaryTextColor: secondaryTextColor,
-                cardBackgroundColor: cardBackgroundColor,
-              ),
-              const SizedBox(height: 24),
-              Text(
-                'Informations de contact',
-                style: TextStyle(
-                  color: textColor,
-                  fontSize: 20,
-                  fontWeight: FontWeight.bold,
+                const SizedBox(height: 16),
+                ...widget.tickets.map((ticket) => _buildTicketCard(
+                      title: ticket.eventName,
+                      price: '0 FCFA',
+                      fee: 'incl. 0 FCFA de frais',
+                      gate: 'N/A',
+                      row: 'N/A',
+                      seat: 'N/A',
+                      textColor: textColor,
+                      secondaryTextColor: secondaryTextColor,
+                      cardBackgroundColor: cardBackgroundColor,
+                    )),
+                const SizedBox(height: 24),
+                Text(
+                  'Informations de contact',
+                  style: TextStyle(
+                    color: textColor,
+                    fontSize: 20,
+                    fontWeight: FontWeight.bold,
+                  ),
                 ),
-              ),
-              const SizedBox(height: 16),
-              _buildTextField(label: 'Nom complet', textColor: textColor, cardBackgroundColor: cardBackgroundColor),
-              const SizedBox(height: 16),
-              _buildTextField(label: 'Numéro de téléphone', textColor: textColor, cardBackgroundColor: cardBackgroundColor),
-              const SizedBox(height: 24),
-              Text(
-                'Moyen de paiement',
-                style: TextStyle(
-                  color: textColor,
-                  fontSize: 20,
-                  fontWeight: FontWeight.bold,
+                const SizedBox(height: 16),
+                _buildTextField(
+                  controller: _nameController,
+                  label: 'Nom complet',
+                  textColor: textColor,
+                  cardBackgroundColor: cardBackgroundColor,
+                  validator: (value) {
+                    if (value == null || value.isEmpty) {
+                      return 'Veuillez entrer votre nom complet.';
+                    }
+                    return null;
+                  },
                 ),
-              ),
-              const SizedBox(height: 16),
-              _buildPaymentMethodSelector(primaryColor, textColor, cardBackgroundColor),
-              const SizedBox(height: 24),
-              _buildPriceDetails(textColor, secondaryTextColor, cardBackgroundColor),
-              const SizedBox(height: 24),
-              _buildCancellationInfo(cardBackgroundColor),
-              const SizedBox(height: 24),
-              _buildKeepUpdatedCheckbox(primaryColor, secondaryTextColor),
-            ],
+                const SizedBox(height: 16),
+                _buildTextField(
+                  controller: _phoneController,
+                  label: 'Numéro de téléphone',
+                  textColor: textColor,
+                  cardBackgroundColor: cardBackgroundColor,
+                  validator: (value) {
+                    if (value == null || value.isEmpty) {
+                      return 'Veuillez entrer votre numéro de téléphone.';
+                    }
+                    return null;
+                  },
+                ),
+                const SizedBox(height: 24),
+                Text(
+                  'Moyen de paiement',
+                  style: TextStyle(
+                    color: textColor,
+                    fontSize: 20,
+                    fontWeight: FontWeight.bold,
+                  ),
+                ),
+                const SizedBox(height: 16),
+                _buildPaymentMethodSelector(primaryColor, textColor, cardBackgroundColor),
+                const SizedBox(height: 24),
+                _buildPriceDetails(textColor, secondaryTextColor, cardBackgroundColor),
+                const SizedBox(height: 24),
+                _buildCancellationInfo(cardBackgroundColor),
+                const SizedBox(height: 24),
+                _buildKeepUpdatedCheckbox(primaryColor, secondaryTextColor),
+                const SizedBox(height: 16),
+                _buildTermsCheckbox(primaryColor, secondaryTextColor),
+              ],
+            ),
           ),
         ),
       ),
@@ -191,8 +222,8 @@ class CheckoutScreenState extends State<CheckoutScreen> {
       children: [
         ClipRRect(
           borderRadius: BorderRadius.circular(8.0),
-          child: Image.asset(
-            'assets/images/enb.jpg',
+          child: Image.network(
+            widget.event.coverImageUrl,
             width: 100,
             height: 80,
             fit: BoxFit.cover,
@@ -204,7 +235,7 @@ class CheckoutScreenState extends State<CheckoutScreen> {
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
               Text(
-                'Concert sous les étoiles',
+                widget.event.name,
                 style: TextStyle(
                   color: textColor,
                   fontSize: 18,
@@ -217,7 +248,7 @@ class CheckoutScreenState extends State<CheckoutScreen> {
                   Icon(Icons.location_on_outlined, color: secondaryTextColor, size: 16),
                   const SizedBox(width: 4),
                   Text(
-                    'Libreville',
+                    widget.event.cityName,
                     style: TextStyle(color: secondaryTextColor, fontSize: 14),
                   ),
                 ],
@@ -234,18 +265,34 @@ class CheckoutScreenState extends State<CheckoutScreen> {
       children: [
         Expanded(
           child: _buildInfoCard(
-              title: 'Date', value: '14:00', subValue: '25 Nov, 2025', textColor: textColor, secondaryTextColor: secondaryTextColor, cardBackgroundColor: cardBackgroundColor),
+              title: 'Date',
+              value: '${widget.event.startDate.hour}:${widget.event.startDate.minute}',
+              subValue: '${widget.event.startDate.day} Nov, ${widget.event.startDate.year}',
+              textColor: textColor,
+              secondaryTextColor: secondaryTextColor,
+              cardBackgroundColor: cardBackgroundColor),
         ),
         const SizedBox(width: 16),
         Expanded(
           child: _buildInfoCard(
-              title: 'Lieu', value: 'Libreville', subValue: 'Stade de l\'amitié', textColor: textColor, secondaryTextColor: secondaryTextColor, cardBackgroundColor: cardBackgroundColor),
+              title: 'Lieu',
+              value: widget.event.cityName,
+              subValue: widget.event.venueName,
+              textColor: textColor,
+              secondaryTextColor: secondaryTextColor,
+              cardBackgroundColor: cardBackgroundColor),
         ),
       ],
     );
   }
 
-  Widget _buildInfoCard({required String title, required String value, required String subValue, required Color textColor, required Color secondaryTextColor, required Color cardBackgroundColor}) {
+  Widget _buildInfoCard(
+      {required String title,
+      required String value,
+      required String subValue,
+      required Color textColor,
+      required Color secondaryTextColor,
+      required Color cardBackgroundColor}) {
     return Container(
       padding: const EdgeInsets.all(16),
       decoration: BoxDecoration(
@@ -328,7 +375,13 @@ class CheckoutScreenState extends State<CheckoutScreen> {
     );
   }
 
-  Widget _buildTextField({required String label, required Color textColor, required Color cardBackgroundColor}) {
+  Widget _buildTextField({
+    required TextEditingController controller,
+    required String label,
+    required Color textColor,
+    required Color cardBackgroundColor,
+    String? Function(String?)? validator,
+  }) {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
@@ -338,6 +391,7 @@ class CheckoutScreenState extends State<CheckoutScreen> {
         ),
         const SizedBox(height: 8),
         TextFormField(
+          controller: controller,
           style: TextStyle(color: textColor),
           decoration: InputDecoration(
             filled: true,
@@ -348,6 +402,7 @@ class CheckoutScreenState extends State<CheckoutScreen> {
             ),
             contentPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 14),
           ),
+          validator: validator,
         ),
       ],
     );
@@ -377,12 +432,18 @@ class CheckoutScreenState extends State<CheckoutScreen> {
     );
   }
 
-  Widget _buildPaymentOption(
-      {required PaymentMethod method, required String logo, required String name, required Color primaryColor, required Color textColor, required Color cardBackgroundColor}) {
+  Widget _buildPaymentOption({
+    required PaymentMethod method,
+    required String logo,
+    required String name,
+    required Color primaryColor,
+    required Color textColor,
+    required Color cardBackgroundColor,
+  }) {
     final isSelected = _selectedPaymentMethod == method;
     return GestureDetector(
       onTap: () {
-        if (_isProcessing) return; // Prevent changing method during processing
+        if (_isProcessing) return;
         setState(() {
           _selectedPaymentMethod = method;
         });
@@ -407,8 +468,7 @@ class CheckoutScreenState extends State<CheckoutScreen> {
                 Text(name, style: TextStyle(color: textColor, fontSize: 16, fontWeight: FontWeight.w600)),
               ],
             ),
-            if (isSelected)
-              Icon(Icons.check_circle, color: primaryColor, size: 24),
+            if (isSelected) Icon(Icons.check_circle, color: primaryColor, size: 24),
           ],
         ),
       ),
@@ -424,13 +484,13 @@ class CheckoutScreenState extends State<CheckoutScreen> {
       ),
       child: Column(
         children: [
-          _buildPriceRow('Montant', '19500 FCFA', textColor, secondaryTextColor),
+          _buildPriceRow('Montant', '0 FCFA', textColor, secondaryTextColor),
           const SizedBox(height: 12),
-          _buildPriceRow('Frais', '800 FCFA', textColor, secondaryTextColor),
+          _buildPriceRow('Frais', '0 FCFA', textColor, secondaryTextColor),
           const SizedBox(height: 12),
-          _buildPriceRow('Réduction', '-1000 FCFA', textColor, secondaryTextColor, color: Colors.green),
+          _buildPriceRow('Réduction', '0 FCFA', textColor, secondaryTextColor, color: Colors.green),
           const Divider(height: 24, color: Colors.grey),
-          _buildPriceRow('Total', '19300 FCFA', textColor, secondaryTextColor, isTotal: true),
+          _buildPriceRow('Total', '0 FCFA', textColor, secondaryTextColor, isTotal: true),
         ],
       ),
     );
@@ -504,19 +564,42 @@ class CheckoutScreenState extends State<CheckoutScreen> {
     );
   }
 
+  Widget _buildTermsCheckbox(Color primaryColor, Color secondaryTextColor) {
+    return Row(
+      children: [
+        Checkbox(
+          value: _agreedToTerms,
+          onChanged: (bool? value) {
+            setState(() {
+              _agreedToTerms = value ?? false;
+            });
+          },
+          activeColor: primaryColor,
+          side: BorderSide(color: Colors.grey[400]!),
+        ),
+        Expanded(
+          child: Text(
+            'J'accepte les conditons et confirme la volonté d'achat du billet',
+            style: TextStyle(color: secondaryTextColor),
+          ),
+        ),
+      ],
+    );
+  }
+
   Widget _buildPurchaseButton(Color primaryColor) {
     return Container(
       color: Colors.white,
       padding: const EdgeInsets.fromLTRB(24, 12, 24, 24),
       child: ElevatedButton(
-        onPressed: _isProcessing ? null : _processPayment, // Updated onPressed
+        onPressed: _isProcessing ? null : _processPayment,
         style: ElevatedButton.styleFrom(
           backgroundColor: primaryColor,
           padding: const EdgeInsets.symmetric(vertical: 16),
           shape: RoundedRectangleBorder(
             borderRadius: BorderRadius.circular(12),
           ),
-          disabledBackgroundColor: Colors.grey[400], // Visual feedback when disabled
+          disabledBackgroundColor: Colors.grey[400],
         ),
         child: _isProcessing
             ? const SizedBox(

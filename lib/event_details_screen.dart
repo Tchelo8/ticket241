@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
 import 'package:myapp/models/event_model.dart';
+import 'package:myapp/models/ticket_model.dart';
 import 'package:myapp/providers/favorites_provider.dart';
 import 'package:provider/provider.dart';
 import 'package:intl/intl.dart';
@@ -564,9 +565,8 @@ class EventDetailsScreenState extends State<EventDetailsScreen> {
       child: Container(
         padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 15),
         decoration: BoxDecoration(
-          color: Colors.white,
-          border: Border(top: BorderSide(color: Colors.grey[200]!))
-        ),
+            color: Colors.white,
+            border: Border(top: BorderSide(color: Colors.grey[200]!))),
         child: Row(
           mainAxisAlignment: MainAxisAlignment.spaceBetween,
           children: [
@@ -578,9 +578,30 @@ class EventDetailsScreenState extends State<EventDetailsScreen> {
               ],
             ),
             ElevatedButton(
-              onPressed: _totalPrice > 0 ? () {
-                context.push('/checkout');
-              } : null,
+              onPressed: _totalPrice > 0
+                  ? () {
+                      final tickets = _ticketData
+                          .where((ticket) => ticket['quantity'] > 0)
+                          .map((ticket) => EventTicket(
+                                eventName: ticket['name'],
+                                ticketCount: ticket['quantity'],
+                                // Remplissez les autres champs de EventTicket selon vos besoins
+                                imagePath: '',
+                                location: '',
+                                date: '',
+                                time: '',
+                                status: '',
+                                daysLeft: 0,
+                                isUpcoming: true,
+                              ))
+                          .toList();
+
+                      context.push('/checkout', extra: {
+                        'event': widget.event,
+                        'tickets': tickets,
+                      });
+                    }
+                  : null,
               style: ElevatedButton.styleFrom(
                 backgroundColor: primaryColor,
                 padding: const EdgeInsets.symmetric(horizontal: 40, vertical: 15),
