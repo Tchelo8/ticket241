@@ -579,7 +579,7 @@ class CheckoutScreenState extends State<CheckoutScreen> {
         ),
         Expanded(
           child: Text(
-            'J'accepte les conditons et confirme la volonté d'achat du billet',
+            'J\'accepte les conditions et confirme la volonté d\'achat du billet',
             style: TextStyle(color: secondaryTextColor),
           ),
         ),
