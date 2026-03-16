@@ -1,6 +1,7 @@
 
 import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
+import 'package:intl/intl.dart';
 import 'package:myapp/models/event_model.dart';
 import 'package:myapp/models/ticket_model.dart';
 
@@ -28,6 +29,25 @@ class CheckoutScreenState extends State<CheckoutScreen> {
   PaymentMethod? _selectedPaymentMethod = PaymentMethod.airtel;
   bool _isProcessing = false;
   bool _agreedToTerms = false;
+  late List<EventTicket> _localTickets;
+
+  @override
+  void initState() {
+    super.initState();
+    _localTickets = List.from(widget.tickets);
+  }
+
+  double get _totalAmount =>
+      _localTickets.fold(0, (sum, item) => sum + (item.price * item.ticketCount));
+
+  void _removeTicket(EventTicket ticket) {
+    setState(() {
+      _localTickets.remove(ticket);
+      if (_localTickets.isEmpty) {
+        context.pop();
+      }
+    });
+  }
 
   @override
   void dispose() {
@@ -61,7 +81,7 @@ class CheckoutScreenState extends State<CheckoutScreen> {
     }
   }
 
-  void _showTicketOptions(BuildContext context, String ticketTitle) {
+  void _showTicketOptions(BuildContext context, EventTicket ticket) {
     showModalBottomSheet(
       context: context,
       shape: const RoundedRectangleBorder(
@@ -74,7 +94,7 @@ class CheckoutScreenState extends State<CheckoutScreen> {
             mainAxisSize: MainAxisSize.min,
             children: [
               Text(
-                ticketTitle,
+                ticket.eventName,
                 style: const TextStyle(fontSize: 22, fontWeight: FontWeight.bold),
                 textAlign: TextAlign.center,
               ),
@@ -84,6 +104,7 @@ class CheckoutScreenState extends State<CheckoutScreen> {
                 title: const Text('Retirer du ticket', style: TextStyle(color: Colors.redAccent)),
                 onTap: () {
                   Navigator.pop(context);
+                  _removeTicket(ticket);
                 },
               ),
               const Divider(),
@@ -135,7 +156,7 @@ class CheckoutScreenState extends State<CheckoutScreen> {
                 _buildInfoCards(textColor, secondaryTextColor, cardBackgroundColor!),
                 const SizedBox(height: 24),
                 Text(
-                  'Billets sélectionnés ${widget.tickets.length}',
+                  'Billets sélectionnés ${_localTickets.length}',
                   style: TextStyle(
                     color: textColor,
                     fontSize: 20,
@@ -143,9 +164,10 @@ class CheckoutScreenState extends State<CheckoutScreen> {
                   ),
                 ),
                 const SizedBox(height: 16),
-                ...widget.tickets.map((ticket) => _buildTicketCard(
+                ..._localTickets.map((ticket) => _buildTicketCard(
+                      ticket: ticket,
                       title: ticket.eventName,
-                      price: '0 FCFA',
+                      price: '${(ticket.price * ticket.ticketCount).toStringAsFixed(0)} FCFA',
                       fee: 'incl. 0 FCFA de frais',
                       gate: 'N/A',
                       row: 'N/A',
@@ -261,13 +283,15 @@ class CheckoutScreenState extends State<CheckoutScreen> {
   }
 
   Widget _buildInfoCards(Color textColor, Color secondaryTextColor, Color cardBackgroundColor) {
+    final dateFormat = DateFormat('dd MMM, yyyy', 'fr_FR');
+    final timeFormat = DateFormat('HH:mm', 'fr_FR');
     return Row(
       children: [
         Expanded(
           child: _buildInfoCard(
               title: 'Date',
-              value: '${widget.event.startDate.hour}:${widget.event.startDate.minute}',
-              subValue: '${widget.event.startDate.day} Nov, ${widget.event.startDate.year}',
+              value: timeFormat.format(widget.event.startDate),
+              subValue: dateFormat.format(widget.event.startDate),
               textColor: textColor,
               secondaryTextColor: secondaryTextColor,
               cardBackgroundColor: cardBackgroundColor),
@@ -313,6 +337,7 @@ class CheckoutScreenState extends State<CheckoutScreen> {
   }
 
   Widget _buildTicketCard({
+    required EventTicket ticket,
     required String title,
     required String price,
     required String fee,
@@ -355,7 +380,7 @@ class CheckoutScreenState extends State<CheckoutScreen> {
           ),
           IconButton(
             icon: Icon(Icons.more_vert, color: secondaryTextColor),
-            onPressed: () => _showTicketOptions(context, title),
+            onPressed: () => _showTicketOptions(context, ticket),
           ),
         ],
       ),
@@ -476,6 +501,7 @@ class CheckoutScreenState extends State<CheckoutScreen> {
   }
 
   Widget _buildPriceDetails(Color textColor, Color secondaryTextColor, Color cardBackgroundColor) {
+    final total = _totalAmount;
     return Container(
       padding: const EdgeInsets.all(16),
       decoration: BoxDecoration(
@@ -484,13 +510,13 @@ class CheckoutScreenState extends State<CheckoutScreen> {
       ),
       child: Column(
         children: [
-          _buildPriceRow('Montant', '0 FCFA', textColor, secondaryTextColor),
+          _buildPriceRow('Montant', '${total.toStringAsFixed(0)} FCFA', textColor, secondaryTextColor),
           const SizedBox(height: 12),
           _buildPriceRow('Frais', '0 FCFA', textColor, secondaryTextColor),
           const SizedBox(height: 12),
           _buildPriceRow('Réduction', '0 FCFA', textColor, secondaryTextColor, color: Colors.green),
           const Divider(height: 24, color: Colors.grey),
-          _buildPriceRow('Total', '0 FCFA', textColor, secondaryTextColor, isTotal: true),
+          _buildPriceRow('Total', '${total.toStringAsFixed(0)} FCFA', textColor, secondaryTextColor, isTotal: true),
         ],
       ),
     );

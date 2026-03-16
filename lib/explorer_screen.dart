@@ -206,7 +206,7 @@ class ExplorerScreenState extends State<ExplorerScreen> {
 
     return GestureDetector(
       onTap: () {
-        context.push('/details');
+        context.push('/details', extra: event);
       },
       child: Container(
         decoration: BoxDecoration(

@@ -585,6 +585,7 @@ class EventDetailsScreenState extends State<EventDetailsScreen> {
                           .map((ticket) => EventTicket(
                                 eventName: ticket['name'],
                                 ticketCount: ticket['quantity'],
+                                price: ticket['price'],
                                 // Remplissez les autres champs de EventTicket selon vos besoins
                                 imagePath: '',
                                 location: '',
