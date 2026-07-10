@@ -1,3 +1,5 @@
+import 'dart:ui';
+
 import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
 import 'package:myapp/models/event_model.dart';
@@ -30,7 +32,7 @@ class _HomeScreenState extends State<HomeScreen> {
         name: 'Concert Live Acoustique',
         coverImageUrl: 'assets/images/enb.jpg',
         venueName: 'Entre Nous Bar, Angondjé',
-        startDate: DateTime(2025, 3, 29),
+        startDate: DateTime(2023, 3, 29), // Date passée pour tester
         minPrice: 5000.0,
         category: 'Concert',
         cityId: 1,
@@ -89,54 +91,6 @@ class _HomeScreenState extends State<HomeScreen> {
         isSoldOut: false),
   ];
 
-  static final List<Event> _sportEvents = [
-    Event(
-        id: 0,
-        slug: 'sport-1',
-        name: 'CMS vs US Bitam',
-        coverImageUrl: 'assets/images/sibang.jpg',
-        venueName: 'Stade amitié',
-        startDate: DateTime(2025, 5, 5),
-        minPrice: 1000.0,
-        category: 'Sport',
-        cityId: 1,
-        cityName: 'Libreville',
-        cityCountry: 'Gabon',
-        soldSeats: 0,
-        availableSeats: 100,
-        maxPrice: 1000.0,
-        isFeatured: false,
-        isPromoted: false,
-        viewCount: 0,
-        isSaleOpen: true,
-        isPastEvent: false,
-        isSoldOut: false),
-  ];
-
-  static final List<Event> _cultureEvents = [
-    Event(
-        id: 0,
-        slug: 'culture-1',
-        name: 'Concert oiseau rare',
-        coverImageUrl: 'assets/images/oiseau.jpg',
-        venueName: 'Casino Croisette',
-        startDate: DateTime(2025, 2, 14),
-        minPrice: 15000.0,
-        category: 'Concert',
-        cityId: 1,
-        cityName: 'Libreville',
-        cityCountry: 'Gabon',
-        soldSeats: 0,
-        availableSeats: 100,
-        maxPrice: 15000.0,
-        isFeatured: false,
-        isPromoted: false,
-        viewCount: 0,
-        isSaleOpen: true,
-        isPastEvent: false,
-        isSoldOut: false),
-  ];
-
   @override
   void initState() {
     super.initState();
@@ -166,6 +120,10 @@ class _HomeScreenState extends State<HomeScreen> {
   }
 
   String _formatDate(DateTime date) {
+    return DateFormat('dd MMM, yyyy', 'fr_FR').format(date);
+  }
+
+  String _formatDateUpcoming(DateTime date) {
     return DateFormat('dd MMM', 'fr_FR').format(date);
   }
 
@@ -196,8 +154,6 @@ class _HomeScreenState extends State<HomeScreen> {
 
   @override
   Widget build(BuildContext context) {
-    final popularEvents = _events;
-
     return Scaffold(
       backgroundColor: Colors.grey[100],
       body: SafeArea(
@@ -221,7 +177,7 @@ class _HomeScreenState extends State<HomeScreen> {
                     _buildSearchBar(),
                     const SizedBox(height: 24),
                     _buildSectionHeader("Événements à venir"),
-                    _buildUpcomingEventsList(_upcomingEvents),
+                    _buildUpcomingEventsList(),
                     const SizedBox(height: 24),
                     _buildSectionHeader("Populaire actuellement", showSeeAll: true),
                     if (_isLoading)
@@ -232,16 +188,7 @@ class _HomeScreenState extends State<HomeScreen> {
                         ),
                       )
                     else
-                      _buildPopularEventsList(context, events: popularEvents),
-                    const SizedBox(height: 24),
-                    _buildSectionHeader("Pour vous", showSeeAll: true),
-                    _buildPopularEventsList(context, events: _upcomingEvents.reversed.toList()),
-                    const SizedBox(height: 24),
-                    _buildSectionHeader("Sport", showSeeAll: true),
-                    _buildPopularEventsList(context, events: _sportEvents),
-                    const SizedBox(height: 24),
-                    _buildSectionHeader("Culture", showSeeAll: true),
-                    _buildPopularEventsList(context, events: _cultureEvents),
+                      _buildPopularEventsList(context, events: _events),
                     const SizedBox(height: 24),
                   ],
                 ),
@@ -292,7 +239,7 @@ class _HomeScreenState extends State<HomeScreen> {
                 shape: BoxShape.circle,
                 boxShadow: [
                   BoxShadow(
-                    color: Colors.grey.withAlpha((255 * 0.2).round()),
+                    color: Colors.grey.withAlpha(50),
                     spreadRadius: 1,
                     blurRadius: 5,
                   )
@@ -358,16 +305,16 @@ class _HomeScreenState extends State<HomeScreen> {
     );
   }
 
-  Widget _buildUpcomingEventsList(List<Event> events) {
+  Widget _buildUpcomingEventsList() {
     return SizedBox(
       height: 120,
       child: AnimationLimiter(
         child: ListView.builder(
           scrollDirection: Axis.horizontal,
           physics: const BouncingScrollPhysics(),
-          itemCount: events.length,
+          itemCount: _upcomingEvents.length,
           itemBuilder: (context, index) {
-            final event = events[index];
+            final event = _upcomingEvents[index];
             return AnimationConfiguration.staggeredList(
               position: index,
               duration: const Duration(milliseconds: 375),
@@ -386,15 +333,14 @@ class _HomeScreenState extends State<HomeScreen> {
   }
 
   Widget _buildUpcomingEventCard(BuildContext context, {required Event event}) {
-    final formattedDate = event.startDate != null ? _formatDate(event.startDate!) : '';
+    final formattedDate = _formatDateUpcoming(event.startDate);
     final dateParts = formattedDate.split(' ');
     final day = dateParts.isNotEmpty ? dateParts[0] : '';
     final month = dateParts.length > 1 ? dateParts[1] : '';
+    final isPast = DateTime.now().isAfter(event.startDate);
 
     return GestureDetector(
-      onTap: () {
-        context.push('/details', extra: event);
-      },
+      onTap: isPast ? null : () => context.push('/details', extra: event),
       child: Container(
         width: 300,
         margin: const EdgeInsets.only(right: 16),
@@ -403,98 +349,104 @@ class _HomeScreenState extends State<HomeScreen> {
             borderRadius: BorderRadius.circular(16),
             boxShadow: [
               BoxShadow(
-                color: Colors.grey.withAlpha((255 * 0.15).round()),
+                color: Colors.grey.withAlpha(40),
                 spreadRadius: 1,
                 blurRadius: 8,
                 offset: const Offset(0, 4),
               )
             ]),
-        child: Padding(
-          padding: const EdgeInsets.all(12.0),
-          child: Row(
-            children: [
-              Stack(
-                alignment: Alignment.center,
-                children: [
-                  ClipRRect(
-                    borderRadius: BorderRadius.circular(12),
-                    child: event.coverImageUrl != null && event.coverImageUrl!.startsWith('assets/')
-                        ? Image.asset(event.coverImageUrl!, width: 80, height: 96, fit: BoxFit.cover)
-                        : (event.coverImageUrl != null
-                            ? Image.network(event.coverImageUrl!,
-                                width: 80, height: 96, fit: BoxFit.cover, errorBuilder: (context, error, stackTrace) => const Icon(Icons.broken_image, size: 40))
-                            : Container(width: 80, height: 96, color: Colors.grey[300], child: const Icon(Icons.image))),
-                  ),
-                  Positioned.fill(
-                    child: ClipRRect(
+        child: Opacity(
+          opacity: isPast ? 0.6 : 1.0,
+          child: Padding(
+            padding: const EdgeInsets.all(12.0),
+            child: Row(
+              children: [
+                Stack(
+                  alignment: Alignment.center,
+                  children: [
+                    ClipRRect(
                       borderRadius: BorderRadius.circular(12),
-                      child: Container(
-                        decoration: BoxDecoration(
-                          color: Colors.black.withAlpha((255 * 0.2).round()),
-                        ),
+                      child: Image.asset(
+                        event.coverImageUrl,
+                        width: 80, 
+                        height: 96, 
+                        fit: BoxFit.cover,
                       ),
                     ),
-                  ),
-                  Container(
-                    width: 45,
-                    height: 45,
-                    decoration: BoxDecoration(
-                      color: Colors.white.withAlpha((255 * 0.85).round()),
-                      borderRadius: BorderRadius.circular(8),
-                    ),
-                    child: Column(mainAxisAlignment: MainAxisAlignment.center, children: [
-                      Text(day, style: const TextStyle(fontSize: 18, fontWeight: FontWeight.bold, color: Color(0xFF1E90FF))),
-                      Text(month.toUpperCase(), style: const TextStyle(fontSize: 12, fontWeight: FontWeight.bold, color: Color(0xFF1E90FF))),
-                    ]),
-                  ),
-                ],
-              ),
-              const SizedBox(width: 12),
-              Expanded(
-                child: SingleChildScrollView(
+                    if(!isPast)
+                      Positioned.fill(
+                        child: ClipRRect(
+                          borderRadius: BorderRadius.circular(12),
+                          child: Container(
+                            decoration: BoxDecoration(
+                              color: Colors.black.withAlpha(50),
+                            ),
+                          ),
+                        ),
+                      ),
+                    if(!isPast)
+                      Container(
+                        width: 45,
+                        height: 45,
+                        decoration: BoxDecoration(
+                          color: Colors.white.withAlpha(220),
+                          borderRadius: BorderRadius.circular(8),
+                        ),
+                        child: Column(mainAxisAlignment: MainAxisAlignment.center, children: [
+                          Text(day, style: const TextStyle(fontSize: 18, fontWeight: FontWeight.bold, color: Color(0xFF1E90FF))),
+                          Text(month.toUpperCase(), style: const TextStyle(fontSize: 12, fontWeight: FontWeight.bold, color: Color(0xFF1E90FF))),
+                        ]),
+                      ),
+                  ],
+                ),
+                const SizedBox(width: 12),
+                Expanded(
                   child: Column(
                     crossAxisAlignment: CrossAxisAlignment.start,
+                    mainAxisAlignment: MainAxisAlignment.center,
                     children: [
                       Text(
-                        event.name.length > 20 ? '${event.name.substring(0, 20)}...' : event.name,
-                        style: const TextStyle(fontSize: 16, fontWeight: FontWeight.bold),
+                        event.name,
+                        style: TextStyle(
+                          fontSize: 16, 
+                          fontWeight: FontWeight.bold,
+                          color: isPast ? Colors.grey[700] : Colors.black,
+                        ),
                         maxLines: 2,
                         overflow: TextOverflow.ellipsis,
                       ),
                       const SizedBox(height: 8),
                       Row(
                         children: [
-                          const Icon(Icons.location_on_outlined, size: 16, color: Colors.grey),
+                          Icon(Icons.location_on_outlined, size: 16, color: Colors.grey[600]),
                           const SizedBox(width: 4),
                           Expanded(
                             child: Text(
-                              event.venueName ?? '',
-                              style: const TextStyle(color: Colors.grey, fontSize: 13),
+                              event.venueName,
+                              style: TextStyle(color: Colors.grey[600], fontSize: 13),
                               overflow: TextOverflow.ellipsis,
                             ),
                           ),
                         ],
                       ),
-                      const SizedBox(height: 8),
-                      Align(
-                        alignment: Alignment.bottomRight,
-                        child: ElevatedButton(
-                          onPressed: () {},
-                          style: ElevatedButton.styleFrom(
-                            backgroundColor: const Color(0xFF1E90FF).withAlpha((255 * 0.1).round()),
-                            foregroundColor: const Color(0xFF1E90FF),
-                            elevation: 0,
-                            padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
-                            shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)),
+                       const SizedBox(height: 8),
+                      if (isPast)
+                        Container(
+                          padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
+                          decoration: BoxDecoration(
+                            color: Colors.redAccent.withOpacity(0.1),
+                            borderRadius: BorderRadius.circular(8),
                           ),
-                          child: const Text('Précommander', style: TextStyle(fontSize: 11)),
+                          child: const Text(
+                            'Événement Passé',
+                            style: TextStyle(fontSize: 11, color: Colors.redAccent, fontWeight: FontWeight.w600),
+                          ),
                         ),
-                      ),
                     ],
                   ),
                 ),
-              ),
-            ],
+              ],
+            ),
           ),
         ),
       ),
@@ -531,12 +483,10 @@ class _HomeScreenState extends State<HomeScreen> {
   Widget _buildPopularEventCard(BuildContext context, {required Event event}) {
     final favoritesProvider = Provider.of<FavoritesProvider>(context);
     final isFavorite = favoritesProvider.isFavorite(event);
-    final formattedDate = event.startDate != null ? _formatDate(event.startDate!) : '';
+    final isPast = DateTime.now().isAfter(event.startDate);
 
     return GestureDetector(
-      onTap: () {
-        context.push('/details', extra: event);
-      },
+      onTap: isPast ? null : () => context.push('/details', extra: event),
       child: Container(
         width: 220,
         margin: const EdgeInsets.only(right: 16),
@@ -545,7 +495,7 @@ class _HomeScreenState extends State<HomeScreen> {
             borderRadius: BorderRadius.circular(20),
             boxShadow: [
               BoxShadow(
-                color: Colors.grey.withAlpha((255 * 0.15).round()),
+                color: Colors.grey.withAlpha(40),
                 spreadRadius: 1,
                 blurRadius: 8,
                 offset: const Offset(0, 4),
@@ -555,88 +505,135 @@ class _HomeScreenState extends State<HomeScreen> {
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
             Stack(
+              alignment: Alignment.center,
               children: [
                 ClipRRect(
                   borderRadius: const BorderRadius.only(
                     topLeft: Radius.circular(20),
                     topRight: Radius.circular(20),
                   ),
-                  child: event.coverImageUrl != null && event.coverImageUrl!.startsWith('assets/')
-                      ? Image.asset(event.coverImageUrl!, height: 120, width: double.infinity, fit: BoxFit.cover)
-                      : (event.coverImageUrl != null
-                          ? Image.network(event.coverImageUrl!,
-                              height: 120, width: double.infinity, fit: BoxFit.cover, errorBuilder: (context, error, stackTrace) => const Icon(Icons.broken_image, size: 50))
-                          : Container(height: 120, width: double.infinity, color: Colors.grey[300], child: const Icon(Icons.image))),
-                ),
-                Positioned(
-                  top: 8,
-                  right: 8,
-                  child: GestureDetector(
-                    onTap: () {
-                      favoritesProvider.toggleFavorite(event);
-                      if (!isFavorite) {
-                        ScaffoldMessenger.of(context).showSnackBar(
-                          const SnackBar(
-                            content: Text('Ajouté aux favoris'),
-                            duration: Duration(seconds: 2),
-                          ),
-                        );
-                      }
-                    },
-                    child: Container(
-                      padding: const EdgeInsets.all(6),
-                      decoration: BoxDecoration(
-                        color: Colors.white.withAlpha((255 * 0.9).round()),
-                        shape: BoxShape.circle,
-                      ),
-                      child: Icon(
-                        isFavorite ? Icons.favorite : Icons.favorite_border,
-                        color: isFavorite ? Colors.red : Colors.black,
-                        size: 22,
-                      ),
+                  child: Image.network(
+                    event.coverImageUrl,
+                    height: 120, 
+                    width: double.infinity, 
+                    fit: BoxFit.cover, 
+                    errorBuilder: (context, error, stackTrace) => Container(
+                      height: 120,
+                      color: Colors.grey[300],
+                      child: const Icon(Icons.broken_image, color: Colors.grey),
                     ),
                   ),
                 ),
+                if (isPast)
+                  Positioned.fill(
+                    child: ClipRRect(
+                      borderRadius: const BorderRadius.only(
+                        topLeft: Radius.circular(20),
+                        topRight: Radius.circular(20),
+                      ),
+                      child: BackdropFilter(
+                        filter: ImageFilter.blur(sigmaX: 1, sigmaY: 1),
+                        child: Container(
+                          color: Colors.black.withOpacity(0.3),
+                          alignment: Alignment.center,
+                          child: Container(
+                            padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
+                            decoration: BoxDecoration(
+                              color: Colors.redAccent.withOpacity(0.8),
+                              borderRadius: BorderRadius.circular(30),
+                            ),
+                            child: const Text(
+                              'Passé',
+                              style: TextStyle(
+                                color: Colors.white,
+                                fontWeight: FontWeight.bold,
+                                fontSize: 14,
+                              ),
+                            ),
+                          ),
+                        ),
+                      ),
+                    ),
+                  ),
+                if (!isPast)
+                  Positioned(
+                    top: 8,
+                    right: 8,
+                    child: GestureDetector(
+                      onTap: () {
+                        favoritesProvider.toggleFavorite(event);
+                         if (!favoritesProvider.isFavorite(event)) {
+                           ScaffoldMessenger.of(context).showSnackBar(
+                            const SnackBar(
+                              content: Text('Ajouté aux favoris avec succès'),
+                              duration: Duration(seconds: 2),
+                            ),
+                          );
+                        }
+                      },
+                      child: Container(
+                        padding: const EdgeInsets.all(6),
+                        decoration: BoxDecoration(
+                          color: Colors.white.withAlpha(230),
+                          shape: BoxShape.circle,
+                        ),
+                        child: Icon(
+                          isFavorite ? Icons.favorite : Icons.favorite_border,
+                          color: isFavorite ? Colors.red : Colors.black,
+                          size: 22,
+                        ),
+                      ),
+                    ),
+                  ),
               ],
             ),
             Padding(
               padding: const EdgeInsets.all(12.0),
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  Text(formattedDate, style: const TextStyle(fontSize: 12, color: Color(0xFF1E90FF), fontWeight: FontWeight.w600)),
-                  const SizedBox(height: 8),
-                  Text(
-                    event.name.length > 20 ? '${event.name.substring(0, 20)}...' : event.name,
-                    style: const TextStyle(fontSize: 17, fontWeight: FontWeight.bold),
-                    maxLines: 1,
-                    overflow: TextOverflow.ellipsis,
-                  ),
-                  const SizedBox(height: 12),
-                  Row(
-                    mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                    children: [
-                      Row(
-                        children: [
-                          const Icon(Icons.location_on_outlined, size: 16, color: Colors.grey),
-                          const SizedBox(width: 4),
-                          SizedBox(
-                            width: 80,
-                            child: Text(event.venueName ?? '', style: const TextStyle(color: Colors.grey, fontSize: 12), overflow: TextOverflow.ellipsis),
-                          ),
-                        ],
+              child: Opacity(
+                opacity: isPast ? 0.6 : 1.0,
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Text(
+                      DateFormat('dd MMM, yyyy', 'fr_FR').format(event.startDate),
+                      style: TextStyle(fontSize: 12, color: isPast? Colors.grey[700] : Color(0xFF1E90FF), fontWeight: FontWeight.w600)),
+                    const SizedBox(height: 8),
+                    Text(
+                      event.name,
+                      style: TextStyle(
+                        fontSize: 17, 
+                        fontWeight: FontWeight.bold,
+                        color: isPast ? Colors.grey[700] : Colors.black,
                       ),
-                      Container(
-                        padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
-                        decoration: BoxDecoration(
-                          color: const Color(0xFF1E90FF).withAlpha((255 * 0.1).round()),
-                          borderRadius: BorderRadius.circular(8),
+                      maxLines: 1,
+                      overflow: TextOverflow.ellipsis,
+                    ),
+                    const SizedBox(height: 12),
+                    Row(
+                      mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                      children: [
+                        Row(
+                          children: [
+                            Icon(Icons.location_on_outlined, size: 16, color: Colors.grey[600]),
+                            const SizedBox(width: 4),
+                            SizedBox(
+                              width: 80,
+                              child: Text(event.venueName, style: TextStyle(color: Colors.grey[600], fontSize: 12), overflow: TextOverflow.ellipsis),
+                            ),
+                          ],
                         ),
-                        child: Text('${event.minPrice?.toStringAsFixed(0) ?? '0'} FCFA', style: const TextStyle(color: Color(0xFF1E90FF), fontWeight: FontWeight.bold, fontSize: 11)),
-                      )
-                    ],
-                  ),
-                ],
+                        Container(
+                          padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+                          decoration: BoxDecoration(
+                            color: isPast ? Colors.grey[300] : Color(0xFF1E90FF).withAlpha(30),
+                            borderRadius: BorderRadius.circular(8),
+                          ),
+                          child: Text('${event.minPrice.toStringAsFixed(0)} FCFA', style: TextStyle(color: isPast ? Colors.grey[700] : Color(0xFF1E90FF), fontWeight: FontWeight.bold, fontSize: 11)),
+                        )
+                      ],
+                    ),
+                  ],
+                ),
               ),
             )
           ],

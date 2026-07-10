@@ -1,3 +1,5 @@
+import 'dart:ui';
+
 import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
 import 'package:myapp/models/event_model.dart';
@@ -145,7 +147,7 @@ class ExplorerScreenState extends State<ExplorerScreen> {
           boxShadow: isSelected
               ? [
                   BoxShadow(
-                    color: const Color(0xFF1E90FF).withValues(alpha: 0.3),
+                    color: const Color(0xFF1E90FF).withAlpha(100),
                     spreadRadius: 2,
                     blurRadius: 5,
                     offset: const Offset(0, 3),
@@ -203,18 +205,17 @@ class ExplorerScreenState extends State<ExplorerScreen> {
   Widget _buildEventCard(BuildContext context, {required Event event}) {
     final favoritesProvider = Provider.of<FavoritesProvider>(context);
     final isFavorite = favoritesProvider.isFavorite(event);
+    final isPast = DateTime.now().isAfter(event.startDate);
 
     return GestureDetector(
-      onTap: () {
-        context.push('/details', extra: event);
-      },
+      onTap: isPast ? null : () => context.push('/details', extra: event),
       child: Container(
         decoration: BoxDecoration(
           color: Colors.white,
           borderRadius: BorderRadius.circular(20),
           boxShadow: [
             BoxShadow(
-              color: Colors.grey.withValues(alpha: 0.15),
+              color: Colors.grey.withAlpha(50),
               spreadRadius: 1,
               blurRadius: 8,
               offset: const Offset(0, 4),
@@ -225,6 +226,7 @@ class ExplorerScreenState extends State<ExplorerScreen> {
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
             Stack(
+              alignment: Alignment.center,
               children: [
                 ClipRRect(
                   borderRadius: const BorderRadius.only(
@@ -243,35 +245,70 @@ class ExplorerScreenState extends State<ExplorerScreen> {
                     ),
                   ),
                 ),
-                Positioned(
-                  top: 8,
-                  right: 8,
-                  child: GestureDetector(
-                    onTap: () {
-                      favoritesProvider.toggleFavorite(event);
-                      if (!isFavorite) {
-                        ScaffoldMessenger.of(context).showSnackBar(
-                          const SnackBar(
-                            content: Text('Ajouté aux favoris'),
-                            duration: Duration(seconds: 2),
-                          ),
-                        );
-                      }
-                    },
-                    child: Container(
-                      padding: const EdgeInsets.all(6),
-                      decoration: BoxDecoration(
-                        color: Colors.white.withValues(alpha: 0.9),
-                        shape: BoxShape.circle,
+                if (isPast)
+                  Positioned.fill(
+                    child: ClipRRect(
+                      borderRadius: const BorderRadius.only(
+                        topLeft: Radius.circular(20),
+                        topRight: Radius.circular(20),
                       ),
-                      child: Icon(
-                        isFavorite ? Icons.favorite : Icons.favorite_border,
-                        color: isFavorite ? Colors.red : Colors.black,
-                        size: 22,
+                      child: BackdropFilter(
+                        filter: ImageFilter.blur(sigmaX: 1, sigmaY: 1),
+                        child: Container(
+                          color: Colors.black.withOpacity(0.3),
+                          alignment: Alignment.center,
+                          child: Container(
+                            padding: const EdgeInsets.symmetric(
+                                horizontal: 12,
+                                vertical: 6
+                            ),
+                            decoration: BoxDecoration(
+                              color: Colors.redAccent.withOpacity(0.8),
+                              borderRadius: BorderRadius.circular(30),
+                            ),
+                            child: const Text(
+                              'Passé',
+                              style: TextStyle(
+                                color: Colors.white,
+                                fontWeight: FontWeight.bold,
+                                fontSize: 14,
+                              ),
+                            ),
+                          ),
+                        ),
                       ),
                     ),
                   ),
-                ),
+                if (!isPast)
+                  Positioned(
+                    top: 8,
+                    right: 8,
+                    child: GestureDetector(
+                      onTap: () {
+                        favoritesProvider.toggleFavorite(event);
+                        if (!favoritesProvider.isFavorite(event)) {
+                           ScaffoldMessenger.of(context).showSnackBar(
+                            const SnackBar(
+                              content: Text('Ajouté aux favoris avec succès'),
+                              duration: Duration(seconds: 2),
+                            ),
+                          );
+                        }
+                      },
+                      child: Container(
+                        padding: const EdgeInsets.all(6),
+                        decoration: BoxDecoration(
+                          color: Colors.white.withAlpha(230),
+                          shape: BoxShape.circle,
+                        ),
+                        child: Icon(
+                          isFavorite ? Icons.favorite : Icons.favorite_border,
+                          color: isFavorite ? Colors.red : Colors.black,
+                          size: 22,
+                        ),
+                      ),
+                    ),
+                  ),
               ],
             ),
             Padding(
@@ -281,14 +318,18 @@ class ExplorerScreenState extends State<ExplorerScreen> {
                 children: [
                   Text(
                     event.name,
-                    style: const TextStyle(fontSize: 14, fontWeight: FontWeight.bold),
+                    style: TextStyle(
+                        fontSize: 14,
+                        fontWeight: FontWeight.bold,
+                        color: isPast ? Colors.grey[600] : Colors.black,
+                    ),
                     maxLines: 1,
                     overflow: TextOverflow.ellipsis,
                   ),
                   const SizedBox(height: 5),
                   Text(
                     event.venueName,
-                    style: const TextStyle(color: Colors.grey, fontSize: 11),
+                    style: TextStyle(color: Colors.grey[500], fontSize: 11),
                     maxLines: 1,
                     overflow: TextOverflow.ellipsis,
                   ),
@@ -298,13 +339,13 @@ class ExplorerScreenState extends State<ExplorerScreen> {
                     child: Container(
                       padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
                       decoration: BoxDecoration(
-                        color: const Color(0xFF1E90FF).withValues(alpha: 0.1),
+                        color: (isPast ? Colors.grey[300] : const Color(0xFF1E90FF).withAlpha(30)),
                         borderRadius: BorderRadius.circular(8),
                       ),
                       child: Text(
                         '${event.minPrice.toStringAsFixed(0)} FCFA',
-                        style: const TextStyle(
-                          color: Color(0xFF1E90FF),
+                        style: TextStyle(
+                          color: isPast ? Colors.grey[700] : const Color(0xFF1E90FF),
                           fontWeight: FontWeight.bold,
                           fontSize: 10,
                         ),
