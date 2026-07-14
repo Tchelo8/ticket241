@@ -153,16 +153,87 @@ class ApiService {
     );
   }
 
-  /// Récupère la liste des événements depuis l'API.
-  Future<ApiResponse<List<Event>>> getEvents() {
-    return get<List<Event>>(
-      '/api/events/all',
-      fromJson: (json) {
-        if (json is Map<String, dynamic> && json.containsKey('content')) {
-          final List content = json['content'];
-          return content.map((item) => Event.fromJson(item)).toList();
+  /// Récupère la liste complète des événements depuis l'API, en gérant la pagination.
+  Future<ApiResponse<List<Event>>> getEvents() async {
+    final List<Event> allEvents = [];
+    int currentPage = 0;
+    int totalPages = 1; // On commence avec 1, sera mis à jour après le premier appel
+
+    try {
+      while (currentPage < totalPages) {
+        // Le endpoint pour les événements paginés
+        final endpoint = '/api/events/all?page=$currentPage&size=20'; // size=20 est une supposition raisonnable
+
+        final response = await get<Map<String, dynamic>>(
+          endpoint,
+          fromJson: (json) => json as Map<String, dynamic>
+        );
+
+        if (response.success && response.data != null) {
+          final data = response.data!;
+          
+          if (data.containsKey('content') && data['content'] is List) {
+            final List content = data['content'];
+            allEvents.addAll(content.map((item) => Event.fromJson(item)).toList());
+          } else {
+            // Si la structure est inattendue, on arrête
+            throw const FormatException('Le champ "content" est manquant ou invalide dans la réponse.');
+          }
+
+          // Mise à jour du nombre total de pages
+          if (data.containsKey('totalPages') && data['totalPages'] is int) {
+            totalPages = data['totalPages'];
+          } else {
+            // S'il n'y a pas d'info de pagination, on assume qu'il n'y a qu'une seule page
+            break; 
+          }
+          
+          currentPage++;
+
+        } else {
+          // Si une requête échoue, on retourne une erreur avec les événements déjà chargés
+          return ApiResponse<List<Event>>(
+            success: false,
+            error: response.error ?? 'Erreur lors du chargement de la page $currentPage.',
+            data: allEvents, // On renvoie ce qu'on a pu récupérer
+            statusCode: response.statusCode,
+          );
         }
-        throw const FormatException('Réponse invalide, un champ "content" était attendu.');
+      }
+
+      return ApiResponse<List<Event>>(
+        success: true,
+        data: allEvents,
+      );
+
+    } catch (e) {
+      return ApiResponse<List<Event>>(
+        success: false,
+        error: 'Erreur réseau ou de formatage. Vérifiez votre connexion et la structure de la réponse de l'API.',
+        data: allEvents, // On renvoie ce qu'on a pu récupérer
+      );
+    }
+  }
+
+  /// Récupère la liste des catégories d'événements depuis l'API.
+  Future<ApiResponse<List<String>>> getCategories() {
+    return get<List<String>>(
+      '/api/events/categories/get/all', // Assurez-vous que cet endpoint est correct
+      fromJson: (json) {
+        if (json is List) {
+          return List<String>.from(json.map((item) {
+            // Gère une liste de strings: ["SPORT", "CONCERT"]
+            if (item is String) {
+              return item;
+            }
+            // Gère une liste de maps: [{"name": "SPORT"}, {"name": "CONCERT"}]
+            if (item is Map<String, dynamic> && item.containsKey('name')) {
+              return item['name'].toString();
+            }
+            return '';
+          })).where((name) => name.isNotEmpty).toList();
+        }
+        throw const FormatException('Réponse invalide, une liste de catégories (strings ou maps) était attendue.');
       },
     );
   }

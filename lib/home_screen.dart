@@ -21,79 +21,13 @@ class HomeScreen extends StatefulWidget {
 class _HomeScreenState extends State<HomeScreen> {
   String _selectedCity = 'Libreville';
   final ApiService _apiService = ApiService();
-  List<Event> _events = [];
+  List<Event> _allEvents = [];
   bool _isLoading = true;
-
-  // Dummy data
-  static final List<Event> _upcomingEvents = [
-    Event(
-        id: 0,
-        slug: 'upcoming-1',
-        name: 'Concert Live Acoustique',
-        coverImageUrl: 'assets/images/enb.jpg',
-        venueName: 'Entre Nous Bar, Angondjé',
-        startDate: DateTime(2023, 3, 29), // Date passée pour tester
-        minPrice: 5000.0,
-        category: 'Concert',
-        cityId: 1,
-        cityName: 'Libreville',
-        cityCountry: 'Gabon',
-        soldSeats: 0,
-        availableSeats: 100,
-        maxPrice: 5000.0,
-        isFeatured: false,
-        isPromoted: false,
-        viewCount: 0,
-        isSaleOpen: true,
-        isPastEvent: false,
-        isSoldOut: false),
-    Event(
-        id: 0,
-        slug: 'upcoming-2',
-        name: 'Festival International de Sibang',
-        coverImageUrl: 'assets/images/sibang.jpg',
-        venueName: 'Jardin Botanique, Libreville',
-        startDate: DateTime(2025, 4, 15),
-        minPrice: 10000.0,
-        category: 'Festival',
-        cityId: 1,
-        cityName: 'Libreville',
-        cityCountry: 'Gabon',
-        soldSeats: 0,
-        availableSeats: 100,
-        maxPrice: 10000.0,
-        isFeatured: false,
-        isPromoted: false,
-        viewCount: 0,
-        isSaleOpen: true,
-        isPastEvent: false,
-        isSoldOut: false),
-    Event(
-        id: 0,
-        slug: 'upcoming-3',
-        name: 'Concert Oiseau Rare',
-        coverImageUrl: 'assets/images/oiseau.jpg',
-        venueName: 'Casino Croisette, LBV',
-        startDate: DateTime(2025, 2, 14),
-        minPrice: 15000.0,
-        category: 'Concert',
-        cityId: 1,
-        cityName: 'Libreville',
-        cityCountry: 'Gabon',
-        soldSeats: 0,
-        availableSeats: 100,
-        maxPrice: 15000.0,
-        isFeatured: false,
-        isPromoted: false,
-        viewCount: 0,
-        isSaleOpen: true,
-        isPastEvent: false,
-        isSoldOut: false),
-  ];
 
   @override
   void initState() {
     super.initState();
+    Intl.defaultLocale = 'fr_FR';
     _fetchEvents();
   }
 
@@ -102,29 +36,26 @@ class _HomeScreenState extends State<HomeScreen> {
       _isLoading = true;
     });
     final response = await _apiService.getEvents();
-    if (response.success && response.data != null) {
+    if (mounted) {
       setState(() {
-        _events = response.data!;
+        if (response.success && response.data != null) {
+          _allEvents = response.data!;
+        } else {
+          ScaffoldMessenger.of(context).showSnackBar(
+            SnackBar(content: Text(response.error ?? 'Erreur lors du chargement des événements')),
+          );
+        }
         _isLoading = false;
       });
-    } else {
-      setState(() {
-        _isLoading = false;
-      });
-      if (mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(content: Text(response.error ?? 'Erreur lors du chargement des événements')),
-        );
-      }
     }
   }
 
   String _formatDate(DateTime date) {
-    return DateFormat('dd MMM, yyyy', 'fr_FR').format(date);
+    return DateFormat('dd MMM, yyyy').format(date);
   }
 
   String _formatDateUpcoming(DateTime date) {
-    return DateFormat('dd MMM', 'fr_FR').format(date);
+    return DateFormat('dd MMM').format(date);
   }
 
   void _showCitySelection(BuildContext context) async {
@@ -154,47 +85,79 @@ class _HomeScreenState extends State<HomeScreen> {
 
   @override
   Widget build(BuildContext context) {
+    // --- Filtrage dynamique des événements ---
+    final now = DateTime.now();
+    
+    // Événements futurs (non passés)
+    final upcomingEvents = _allEvents.where((e) => e.startDate.isAfter(now)).toList();
+    upcomingEvents.sort((a, b) => a.startDate.compareTo(b.startDate)); // Les plus proches en premier
+
+    // Événements populaires (ceux marqués comme "featured" ou avec le plus de vues)
+    final popularEvents = _allEvents.where((e) => e.isFeatured && e.startDate.isAfter(now)).toList();
+    if (popularEvents.isEmpty) {
+        // Fallback: trier par nombre de vues si aucun n'est "featured"
+        final sortedByViews = _allEvents.where((e) => e.startDate.isAfter(now)).toList();
+        sortedByViews.sort((a, b) => b.viewCount.compareTo(a.viewCount));
+        popularEvents.addAll(sortedByViews.take(5)); // Prendre les 5 plus populaires
+    }
+
+    // Événements de sport
+    final sportEvents = _allEvents.where((e) => e.category.toUpperCase() == 'SPORT' && e.startDate.isAfter(now)).toList();
+
+    // Événements culturels (ex: Concert, Théâtre)
+    const cultureCategories = {'CONCERT', 'THÉÂTRE', 'FESTIVAL'};
+    final cultureEvents = _allEvents.where((e) => cultureCategories.contains(e.category.toUpperCase()) && e.startDate.isAfter(now)).toList();
+
+
     return Scaffold(
       backgroundColor: Colors.grey[100],
       body: SafeArea(
         child: RefreshIndicator(
           onRefresh: _fetchEvents,
-          child: SingleChildScrollView(
-            physics: const AlwaysScrollableScrollPhysics(),
-            child: AnimationLimiter(
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: AnimationConfiguration.toStaggeredList(
-                  duration: const Duration(milliseconds: 375),
-                  childAnimationBuilder: (widget) => SlideAnimation(
-                    verticalOffset: 50.0,
-                    child: FadeInAnimation(
-                      child: widget,
+          child: _isLoading
+              ? const Center(child: CircularProgressIndicator())
+              : SingleChildScrollView(
+                  physics: const AlwaysScrollableScrollPhysics(),
+                  child: AnimationLimiter(
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: AnimationConfiguration.toStaggeredList(
+                        duration: const Duration(milliseconds: 375),
+                        childAnimationBuilder: (widget) => SlideAnimation(
+                          verticalOffset: 50.0,
+                          child: FadeInAnimation(
+                            child: widget,
+                          ),
+                        ),
+                        children: [
+                          _buildHeader(context),
+                          _buildSearchBar(),
+                          const SizedBox(height: 24),
+
+                          if(upcomingEvents.isNotEmpty)
+                            ...[_buildSectionHeader("Événements à venir"),
+                            _buildUpcomingEventsList(upcomingEvents)],
+
+                          if(popularEvents.isNotEmpty)
+                            ...[const SizedBox(height: 24),
+                            _buildSectionHeader("Populaire actuellement", showSeeAll: true),
+                            _buildPopularEventsList(context, events: popularEvents)],
+                          
+                          if(sportEvents.isNotEmpty)
+                            ...[const SizedBox(height: 24),
+                            _buildSectionHeader("Sport", showSeeAll: true),
+                            _buildPopularEventsList(context, events: sportEvents)],
+
+                          if(cultureEvents.isNotEmpty)
+                            ...[const SizedBox(height: 24),
+                            _buildSectionHeader("Culture", showSeeAll: true),
+                            _buildPopularEventsList(context, events: cultureEvents)],
+
+                          const SizedBox(height: 24),
+                        ],
+                      ),
                     ),
                   ),
-                  children: [
-                    _buildHeader(context),
-                    _buildSearchBar(),
-                    const SizedBox(height: 24),
-                    _buildSectionHeader("Événements à venir"),
-                    _buildUpcomingEventsList(),
-                    const SizedBox(height: 24),
-                    _buildSectionHeader("Populaire actuellement", showSeeAll: true),
-                    if (_isLoading)
-                      const Center(
-                        child: Padding(
-                          padding: EdgeInsets.all(32.0),
-                          child: CircularProgressIndicator(),
-                        ),
-                      )
-                    else
-                      _buildPopularEventsList(context, events: _events),
-                    const SizedBox(height: 24),
-                  ],
-                ),
-              ),
-            ),
-          ),
         ),
       ),
     );
@@ -262,7 +225,7 @@ class _HomeScreenState extends State<HomeScreen> {
       child: TextField(
         readOnly: true,
         onTap: () {
-          widget.onNavigate(1);
+          widget.onNavigate(1); // Naviguer vers l'onglet Explorer
         },
         decoration: InputDecoration(
           hintText: 'Rechercher des événements...',
@@ -305,16 +268,16 @@ class _HomeScreenState extends State<HomeScreen> {
     );
   }
 
-  Widget _buildUpcomingEventsList() {
+  Widget _buildUpcomingEventsList(List<Event> events) {
     return SizedBox(
       height: 120,
       child: AnimationLimiter(
         child: ListView.builder(
           scrollDirection: Axis.horizontal,
           physics: const BouncingScrollPhysics(),
-          itemCount: _upcomingEvents.length,
+          itemCount: events.length,
           itemBuilder: (context, index) {
-            final event = _upcomingEvents[index];
+            final event = events[index];
             return AnimationConfiguration.staggeredList(
               position: index,
               duration: const Duration(milliseconds: 375),
@@ -337,10 +300,9 @@ class _HomeScreenState extends State<HomeScreen> {
     final dateParts = formattedDate.split(' ');
     final day = dateParts.isNotEmpty ? dateParts[0] : '';
     final month = dateParts.length > 1 ? dateParts[1] : '';
-    final isPast = DateTime.now().isAfter(event.startDate);
 
     return GestureDetector(
-      onTap: isPast ? null : () => context.push('/details', extra: event),
+      onTap: () => context.push('/details', extra: event),
       child: Container(
         width: 300,
         margin: const EdgeInsets.only(right: 16),
@@ -355,98 +317,81 @@ class _HomeScreenState extends State<HomeScreen> {
                 offset: const Offset(0, 4),
               )
             ]),
-        child: Opacity(
-          opacity: isPast ? 0.6 : 1.0,
-          child: Padding(
-            padding: const EdgeInsets.all(12.0),
-            child: Row(
-              children: [
-                Stack(
-                  alignment: Alignment.center,
-                  children: [
-                    ClipRRect(
+        child: Padding(
+          padding: const EdgeInsets.all(12.0),
+          child: Row(
+            children: [
+              Stack(
+                alignment: Alignment.center,
+                children: [
+                  ClipRRect(
+                    borderRadius: BorderRadius.circular(12),
+                    child: Image.network(
+                      event.coverImageUrl,
+                      width: 80,
+                      height: 96,
+                      fit: BoxFit.cover,
+                      errorBuilder: (context, error, stackTrace) => Container(
+                          width: 80, height: 96, color: Colors.grey[300], child: const Icon(Icons.image, color: Colors.grey)),
+                    ),
+                  ),
+                  Positioned.fill(
+                    child: ClipRRect(
                       borderRadius: BorderRadius.circular(12),
-                      child: Image.asset(
-                        event.coverImageUrl,
-                        width: 80, 
-                        height: 96, 
-                        fit: BoxFit.cover,
+                      child: Container(
+                        decoration: BoxDecoration(
+                          color: Colors.black.withAlpha(50),
+                        ),
                       ),
                     ),
-                    if(!isPast)
-                      Positioned.fill(
-                        child: ClipRRect(
-                          borderRadius: BorderRadius.circular(12),
-                          child: Container(
-                            decoration: BoxDecoration(
-                              color: Colors.black.withAlpha(50),
-                            ),
+                  ),
+                  Container(
+                    width: 45,
+                    height: 45,
+                    decoration: BoxDecoration(
+                      color: Colors.white.withAlpha(220),
+                      borderRadius: BorderRadius.circular(8),
+                    ),
+                    child: Column(mainAxisAlignment: MainAxisAlignment.center, children: [
+                      Text(day, style: const TextStyle(fontSize: 18, fontWeight: FontWeight.bold, color: Color(0xFF1E90FF))),
+                      Text(month.toUpperCase(), style: const TextStyle(fontSize: 12, fontWeight: FontWeight.bold, color: Color(0xFF1E90FF))),
+                    ]),
+                  ),
+                ],
+              ),
+              const SizedBox(width: 12),
+              Expanded(
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  mainAxisAlignment: MainAxisAlignment.center,
+                  children: [
+                    Text(
+                      event.name,
+                      style: const TextStyle(
+                        fontSize: 16,
+                        fontWeight: FontWeight.bold,
+                      ),
+                      maxLines: 2,
+                      overflow: TextOverflow.ellipsis,
+                    ),
+                    const SizedBox(height: 8),
+                    Row(
+                      children: [
+                        Icon(Icons.location_on_outlined, size: 16, color: Colors.grey[600]),
+                        const SizedBox(width: 4),
+                        Expanded(
+                          child: Text(
+                            event.venueName,
+                            style: TextStyle(color: Colors.grey[600], fontSize: 13),
+                            overflow: TextOverflow.ellipsis,
                           ),
                         ),
-                      ),
-                    if(!isPast)
-                      Container(
-                        width: 45,
-                        height: 45,
-                        decoration: BoxDecoration(
-                          color: Colors.white.withAlpha(220),
-                          borderRadius: BorderRadius.circular(8),
-                        ),
-                        child: Column(mainAxisAlignment: MainAxisAlignment.center, children: [
-                          Text(day, style: const TextStyle(fontSize: 18, fontWeight: FontWeight.bold, color: Color(0xFF1E90FF))),
-                          Text(month.toUpperCase(), style: const TextStyle(fontSize: 12, fontWeight: FontWeight.bold, color: Color(0xFF1E90FF))),
-                        ]),
-                      ),
+                      ],
+                    ),
                   ],
                 ),
-                const SizedBox(width: 12),
-                Expanded(
-                  child: Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    mainAxisAlignment: MainAxisAlignment.center,
-                    children: [
-                      Text(
-                        event.name,
-                        style: TextStyle(
-                          fontSize: 16, 
-                          fontWeight: FontWeight.bold,
-                          color: isPast ? Colors.grey[700] : Colors.black,
-                        ),
-                        maxLines: 2,
-                        overflow: TextOverflow.ellipsis,
-                      ),
-                      const SizedBox(height: 8),
-                      Row(
-                        children: [
-                          Icon(Icons.location_on_outlined, size: 16, color: Colors.grey[600]),
-                          const SizedBox(width: 4),
-                          Expanded(
-                            child: Text(
-                              event.venueName,
-                              style: TextStyle(color: Colors.grey[600], fontSize: 13),
-                              overflow: TextOverflow.ellipsis,
-                            ),
-                          ),
-                        ],
-                      ),
-                       const SizedBox(height: 8),
-                      if (isPast)
-                        Container(
-                          padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
-                          decoration: BoxDecoration(
-                            color: Colors.redAccent.withOpacity(0.1),
-                            borderRadius: BorderRadius.circular(8),
-                          ),
-                          child: const Text(
-                            'Événement Passé',
-                            style: TextStyle(fontSize: 11, color: Colors.redAccent, fontWeight: FontWeight.w600),
-                          ),
-                        ),
-                    ],
-                  ),
-                ),
-              ],
-            ),
+              ),
+            ],
           ),
         ),
       ),
@@ -485,6 +430,7 @@ class _HomeScreenState extends State<HomeScreen> {
     final isFavorite = favoritesProvider.isFavorite(event);
     final isPast = DateTime.now().isAfter(event.startDate);
 
+    // Ce widget réutilise la logique de `explorer_screen` pour la cohérence
     return GestureDetector(
       onTap: isPast ? null : () => context.push('/details', extra: event),
       child: Container(
@@ -514,9 +460,9 @@ class _HomeScreenState extends State<HomeScreen> {
                   ),
                   child: Image.network(
                     event.coverImageUrl,
-                    height: 120, 
-                    width: double.infinity, 
-                    fit: BoxFit.cover, 
+                    height: 120,
+                    width: double.infinity,
+                    fit: BoxFit.cover,
                     errorBuilder: (context, error, stackTrace) => Container(
                       height: 120,
                       color: Colors.grey[300],
@@ -562,14 +508,12 @@ class _HomeScreenState extends State<HomeScreen> {
                     child: GestureDetector(
                       onTap: () {
                         favoritesProvider.toggleFavorite(event);
-                         if (!favoritesProvider.isFavorite(event)) {
-                           ScaffoldMessenger.of(context).showSnackBar(
-                            const SnackBar(
-                              content: Text('Ajouté aux favoris avec succès'),
-                              duration: Duration(seconds: 2),
-                            ),
-                          );
-                        }
+                        ScaffoldMessenger.of(context).showSnackBar(
+                          const SnackBar(
+                            content: Text('Favoris mis à jour'),
+                            duration: Duration(seconds: 2),
+                          ),
+                        );
                       },
                       child: Container(
                         padding: const EdgeInsets.all(6),
@@ -595,13 +539,13 @@ class _HomeScreenState extends State<HomeScreen> {
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
                     Text(
-                      DateFormat('dd MMM, yyyy', 'fr_FR').format(event.startDate),
-                      style: TextStyle(fontSize: 12, color: isPast? Colors.grey[700] : Color(0xFF1E90FF), fontWeight: FontWeight.w600)),
+                        _formatDate(event.startDate),
+                        style: TextStyle(fontSize: 12, color: isPast? Colors.grey[700] : const Color(0xFF1E90FF), fontWeight: FontWeight.w600)),
                     const SizedBox(height: 8),
                     Text(
                       event.name,
                       style: TextStyle(
-                        fontSize: 17, 
+                        fontSize: 17,
                         fontWeight: FontWeight.bold,
                         color: isPast ? Colors.grey[700] : Colors.black,
                       ),
@@ -625,10 +569,10 @@ class _HomeScreenState extends State<HomeScreen> {
                         Container(
                           padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
                           decoration: BoxDecoration(
-                            color: isPast ? Colors.grey[300] : Color(0xFF1E90FF).withAlpha(30),
+                            color: isPast ? Colors.grey[300] : const Color(0xFF1E90FF).withAlpha(30),
                             borderRadius: BorderRadius.circular(8),
                           ),
-                          child: Text('${event.minPrice.toStringAsFixed(0)} FCFA', style: TextStyle(color: isPast ? Colors.grey[700] : Color(0xFF1E90FF), fontWeight: FontWeight.bold, fontSize: 11)),
+                          child: Text('${event.minPrice.toStringAsFixed(0)} FCFA', style: TextStyle(color: isPast ? Colors.grey[700] : const Color(0xFF1E90FF), fontWeight: FontWeight.bold, fontSize: 11)),
                         )
                       ],
                     ),

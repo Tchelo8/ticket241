@@ -17,62 +17,103 @@ class ExplorerScreen extends StatefulWidget {
 class ExplorerScreenState extends State<ExplorerScreen> {
   final ApiService _apiService = ApiService();
   List<Event> _allEvents = [];
-  bool _isLoading = true;
+  List<String> _categories = [];
+  bool _isLoadingEvents = true;
+  bool _isLoadingCategories = true;
 
-  final List<Map<String, String>> _categories = [
-    {'name': 'CONCERT', 'image': 'assets/images/jazz.png'},
-    {'name': 'SPORT', 'image': 'assets/images/sibang.jpg'},
-    {'name': 'FESTIVAL', 'image': 'assets/images/enb.jpg'},
-    {'name': 'SOIRÉE', 'image': 'assets/images/oiseau.jpg'},
-    {'name': 'THÉÂTRE', 'image': 'assets/images/party.png'},
-  ];
+  // Associe un nom de catégorie à une image locale pour garder une belle interface
+  final Map<String, String> _categoryImages = {
+    'CONCERT': 'assets/images/jazz.png',
+    'SPORT': 'assets/images/sibang.jpg',
+    'FESTIVAL': 'assets/images/enb.jpg',
+    'SOIRÉE': 'assets/images/oiseau.jpg',
+    'THÉÂTRE': 'assets/images/party.png',
+    // On peut ajouter d'autres catégories ici au besoin
+  };
+  final String _defaultCategoryImage = 'assets/images/ticket.png'; // Image par défaut
 
   List<Event> _filteredEvents = [];
-  String _selectedCategory = 'CONCERT';
+  String? _selectedCategory;
   String _searchQuery = '';
 
   @override
   void initState() {
     super.initState();
-    _fetchEvents();
+    _fetchData();
   }
 
-  Future<void> _fetchEvents() async {
-    final response = await _apiService.getEvents();
+  /// Récupère les événements et les catégories en parallèle pour plus de performance
+  Future<void> _fetchData() async {
+    // On lance les deux requêtes en même temps
+    final eventsFuture = _apiService.getEvents();
+    final categoriesFuture = _apiService.getCategories();
+
+    // On attend les résultats
+    final results = await Future.wait([eventsFuture, categoriesFuture]);
+
+    final eventsResponse = results[0] as ApiResponse<List<Event>>;
+    final categoriesResponse = results[1] as ApiResponse<List<String>>;
+
     if (mounted) {
       setState(() {
-        if (response.success && response.data != null) {
-          _allEvents = response.data!;
+        // Traitement des événements
+        if (eventsResponse.success && eventsResponse.data != null) {
+          _allEvents = eventsResponse.data!;
         }
-        _isLoading = false;
+        _isLoadingEvents = false;
+
+        // Traitement des catégories
+        if (categoriesResponse.success && categoriesResponse.data != null) {
+          _categories = categoriesResponse.data!;
+          if (_categories.isNotEmpty) {
+            // On sélectionne la première catégorie par défaut
+            _selectedCategory = _categories.first;
+          }
+        }
+        _isLoadingCategories = false;
+        
+        // On applique les filtres une fois que tout est chargé
         _applyFilters();
       });
     }
   }
 
+
   void _applyFilters() {
+    if (_isLoadingEvents || _selectedCategory == null) return;
+
     setState(() {
       _filteredEvents = _allEvents.where((event) {
-        final categoryMatch = event.category.toUpperCase() == _selectedCategory.toUpperCase();
+        // Le filtre par catégorie est maintenant sensible à la casse et gère le cas null
+        final categoryMatch = event.category.toUpperCase() == _selectedCategory!.toUpperCase();
+        
+        // Le filtre par recherche reste inchangé
         final queryMatch = _searchQuery.isEmpty ||
             event.name.toLowerCase().contains(_searchQuery.toLowerCase());
+            
         return categoryMatch && queryMatch;
       }).toList();
     });
   }
 
   void _onCategorySelected(String category) {
-    _selectedCategory = category;
-    _applyFilters();
+    setState(() {
+      _selectedCategory = category;
+      _applyFilters();
+    });
   }
 
   void _onSearchChanged(String query) {
-    _searchQuery = query;
-    _applyFilters();
+    setState(() {
+      _searchQuery = query;
+      _applyFilters();
+    });
   }
 
   @override
   Widget build(BuildContext context) {
+    final bool isLoading = _isLoadingEvents || _isLoadingCategories;
+
     return Scaffold(
       backgroundColor: Colors.white,
       appBar: AppBar(
@@ -90,7 +131,7 @@ class ExplorerScreenState extends State<ExplorerScreen> {
             _buildCategoryList(),
             const SizedBox(height: 20),
             Expanded(
-              child: _isLoading
+              child: isLoading
                   ? const Center(child: CircularProgressIndicator())
                   : _buildEventsGrid(),
             ),
@@ -117,21 +158,30 @@ class ExplorerScreenState extends State<ExplorerScreen> {
   }
 
   Widget _buildCategoryList() {
+    if (_isLoadingCategories) {
+      return const Center(child: CircularProgressIndicator());
+    }
+    if (_categories.isEmpty) {
+      return const Center(child: Text("Aucune catégorie trouvée"));
+    }
+    
     return SizedBox(
       height: 100,
       child: ListView.builder(
         scrollDirection: Axis.horizontal,
         itemCount: _categories.length,
         itemBuilder: (context, index) {
-          final category = _categories[index];
-          return _buildCategoryCard(category['name']!, category['image']!);
+          final categoryName = _categories[index];
+          // On récupère l'image associée ou l'image par défaut
+          final categoryImage = _categoryImages[categoryName.toUpperCase()] ?? _defaultCategoryImage;
+          return _buildCategoryCard(categoryName, categoryImage);
         },
       ),
     );
   }
 
-  Widget _buildCategoryCard(String name, String image) {
-    final isSelected = _selectedCategory.toUpperCase() == name.toUpperCase();
+  Widget _buildCategoryCard(String name, String imagePath) {
+    final isSelected = _selectedCategory?.toUpperCase() == name.toUpperCase();
     return GestureDetector(
       onTap: () => _onCategorySelected(name),
       child: Container(
@@ -161,10 +211,17 @@ class ExplorerScreenState extends State<ExplorerScreen> {
             ClipRRect(
               borderRadius: BorderRadius.circular(10),
               child: Image.asset(
-                image,
+                imagePath, // Utilise le chemin d'image dynamique
                 height: 40,
                 width: 40,
                 fit: BoxFit.cover,
+                // Gestion d'erreur si une image n'est pas trouvée
+                errorBuilder: (context, error, stackTrace) => Image.asset(
+                  _defaultCategoryImage,
+                  height: 40,
+                  width: 40,
+                  fit: BoxFit.cover,
+                ),
               ),
             ),
             const SizedBox(height: 8),
@@ -185,7 +242,7 @@ class ExplorerScreenState extends State<ExplorerScreen> {
 
   Widget _buildEventsGrid() {
     if (_filteredEvents.isEmpty) {
-      return const Center(child: Text("Aucun événement trouvé"));
+      return const Center(child: Text("Aucun événement trouvé pour cette catégorie"));
     }
     return GridView.builder(
       gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
@@ -286,14 +343,12 @@ class ExplorerScreenState extends State<ExplorerScreen> {
                     child: GestureDetector(
                       onTap: () {
                         favoritesProvider.toggleFavorite(event);
-                        if (!favoritesProvider.isFavorite(event)) {
-                           ScaffoldMessenger.of(context).showSnackBar(
-                            const SnackBar(
-                              content: Text('Ajouté aux favoris avec succès'),
-                              duration: Duration(seconds: 2),
-                            ),
-                          );
-                        }
+                        ScaffoldMessenger.of(context).showSnackBar(
+                          SnackBar(
+                            content: Text(isFavorite ? 'Retiré des favoris' : 'Ajouté aux favoris'),
+                            duration: const Duration(seconds: 2),
+                          ),
+                        );
                       },
                       child: Container(
                         padding: const EdgeInsets.all(6),
