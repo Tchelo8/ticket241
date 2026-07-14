@@ -209,7 +209,7 @@ class ApiService {
     } catch (e) {
       return ApiResponse<List<Event>>(
         success: false,
-        error: 'Erreur réseau ou de formatage. Vérifiez votre connexion et la structure de la réponse de l'API.',
+        error: 'Erreur réseau ou de formatage. Vérifiez votre connexion et la structure de la réponse de l API.',
         data: allEvents, // On renvoie ce qu'on a pu récupérer
       );
     }
