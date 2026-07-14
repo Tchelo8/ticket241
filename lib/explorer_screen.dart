@@ -20,6 +20,7 @@ class ExplorerScreenState extends State<ExplorerScreen> {
   List<String> _categories = [];
   bool _isLoadingEvents = true;
   bool _isLoadingCategories = true;
+  String _selectedCity = 'Libreville'; // Ajout de la ville sélectionnée
 
   // Associe un nom de catégorie à une image locale pour garder une belle interface
   final Map<String, String> _categoryImages = {
@@ -84,6 +85,9 @@ class ExplorerScreenState extends State<ExplorerScreen> {
 
     setState(() {
       _filteredEvents = _allEvents.where((event) {
+        // Filtre par ville
+        final cityMatch = event.cityName == _selectedCity;
+
         // Le filtre par catégorie est maintenant sensible à la casse et gère le cas null
         final categoryMatch = event.category.toUpperCase() == _selectedCategory!.toUpperCase();
         
@@ -91,7 +95,7 @@ class ExplorerScreenState extends State<ExplorerScreen> {
         final queryMatch = _searchQuery.isEmpty ||
             event.name.toLowerCase().contains(_searchQuery.toLowerCase());
             
-        return categoryMatch && queryMatch;
+        return cityMatch && categoryMatch && queryMatch;
       }).toList();
     });
   }
