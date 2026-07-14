@@ -88,25 +88,28 @@ class _HomeScreenState extends State<HomeScreen> {
     // --- Filtrage dynamique des événements ---
     final now = DateTime.now();
     
+    // Événements de la ville sélectionnée
+    final eventsInCity = _allEvents.where((e) => e.cityName == _selectedCity).toList();
+
     // Événements futurs (non passés)
-    final upcomingEvents = _allEvents.where((e) => e.startDate.isAfter(now)).toList();
+    final upcomingEvents = eventsInCity.where((e) => e.startDate.isAfter(now)).toList();
     upcomingEvents.sort((a, b) => a.startDate.compareTo(b.startDate)); // Les plus proches en premier
 
     // Événements populaires (ceux marqués comme "featured" ou avec le plus de vues)
-    final popularEvents = _allEvents.where((e) => e.isFeatured && e.startDate.isAfter(now)).toList();
+    final popularEvents = eventsInCity.where((e) => e.isFeatured && e.startDate.isAfter(now)).toList();
     if (popularEvents.isEmpty) {
         // Fallback: trier par nombre de vues si aucun n'est "featured"
-        final sortedByViews = _allEvents.where((e) => e.startDate.isAfter(now)).toList();
+        final sortedByViews = eventsInCity.where((e) => e.startDate.isAfter(now)).toList();
         sortedByViews.sort((a, b) => b.viewCount.compareTo(a.viewCount));
         popularEvents.addAll(sortedByViews.take(5)); // Prendre les 5 plus populaires
     }
 
     // Événements de sport
-    final sportEvents = _allEvents.where((e) => e.category.toUpperCase() == 'SPORT' && e.startDate.isAfter(now)).toList();
+    final sportEvents = eventsInCity.where((e) => e.category.toUpperCase() == 'SPORT' && e.startDate.isAfter(now)).toList();
 
     // Événements culturels (ex: Concert, Théâtre)
     const cultureCategories = {'CONCERT', 'THÉÂTRE', 'FESTIVAL'};
-    final cultureEvents = _allEvents.where((e) => cultureCategories.contains(e.category.toUpperCase()) && e.startDate.isAfter(now)).toList();
+    final cultureEvents = eventsInCity.where((e) => cultureCategories.contains(e.category.toUpperCase()) && e.startDate.isAfter(now)).toList();
 
 
     return Scaffold(
