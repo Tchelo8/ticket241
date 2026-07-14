@@ -31,16 +31,17 @@ class _HomeScreenState extends State<HomeScreen> {
     _fetchEvents();
   }
 
-  Future<void> _fetchEvents() async {
+  Future<void> _fetchEvents({String? city}) async {
     setState(() {
       _isLoading = true;
     });
-    final response = await _apiService.getEvents();
+    final response = await _apiService.getEvents(city: city ?? _selectedCity);
     if (mounted) {
       setState(() {
         if (response.success && response.data != null) {
           _allEvents = response.data!;
         } else {
+          _allEvents = []; // On vide la liste en cas d'erreur
           ScaffoldMessenger.of(context).showSnackBar(
             SnackBar(content: Text(response.error ?? 'Erreur lors du chargement des événements')),
           );
@@ -70,56 +71,56 @@ class _HomeScreenState extends State<HomeScreen> {
           maxChildSize: 0.8,
           expand: false,
           builder: (context, scrollController) {
-            return const CitySelectionPopup();
+            return CitySelectionPopup(currentCity: _selectedCity); // Passe la ville actuelle
           },
         );
       },
     );
 
-    if (result != null) {
+    if (result != null && result != _selectedCity) {
       setState(() {
         _selectedCity = result;
+        _fetchEvents(city: _selectedCity); // On recharge les événements pour la nouvelle ville
       });
     }
   }
 
   @override
   Widget build(BuildContext context) {
-    // --- Filtrage dynamique des événements ---
+    // --- Le filtrage est maintenant géré par l'API, on prépare juste les listes pour l'UI ---
     final now = DateTime.now();
     
-    // Événements de la ville sélectionnée
-    final eventsInCity = _allEvents.where((e) => e.cityName == _selectedCity).toList();
-
     // Événements futurs (non passés)
-    final upcomingEvents = eventsInCity.where((e) => e.startDate.isAfter(now)).toList();
+    final upcomingEvents = _allEvents.where((e) => e.startDate.isAfter(now)).toList();
     upcomingEvents.sort((a, b) => a.startDate.compareTo(b.startDate)); // Les plus proches en premier
 
     // Événements populaires (ceux marqués comme "featured" ou avec le plus de vues)
-    final popularEvents = eventsInCity.where((e) => e.isFeatured && e.startDate.isAfter(now)).toList();
+    final popularEvents = _allEvents.where((e) => e.isFeatured && e.startDate.isAfter(now)).toList();
     if (popularEvents.isEmpty) {
         // Fallback: trier par nombre de vues si aucun n'est "featured"
-        final sortedByViews = eventsInCity.where((e) => e.startDate.isAfter(now)).toList();
+        final sortedByViews = _allEvents.where((e) => e.startDate.isAfter(now)).toList();
         sortedByViews.sort((a, b) => b.viewCount.compareTo(a.viewCount));
         popularEvents.addAll(sortedByViews.take(5)); // Prendre les 5 plus populaires
     }
 
     // Événements de sport
-    final sportEvents = eventsInCity.where((e) => e.category.toUpperCase() == 'SPORT' && e.startDate.isAfter(now)).toList();
+    final sportEvents = _allEvents.where((e) => e.category.toUpperCase() == 'SPORT' && e.startDate.isAfter(now)).toList();
 
     // Événements culturels (ex: Concert, Théâtre)
     const cultureCategories = {'CONCERT', 'THÉÂTRE', 'FESTIVAL'};
-    final cultureEvents = eventsInCity.where((e) => cultureCategories.contains(e.category.toUpperCase()) && e.startDate.isAfter(now)).toList();
+    final cultureEvents = _allEvents.where((e) => cultureCategories.contains(e.category.toUpperCase()) && e.startDate.isAfter(now)).toList();
 
 
     return Scaffold(
       backgroundColor: Colors.grey[100],
       body: SafeArea(
         child: RefreshIndicator(
-          onRefresh: _fetchEvents,
+          onRefresh: () => _fetchEvents(), // Le refresh recharge pour la ville actuelle
           child: _isLoading
               ? const Center(child: CircularProgressIndicator())
-              : SingleChildScrollView(
+              : _allEvents.isEmpty
+                ? const Center(child: Text("Aucun événement trouvé pour cette ville."))
+                : SingleChildScrollView(
                   physics: const AlwaysScrollableScrollPhysics(),
                   child: AnimationLimiter(
                     child: Column(

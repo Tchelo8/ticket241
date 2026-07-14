@@ -20,18 +20,16 @@ class ExplorerScreenState extends State<ExplorerScreen> {
   List<String> _categories = [];
   bool _isLoadingEvents = true;
   bool _isLoadingCategories = true;
-  String _selectedCity = 'Libreville'; // Ajout de la ville sélectionnée
+  String _selectedCity = 'Libreville'; // La ville est maintenant gérée ici
 
-  // Associe un nom de catégorie à une image locale pour garder une belle interface
   final Map<String, String> _categoryImages = {
     'CONCERT': 'assets/images/jazz.png',
     'SPORT': 'assets/images/sibang.jpg',
     'FESTIVAL': 'assets/images/enb.jpg',
     'SOIRÉE': 'assets/images/oiseau.jpg',
     'THÉÂTRE': 'assets/images/party.png',
-    // On peut ajouter d'autres catégories ici au besoin
   };
-  final String _defaultCategoryImage = 'assets/images/ticket.png'; // Image par défaut
+  final String _defaultCategoryImage = 'assets/images/ticket.png';
 
   List<Event> _filteredEvents = [];
   String? _selectedCategory;
@@ -43,13 +41,15 @@ class ExplorerScreenState extends State<ExplorerScreen> {
     _fetchData();
   }
 
-  /// Récupère les événements et les catégories en parallèle pour plus de performance
-  Future<void> _fetchData() async {
-    // On lance les deux requêtes en même temps
-    final eventsFuture = _apiService.getEvents();
+  Future<void> _fetchData({String? city}) async {
+    setState(() {
+        _isLoadingEvents = true;
+        _isLoadingCategories = true;
+    });
+
+    final eventsFuture = _apiService.getEvents(city: city ?? _selectedCity);
     final categoriesFuture = _apiService.getCategories();
 
-    // On attend les résultats
     final results = await Future.wait([eventsFuture, categoriesFuture]);
 
     final eventsResponse = results[0] as ApiResponse<List<Event>>;
@@ -57,45 +57,32 @@ class ExplorerScreenState extends State<ExplorerScreen> {
 
     if (mounted) {
       setState(() {
-        // Traitement des événements
         if (eventsResponse.success && eventsResponse.data != null) {
           _allEvents = eventsResponse.data!;
         }
         _isLoadingEvents = false;
 
-        // Traitement des catégories
         if (categoriesResponse.success && categoriesResponse.data != null) {
           _categories = categoriesResponse.data!;
-          if (_categories.isNotEmpty) {
-            // On sélectionne la première catégorie par défaut
+          if (_categories.isNotEmpty && _selectedCategory == null) {
             _selectedCategory = _categories.first;
           }
         }
         _isLoadingCategories = false;
         
-        // On applique les filtres une fois que tout est chargé
         _applyFilters();
       });
     }
   }
 
-
   void _applyFilters() {
-    if (_isLoadingEvents || _selectedCategory == null) return;
+    if (_isLoadingEvents) return;
 
     setState(() {
       _filteredEvents = _allEvents.where((event) {
-        // Filtre par ville
-        final cityMatch = event.cityName == _selectedCity;
-
-        // Le filtre par catégorie est maintenant sensible à la casse et gère le cas null
-        final categoryMatch = event.category.toUpperCase() == _selectedCategory!.toUpperCase();
-        
-        // Le filtre par recherche reste inchangé
-        final queryMatch = _searchQuery.isEmpty ||
-            event.name.toLowerCase().contains(_searchQuery.toLowerCase());
-            
-        return cityMatch && categoryMatch && queryMatch;
+        final categoryMatch = _selectedCategory == null || event.category.toUpperCase() == _selectedCategory!.toUpperCase();
+        final queryMatch = _searchQuery.isEmpty || event.name.toLowerCase().contains(_searchQuery.toLowerCase());
+        return categoryMatch && queryMatch;
       }).toList();
     });
   }
@@ -112,6 +99,16 @@ class ExplorerScreenState extends State<ExplorerScreen> {
       _searchQuery = query;
       _applyFilters();
     });
+  }
+
+  // Vous pouvez appeler cette méthode depuis un sélecteur de ville
+  void _onCityChanged(String newCity) {
+    if (newCity != _selectedCity) {
+      setState(() {
+        _selectedCity = newCity;
+        _fetchData(city: newCity); // On recharge les données pour la nouvelle ville
+      });
+    }
   }
 
   @override
@@ -137,7 +134,9 @@ class ExplorerScreenState extends State<ExplorerScreen> {
             Expanded(
               child: isLoading
                   ? const Center(child: CircularProgressIndicator())
-                  : _buildEventsGrid(),
+                  : _filteredEvents.isEmpty
+                    ? const Center(child: Text("Aucun résultat pour cette sélection."))
+                    : _buildEventsGrid(),
             ),
           ],
         ),
@@ -176,7 +175,6 @@ class ExplorerScreenState extends State<ExplorerScreen> {
         itemCount: _categories.length,
         itemBuilder: (context, index) {
           final categoryName = _categories[index];
-          // On récupère l'image associée ou l'image par défaut
           final categoryImage = _categoryImages[categoryName.toUpperCase()] ?? _defaultCategoryImage;
           return _buildCategoryCard(categoryName, categoryImage);
         },
@@ -215,11 +213,10 @@ class ExplorerScreenState extends State<ExplorerScreen> {
             ClipRRect(
               borderRadius: BorderRadius.circular(10),
               child: Image.asset(
-                imagePath, // Utilise le chemin d'image dynamique
+                imagePath,
                 height: 40,
                 width: 40,
                 fit: BoxFit.cover,
-                // Gestion d'erreur si une image n'est pas trouvée
                 errorBuilder: (context, error, stackTrace) => Image.asset(
                   _defaultCategoryImage,
                   height: 40,
@@ -245,9 +242,6 @@ class ExplorerScreenState extends State<ExplorerScreen> {
   }
 
   Widget _buildEventsGrid() {
-    if (_filteredEvents.isEmpty) {
-      return const Center(child: Text("Aucun événement trouvé pour cette catégorie"));
-    }
     return GridView.builder(
       gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
         crossAxisCount: 2,

@@ -153,16 +153,19 @@ class ApiService {
     );
   }
 
-  /// Récupère la liste complète des événements depuis l'API, en gérant la pagination.
-  Future<ApiResponse<List<Event>>> getEvents() async {
+  /// Récupère la liste des événements, avec un filtre optionnel par ville.
+  Future<ApiResponse<List<Event>>> getEvents({String? city}) async {
     final List<Event> allEvents = [];
     int currentPage = 0;
     int totalPages = 1; // On commence avec 1, sera mis à jour après le premier appel
 
     try {
       while (currentPage < totalPages) {
-        // Le endpoint pour les événements paginés
-        final endpoint = '/api/events/all?page=$currentPage&size=20'; // size=20 est une supposition raisonnable
+        // Construit l'endpoint avec la pagination et le filtre de ville si fourni.
+        String endpoint = '/api/events/all?page=$currentPage&size=20';
+        if (city != null && city.isNotEmpty) {
+          endpoint += '&city=${Uri.encodeComponent(city)}';
+        }
 
         final response = await get<Map<String, dynamic>>(
           endpoint,
@@ -218,23 +221,33 @@ class ApiService {
   /// Récupère la liste des catégories d'événements depuis l'API.
   Future<ApiResponse<List<String>>> getCategories() {
     return get<List<String>>(
-      '/api/events/categories/get/all', // Assurez-vous que cet endpoint est correct
+      '/api/events/categories/get/all',
       fromJson: (json) {
-        if (json is List) {
-          return List<String>.from(json.map((item) {
-            // Gère une liste de strings: ["SPORT", "CONCERT"]
-            if (item is String) {
-              return item;
-            }
-            // Gère une liste de maps: [{"name": "SPORT"}, {"name": "CONCERT"}]
-            if (item is Map<String, dynamic> && item.containsKey('name')) {
-              return item['name'].toString();
-            }
-            return '';
-          })).where((name) => name.isNotEmpty).toList();
+        List<dynamic> categoryList;
+
+        // Gère une réponse paginée: {"content": [...]}
+        if (json is Map<String, dynamic> && json.containsKey('content')) {
+          categoryList = json['content'] as List<dynamic>;
+        } 
+        // Gère une réponse non paginée: [...] 
+        else if (json is List) {
+          categoryList = json;
+        } else {
+          throw const FormatException('Format de réponse des catégories non supporté.');
         }
-        throw const FormatException('Réponse invalide, une liste de catégories (strings ou maps) était attendue.');
+
+        return List<String>.from(categoryList.map((item) {
+          if (item is String) {
+            return item;
+          }
+          if (item is Map<String, dynamic> && item.containsKey('name')) {
+            return item['name'].toString();
+          }
+          return '';
+        })).where((name) => name.isNotEmpty).toList();
       },
     );
   }
+
+
 }
