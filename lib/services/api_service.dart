@@ -1,7 +1,8 @@
 import 'dart:convert';
-import 'package:flutter/foundation.dart';
+import 'package:flutter/foundation.dart' hide Category;
 import 'package:flutter_dotenv/flutter_dotenv.dart';
 import 'package:http/http.dart' as http;
+import 'package:myapp/models/category_model.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import '../models/event_model.dart';
 
@@ -219,8 +220,8 @@ class ApiService {
   }
 
   /// Récupère la liste des catégories d'événements depuis l'API.
-  Future<ApiResponse<List<String>>> getCategories() {
-    return get<List<String>>(
+  Future<ApiResponse<List<Category>>> getCategories() {
+    return get<List<Category>>(
       '/api/events/categories/get/all',
       fromJson: (json) {
         List<dynamic> categoryList;
@@ -236,15 +237,7 @@ class ApiService {
           throw const FormatException('Format de réponse des catégories non supporté.');
         }
 
-        return List<String>.from(categoryList.map((item) {
-          if (item is String) {
-            return item;
-          }
-          if (item is Map<String, dynamic> && item.containsKey('name')) {
-            return item['name'].toString();
-          }
-          return '';
-        })).where((name) => name.isNotEmpty).toList();
+        return categoryList.map((item) => Category.fromJson(item)).toList();
       },
     );
   }

@@ -2,6 +2,7 @@ import 'dart:ui';
 
 import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
+import 'package:myapp/models/category_model.dart';
 import 'package:myapp/models/event_model.dart';
 import 'package:myapp/providers/favorites_provider.dart';
 import 'package:provider/provider.dart';
@@ -17,19 +18,10 @@ class ExplorerScreen extends StatefulWidget {
 class ExplorerScreenState extends State<ExplorerScreen> {
   final ApiService _apiService = ApiService();
   List<Event> _allEvents = [];
-  List<String> _categories = [];
+  List<Category> _categories = [];
   bool _isLoadingEvents = true;
   bool _isLoadingCategories = true;
-  String _selectedCity = 'Libreville'; // La ville est maintenant gérée ici
-
-  final Map<String, String> _categoryImages = {
-    'CONCERT': 'assets/images/jazz.png',
-    'SPORT': 'assets/images/sibang.jpg',
-    'FESTIVAL': 'assets/images/enb.jpg',
-    'SOIRÉE': 'assets/images/oiseau.jpg',
-    'THÉÂTRE': 'assets/images/party.png',
-  };
-  final String _defaultCategoryImage = 'assets/images/ticket.png';
+  String _selectedCity = 'Libreville';
 
   List<Event> _filteredEvents = [];
   String? _selectedCategory;
@@ -43,8 +35,8 @@ class ExplorerScreenState extends State<ExplorerScreen> {
 
   Future<void> _fetchData({String? city}) async {
     setState(() {
-        _isLoadingEvents = true;
-        _isLoadingCategories = true;
+      _isLoadingEvents = true;
+      _isLoadingCategories = true;
     });
 
     final eventsFuture = _apiService.getEvents(city: city ?? _selectedCity);
@@ -53,7 +45,7 @@ class ExplorerScreenState extends State<ExplorerScreen> {
     final results = await Future.wait([eventsFuture, categoriesFuture]);
 
     final eventsResponse = results[0] as ApiResponse<List<Event>>;
-    final categoriesResponse = results[1] as ApiResponse<List<String>>;
+    final categoriesResponse = results[1] as ApiResponse<List<Category>>;
 
     if (mounted) {
       setState(() {
@@ -65,11 +57,11 @@ class ExplorerScreenState extends State<ExplorerScreen> {
         if (categoriesResponse.success && categoriesResponse.data != null) {
           _categories = categoriesResponse.data!;
           if (_categories.isNotEmpty && _selectedCategory == null) {
-            _selectedCategory = _categories.first;
+            _selectedCategory = _categories.first.name;
           }
         }
         _isLoadingCategories = false;
-        
+
         _applyFilters();
       });
     }
@@ -80,8 +72,10 @@ class ExplorerScreenState extends State<ExplorerScreen> {
 
     setState(() {
       _filteredEvents = _allEvents.where((event) {
-        final categoryMatch = _selectedCategory == null || event.category.toUpperCase() == _selectedCategory!.toUpperCase();
-        final queryMatch = _searchQuery.isEmpty || event.name.toLowerCase().contains(_searchQuery.toLowerCase());
+        final categoryMatch = _selectedCategory == null ||
+            event.category.toUpperCase() == _selectedCategory!.toUpperCase();
+        final queryMatch = _searchQuery.isEmpty ||
+            event.name.toLowerCase().contains(_searchQuery.toLowerCase());
         return categoryMatch && queryMatch;
       }).toList();
     });
@@ -101,12 +95,11 @@ class ExplorerScreenState extends State<ExplorerScreen> {
     });
   }
 
-  // Vous pouvez appeler cette méthode depuis un sélecteur de ville
   void _onCityChanged(String newCity) {
     if (newCity != _selectedCity) {
       setState(() {
         _selectedCity = newCity;
-        _fetchData(city: newCity); // On recharge les données pour la nouvelle ville
+        _fetchData(city: newCity);
       });
     }
   }
@@ -135,8 +128,9 @@ class ExplorerScreenState extends State<ExplorerScreen> {
               child: isLoading
                   ? const Center(child: CircularProgressIndicator())
                   : _filteredEvents.isEmpty
-                    ? const Center(child: Text("Aucun résultat pour cette sélection."))
-                    : _buildEventsGrid(),
+                      ? const Center(
+                          child: Text("Aucun résultat pour cette sélection."))
+                      : _buildEventsGrid(),
             ),
           ],
         ),
@@ -167,25 +161,51 @@ class ExplorerScreenState extends State<ExplorerScreen> {
     if (_categories.isEmpty) {
       return const Center(child: Text("Aucune catégorie trouvée"));
     }
-    
+
     return SizedBox(
       height: 100,
       child: ListView.builder(
         scrollDirection: Axis.horizontal,
         itemCount: _categories.length,
         itemBuilder: (context, index) {
-          final categoryName = _categories[index];
-          final categoryImage = _categoryImages[categoryName.toUpperCase()] ?? _defaultCategoryImage;
-          return _buildCategoryCard(categoryName, categoryImage);
+          final category = _categories[index];
+          return _buildCategoryCard(category);
         },
       ),
     );
   }
 
-  Widget _buildCategoryCard(String name, String imagePath) {
-    final isSelected = _selectedCategory?.toUpperCase() == name.toUpperCase();
+  Widget _buildCategoryCard(Category category) {
+    final isSelected =
+        _selectedCategory?.toUpperCase() == category.name.toUpperCase();
+
+    const String fallbackImage = 'assets/images/logoblanc.png';
+
+    Widget imageWidget;
+    if (category.iconUrl != null && category.iconUrl!.isNotEmpty) {
+      imageWidget = Image.network(
+        category.iconUrl!,
+        height: 40,
+        width: 40,
+        fit: BoxFit.cover,
+        errorBuilder: (context, error, stackTrace) => Image.asset(
+          fallbackImage,
+          height: 40,
+          width: 40,
+          fit: BoxFit.cover,
+        ),
+      );
+    } else {
+      imageWidget = Image.asset(
+        fallbackImage,
+        height: 40,
+        width: 40,
+        fit: BoxFit.cover,
+      );
+    }
+
     return GestureDetector(
-      onTap: () => _onCategorySelected(name),
+      onTap: () => _onCategorySelected(category.name),
       child: Container(
         width: 80,
         margin: const EdgeInsets.only(right: 10),
@@ -212,22 +232,11 @@ class ExplorerScreenState extends State<ExplorerScreen> {
           children: [
             ClipRRect(
               borderRadius: BorderRadius.circular(10),
-              child: Image.asset(
-                imagePath,
-                height: 40,
-                width: 40,
-                fit: BoxFit.cover,
-                errorBuilder: (context, error, stackTrace) => Image.asset(
-                  _defaultCategoryImage,
-                  height: 40,
-                  width: 40,
-                  fit: BoxFit.cover,
-                ),
-              ),
+              child: imageWidget,
             ),
             const SizedBox(height: 8),
             Text(
-              name,
+              category.displayName,
               style: TextStyle(
                 color: isSelected ? Colors.white : Colors.black87,
                 fontWeight: FontWeight.w600,
