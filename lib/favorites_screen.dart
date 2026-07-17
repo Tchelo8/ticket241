@@ -1,10 +1,10 @@
-
 import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
 import 'package:lottie/lottie.dart';
 import 'package:myapp/models/event_model.dart';
 import 'package:myapp/providers/favorites_provider.dart';
 import 'package:provider/provider.dart';
+import 'package:intl/intl.dart';
 
 class FavoritesScreen extends StatelessWidget {
   const FavoritesScreen({super.key});
@@ -82,7 +82,7 @@ class FavoritesScreen extends StatelessWidget {
 
     return GestureDetector(
       onTap: () {
-        context.push('/details');
+        context.push('/details', extra: event); // Correctly navigate with event object
       },
       child: Container(
         margin: const EdgeInsets.only(bottom: 20),
@@ -91,7 +91,7 @@ class FavoritesScreen extends StatelessWidget {
           borderRadius: BorderRadius.circular(20),
           boxShadow: [
             BoxShadow(
-              color: Colors.grey.withAlpha((255 * 0.15).round()),
+              color: Colors.grey.withAlpha(40),
               spreadRadius: 1,
               blurRadius: 8,
               offset: const Offset(0, 4),
@@ -108,7 +108,14 @@ class FavoritesScreen extends StatelessWidget {
                     topLeft: Radius.circular(20),
                     topRight: Radius.circular(20),
                   ),
-                  child: Image.asset(event.imagePath, height: 150, width: double.infinity, fit: BoxFit.cover),
+                  child: Image.network(
+                    event.coverImageUrl,
+                    height: 150,
+                    width: double.infinity,
+                    fit: BoxFit.cover,
+                    errorBuilder: (context, error, stackTrace) => 
+                      Image.asset('assets/images/enb.jpg', height: 150, width: double.infinity, fit: BoxFit.cover),
+                  ),
                 ),
                 Positioned(
                   top: 8,
@@ -120,7 +127,7 @@ class FavoritesScreen extends StatelessWidget {
                     child: Container(
                       padding: const EdgeInsets.all(6),
                       decoration: BoxDecoration(
-                        color: Colors.white.withAlpha((255 * 0.9).round()),
+                        color: Colors.white.withOpacity(0.9),
                         shape: BoxShape.circle,
                       ),
                       child: Icon(
@@ -138,27 +145,46 @@ class FavoritesScreen extends StatelessWidget {
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
-                  Text(event.date, style: const TextStyle(fontSize: 12, color: Color(0xFF1E90FF), fontWeight: FontWeight.w600)),
+                  Text(
+                    DateFormat('dd MMMM yyyy', 'fr_FR').format(event.startDate),
+                    style: const TextStyle(fontSize: 12, color: Color(0xFF1E90FF), fontWeight: FontWeight.w600)
+                  ),
                   const SizedBox(height: 8),
-                  Text(event.name, style: const TextStyle(fontSize: 17, fontWeight: FontWeight.bold), maxLines: 1, overflow: TextOverflow.ellipsis,),
+                  Text(
+                    event.name,
+                    style: const TextStyle(fontSize: 17, fontWeight: FontWeight.bold),
+                    maxLines: 1,
+                    overflow: TextOverflow.ellipsis,
+                  ),
                   const SizedBox(height: 12),
                   Row(
                     mainAxisAlignment: MainAxisAlignment.spaceBetween,
                     children: [
-                      Row(
-                        children: [
-                          const Icon(Icons.location_on_outlined, size: 16, color: Colors.grey),
-                          const SizedBox(width: 4),
-                          Text(event.location, style: const TextStyle(color: Colors.grey, fontSize: 12)),
-                        ],
+                      Flexible(
+                        child: Row(
+                          children: [
+                            const Icon(Icons.location_on_outlined, size: 16, color: Colors.grey),
+                            const SizedBox(width: 4),
+                            Expanded(
+                              child: Text(
+                                '${event.venueName}, ${event.cityName}',
+                                style: const TextStyle(color: Colors.grey, fontSize: 12),
+                                overflow: TextOverflow.ellipsis,
+                              ),
+                            ),
+                          ],
+                        ),
                       ),
                       Container(
                         padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
                         decoration: BoxDecoration(
-                          color: const Color(0xFF1E90FF).withAlpha((255 * 0.1).round()),
+                          color: const Color(0xFF1E90FF).withOpacity(0.1),
                           borderRadius: BorderRadius.circular(8),
                         ),
-                        child: Text('${event.price} FCFA', style: const TextStyle(color: Color(0xFF1E90FF), fontWeight: FontWeight.bold, fontSize: 11)),
+                        child: Text(
+                          '${event.minPrice.toStringAsFixed(0)} FCFA',
+                          style: const TextStyle(color: Color(0xFF1E90FF), fontWeight: FontWeight.bold, fontSize: 11)
+                        ),
                       )
                     ],
                   ),
