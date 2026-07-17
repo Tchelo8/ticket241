@@ -9,6 +9,8 @@ import 'package:myapp/services/api_service.dart';
 import 'package:provider/provider.dart';
 import 'package:myapp/city_selection_popup.dart';
 import 'package:intl/intl.dart';
+import 'package:cached_network_image/cached_network_image.dart';
+import 'package:shimmer/shimmer.dart';
 
 class HomeScreen extends StatefulWidget {
   final Function(int) onNavigate;
@@ -331,12 +333,19 @@ class _HomeScreenState extends State<HomeScreen> {
                 children: [
                   ClipRRect(
                     borderRadius: BorderRadius.circular(12),
-                    child: Image.network(
-                      event.coverImageUrl,
+                    child: CachedNetworkImage(
+                      imageUrl: event.coverImageUrl,
                       width: 80,
                       height: 96,
                       fit: BoxFit.cover,
-                      errorBuilder: (context, error, stackTrace) => Container(
+                      placeholder: (context, url) => Shimmer.fromColors(
+                        baseColor: Colors.grey[300]!,
+                        highlightColor: Colors.grey[100]!,
+                        child: Container(
+                          color: Colors.white,
+                        ),
+                      ),
+                      errorWidget: (context, url, error) => Container(
                           width: 80, height: 96, color: Colors.grey[300], child: const Icon(Icons.image, color: Colors.grey)),
                     ),
                   ),
@@ -463,12 +472,19 @@ class _HomeScreenState extends State<HomeScreen> {
                     topLeft: Radius.circular(20),
                     topRight: Radius.circular(20),
                   ),
-                  child: Image.network(
-                    event.coverImageUrl,
+                  child: CachedNetworkImage(
+                    imageUrl: event.coverImageUrl,
                     height: 120,
                     width: double.infinity,
                     fit: BoxFit.cover,
-                    errorBuilder: (context, error, stackTrace) => Container(
+                    placeholder: (context, url) => Shimmer.fromColors(
+                      baseColor: Colors.grey[300]!,
+                      highlightColor: Colors.grey[100]!,
+                      child: Container(
+                        color: Colors.white,
+                      ),
+                    ),
+                    errorWidget: (context, url, error) => Container(
                       height: 120,
                       color: Colors.grey[300],
                       child: const Icon(Icons.broken_image, color: Colors.grey),

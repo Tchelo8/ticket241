@@ -1,4 +1,5 @@
 import 'package:go_router/go_router.dart';
+import 'package:myapp/forgot_password_screen.dart';
 import 'package:myapp/main_screen.dart';
 import 'package:myapp/models/ticket_model.dart';
 import 'package:myapp/otp_verification_screen.dart';
@@ -43,6 +44,10 @@ class AppRouter {
         GoRoute(
           path: '/login',
           builder: (context, state) => const LoginScreen(),
+        ),
+        GoRoute(
+          path: '/forgot-password',
+          builder: (context, state) => const ForgotPasswordScreen(),
         ),
         GoRoute(
           path: '/signup',
@@ -113,7 +118,7 @@ class AppRouter {
         }
 
         // Handle Authentication
-        final isAuthenticating = location == '/login' || location == '/signup' || location == '/';
+        final isAuthenticating = location == '/login' || location == '/signup' || location == '/' || location == '/forgot-password';
         final privateRoutes = [
           '/app', '/profile', '/edit-profile', '/notifications', 
           '/details', '/location', '/checkout', '/success'

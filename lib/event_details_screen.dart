@@ -1,11 +1,14 @@
+import 'package:cached_network_image/cached_network_image.dart';
 import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
 import 'package:myapp/models/event_model.dart';
 import 'package:myapp/models/ticket_model.dart';
 import 'package:myapp/providers/favorites_provider.dart';
 import 'package:myapp/services/api_service.dart';
+import 'package:myapp/widgets/event_location_card.dart';
 import 'package:provider/provider.dart';
 import 'package:intl/intl.dart';
+import 'package:shimmer/shimmer.dart';
 
 class EventDetailsScreen extends StatefulWidget {
   final Event event;
@@ -101,7 +104,7 @@ class EventDetailsScreenState extends State<EventDetailsScreen> {
                 _buildAboutSection(textColor, primaryColor),
                 _buildGeneralInfoSection(textColor, secondaryTextColor, primaryColor),
                 _buildTicketSelectionSection(primaryColor, textColor),
-                _buildLocationSection(textColor, secondaryTextColor),
+                EventLocationCard(venueAddress: widget.event.venueAddress),
                 _buildSuggestionsSection(textColor, secondaryTextColor, primaryColor),
                 const SizedBox(height: 100), // Bottom padding for action bar
               ],
@@ -113,18 +116,25 @@ class EventDetailsScreenState extends State<EventDetailsScreen> {
     );
   }
 
-    Widget _buildHeaderImage(BuildContext context, Event event) {
+  Widget _buildHeaderImage(BuildContext context, Event event) {
     final favoritesProvider = Provider.of<FavoritesProvider>(context);
     final isFavorite = favoritesProvider.isFavorite(event);
 
     return Stack(
       children: [
-        Image.network(
-          event.coverImageUrl,
+        CachedNetworkImage(
+          imageUrl: event.coverImageUrl,
           height: 300,
           width: double.infinity,
           fit: BoxFit.cover,
-          errorBuilder: (context, error, stackTrace) => Image.asset(
+          placeholder: (context, url) => Shimmer.fromColors(
+            baseColor: Colors.grey[300]!,
+            highlightColor: Colors.grey[100]!,
+            child: Container(
+              color: Colors.white,
+            ),
+          ),
+          errorWidget: (context, url, error) => Image.asset(
             'assets/images/enb.jpg', // Fallback image
             height: 300,
             width: double.infinity,
@@ -412,25 +422,6 @@ class EventDetailsScreenState extends State<EventDetailsScreen> {
     );
   }
 
-  Widget _buildLocationSection(Color textColor, Color secondaryTextColor) {
-    return Padding(
-      padding: const EdgeInsets.all(20.0),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          Text('Localisation', style: TextStyle(color: textColor, fontSize: 20, fontWeight: FontWeight.bold)),
-          const SizedBox(height: 10),
-          Text(widget.event.venueAddress, style: TextStyle(color: secondaryTextColor)),
-          const SizedBox(height: 10),
-          ClipRRect(
-            borderRadius: BorderRadius.circular(15),
-            child: Image.asset('assets/images/map.jpg', height: 180, width: double.infinity, fit: BoxFit.cover),
-          ),
-        ],
-      ),
-    );
-  }
-
   Widget _buildSuggestionsSection(Color textColor, Color secondaryTextColor, Color primaryColor) {
     if (_isLoadingSuggestions) {
       return const Center(child: CircularProgressIndicator());
@@ -480,12 +471,19 @@ class EventDetailsScreenState extends State<EventDetailsScreen> {
               children: [
                 ClipRRect(
                   borderRadius: BorderRadius.circular(15),
-                  child: Image.network(
-                    event.coverImageUrl,
+                  child: CachedNetworkImage(
+                    imageUrl: event.coverImageUrl,
                     height: 150,
                     width: 200,
                     fit: BoxFit.cover,
-                    errorBuilder: (context, error, stackTrace) => Image.asset(
+                    placeholder: (context, url) => Shimmer.fromColors(
+                      baseColor: Colors.grey[300]!,
+                      highlightColor: Colors.grey[100]!,
+                      child: Container(
+                        color: Colors.white,
+                      ),
+                    ),
+                    errorWidget: (context, url, error) => Image.asset(
                       'assets/images/enb.jpg', // Fallback image
                       height: 150,
                       width: 200,

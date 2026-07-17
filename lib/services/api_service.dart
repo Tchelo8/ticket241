@@ -242,5 +242,11 @@ class ApiService {
     );
   }
 
-
+  /// Envoie une demande de réinitialisation de mot de passe.
+  Future<ApiResponse> forgotPassword(String phone) {
+    return post(
+      '/api/auth/forgot-password',
+      body: {'phone': phone},
+    );
+  }
 }

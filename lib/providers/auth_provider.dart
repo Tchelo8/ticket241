@@ -70,6 +70,14 @@ class AuthProvider with ChangeNotifier {
     return response; // On retourne la réponse complète à l'UI
   }
 
+  /// Envoie une demande de réinitialisation de mot de passe.
+  Future<ApiResponse> forgotPassword(String phone) async {
+    // Pas besoin de gérer un état de chargement global ici, 
+    // car la page de mot de passe oublié a son propre état local.
+    final response = await _apiService.forgotPassword(phone);
+    return response;
+  }
+
   /// Sauvegarde la session dans le stockage local.
   Future<void> _saveSession(String token, Map<String, dynamic> user) async {
     final prefs = await SharedPreferences.getInstance();

@@ -7,6 +7,8 @@ import 'package:myapp/models/event_model.dart';
 import 'package:myapp/providers/favorites_provider.dart';
 import 'package:provider/provider.dart';
 import 'package:myapp/services/api_service.dart';
+import 'package:cached_network_image/cached_network_image.dart';
+import 'package:shimmer/shimmer.dart';
 
 class ExplorerScreen extends StatefulWidget {
   const ExplorerScreen({super.key});
@@ -183,12 +185,19 @@ class ExplorerScreenState extends State<ExplorerScreen> {
 
     Widget imageWidget;
     if (category.iconUrl != null && category.iconUrl!.isNotEmpty) {
-      imageWidget = Image.network(
-        category.iconUrl!,
+      imageWidget = CachedNetworkImage(
+        imageUrl: category.iconUrl!,
         height: 40,
         width: 40,
         fit: BoxFit.cover,
-        errorBuilder: (context, error, stackTrace) => Image.asset(
+        placeholder: (context, url) => Shimmer.fromColors(
+          baseColor: Colors.grey[300]!,
+          highlightColor: Colors.grey[100]!,
+          child: Container(
+            color: Colors.white,
+          ),
+        ),
+        errorWidget: (context, url, error) => Image.asset(
           fallbackImage,
           height: 40,
           width: 40,
@@ -297,12 +306,19 @@ class ExplorerScreenState extends State<ExplorerScreen> {
                     topLeft: Radius.circular(20),
                     topRight: Radius.circular(20),
                   ),
-                  child: Image.network(
-                    event.coverImageUrl,
+                  child: CachedNetworkImage(
+                    imageUrl: event.coverImageUrl,
                     height: 120,
                     width: double.infinity,
                     fit: BoxFit.cover,
-                    errorBuilder: (context, error, stackTrace) => Container(
+                    placeholder: (context, url) => Shimmer.fromColors(
+                      baseColor: Colors.grey[300]!,
+                      highlightColor: Colors.grey[100]!,
+                      child: Container(
+                        color: Colors.white,
+                      ),
+                    ),
+                    errorWidget: (context, url, error) => Container(
                       height: 120,
                       color: Colors.grey[300],
                       child: const Icon(Icons.broken_image, color: Colors.grey),

@@ -4,6 +4,8 @@ import 'package:flutter_staggered_animations/flutter_staggered_animations.dart';
 import 'package:go_router/go_router.dart';
 import 'package:lottie/lottie.dart';
 import 'package:myapp/models/ticket_model.dart';
+import 'package:cached_network_image/cached_network_image.dart';
+import 'package:shimmer/shimmer.dart';
 
 class TicketsScreen extends StatefulWidget {
   final Function(int) onNavigate;
@@ -18,50 +20,7 @@ class TicketsScreenState extends State<TicketsScreen> {
   bool _isUpcoming = true;
 
   final List<EventTicket> _tickets = [
-    // EventTicket(
-    //   imagePath: 'assets/images/enb.jpg',
-    //   eventName: 'Concert Live Acoustique',
-    //   location: 'Entre Nous Bar, Angondjé',
-    //   date: '29 Mars 2024',
-    //   time: '22:00',
-    //   status: 'Payé',
-    //   ticketCount: 1,
-    //   daysLeft: 3,
-    //   isUpcoming: true,
-    // ),
-    // EventTicket(
-    //   imagePath: 'assets/images/sibang.jpg',
-    //   eventName: 'Festival International de Sibang',
-    //   location: 'Jardin Botanique, Libreville',
-    //   date: '15 Avril 2024',
-    //   time: '09:00',
-    //   status: 'Payé',
-    //   ticketCount: 2,
-    //   daysLeft: 20,
-    //   isUpcoming: true,
-    // ),
-    // EventTicket(
-    //   imagePath: 'assets/images/oiseau.jpg',
-    //   eventName: 'Concert Oiseau Rare',
-    //   location: 'Casino Croisette, LBV',
-    //   date: '14 Fév 2024',
-    //   time: '20:00',
-    //   status: 'Terminé',
-    //   ticketCount: 2,
-    //   daysLeft: 0,
-    //   isUpcoming: false,
-    // ),
-    // EventTicket(
-    //   imagePath: 'assets/images/jazz.png',
-    //   eventName: 'Libreville Jazz Festival',
-    //   location: 'Institut Français, LBV',
-    //   date: '10 Jan 2024',
-    //   time: '19:00',
-    //   status: 'Terminé',
-    //   ticketCount: 1,
-    //   daysLeft: 0,
-    //   isUpcoming: false,
-    // ),
+    // This is example data. In a real app, this would be fetched from a service.
   ];
 
   @override
@@ -79,7 +38,7 @@ class TicketsScreenState extends State<TicketsScreen> {
           'Mes Billets',
           style: TextStyle(color: Colors.black, fontWeight: FontWeight.bold, fontSize: 24),
         ),
-        actions: const [], // Search icon removed
+        actions: const [],
       ),
       body: Padding(
         padding: const EdgeInsets.symmetric(horizontal: 20.0),
@@ -110,7 +69,7 @@ class TicketsScreenState extends State<TicketsScreen> {
         mainAxisAlignment: MainAxisAlignment.center,
         children: [
           Lottie.asset(
-            'assets/animations/Tickets.json', // Corrected animation name
+            'assets/animations/Tickets.json',
             width: 200,
             height: 200,
             fit: BoxFit.contain,
@@ -140,8 +99,6 @@ class TicketsScreenState extends State<TicketsScreen> {
       ),
     );
   }
-
-
 
   void _showOptionsBottomSheet(BuildContext context, EventTicket ticket) {
     showModalBottomSheet(
@@ -177,7 +134,6 @@ class TicketsScreenState extends State<TicketsScreen> {
           title: const Text('Commander à nouveau'),
           onTap: () {
             context.pop();
-            // Add re-order logic here
           },
         ),
         ListTile(
@@ -185,7 +141,6 @@ class TicketsScreenState extends State<TicketsScreen> {
           title: Text('Annuler la réservation', style: TextStyle(color: Colors.red.shade700)),
           onTap: () {
             context.pop();
-            // Add cancellation logic here
           },
         ),
       ];
@@ -196,7 +151,6 @@ class TicketsScreenState extends State<TicketsScreen> {
           title: const Text('Télécharger le reçu'),
           onTap: () {
             context.pop();
-            // Add download logic here
           },
         ),
         ListTile(
@@ -204,7 +158,6 @@ class TicketsScreenState extends State<TicketsScreen> {
           title: const Text('Archiver'),
           onTap: () {
             context.pop();
-            // Add archive logic here
           },
         ),
       ];
@@ -321,7 +274,23 @@ class TicketsScreenState extends State<TicketsScreen> {
             children: [
               ClipRRect(
                 borderRadius: BorderRadius.circular(15.0),
-                child: Image.asset(ticket.imagePath, width: 80, height: 80, fit: BoxFit.cover),
+                child: CachedNetworkImage(
+                  imageUrl: ticket.imagePath,
+                  width: 80,
+                  height: 80,
+                  fit: BoxFit.cover,
+                  placeholder: (context, url) => Shimmer.fromColors(
+                    baseColor: Colors.grey[300]!,
+                    highlightColor: Colors.grey[100]!,
+                    child: Container(color: Colors.white),
+                  ),
+                  errorWidget: (context, url, error) => Image.asset(
+                    'assets/images/logoblanc.png', // Local fallback image
+                    width: 80,
+                    height: 80,
+                    fit: BoxFit.cover,
+                  ),
+                ),
               ),
               const SizedBox(width: 15),
               Expanded(
