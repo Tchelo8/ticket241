@@ -1,6 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:google_maps_flutter/google_maps_flutter.dart';
-import 'package:geocoding/geocoding.dart';
+import 'package:geocoding/geocoding.dart' as geocoding;
 import 'package:url_launcher/url_launcher.dart';
 
 class EventLocationCard extends StatefulWidget {
@@ -26,16 +26,16 @@ class _EventLocationCardState extends State<EventLocationCard> {
 
   Future<void> _geocodeAddress() async {
     try {
-      List<Location> locations = await locationFromAddress(widget.venueAddress);
+      List<geocoding.Location> locations = await geocoding.locationFromAddress(widget.venueAddress);
       if (locations.isNotEmpty) {
         final location = locations.first;
         setState(() {
           _eventLocation = LatLng(location.latitude, location.longitude);
           _markers.add(
             Marker(
-              markerId: MarkerId('eventLocation'),
+              markerId: const MarkerId('eventLocation'),
               position: _eventLocation!,
-              infoWindow: InfoWindow(title: 'Lieu de l'événement'),
+              infoWindow: const InfoWindow(title: 'Lieu de l événement'),
             ),
           );
         });
@@ -52,13 +52,15 @@ class _EventLocationCardState extends State<EventLocationCard> {
     }
   }
 
-  void _launchMaps() async {
+  Future<void> _launchMaps() async {
     if (_eventLocation != null) {
-      final url = 'https://www.google.com/maps/search/?api=1&query=${_eventLocation!.latitude},${_eventLocation!.longitude}';
-      if (await canLaunch(url)) {
-        await launch(url);
-      } else {
-        throw 'Could not launch $url';
+      final uri = Uri.parse('https://www.google.com/maps/search/?api=1&query=${_eventLocation!.latitude},${_eventLocation!.longitude}');
+      if (!await launchUrl(uri, mode: LaunchMode.externalApplication)) {
+        if (mounted) {
+          ScaffoldMessenger.of(context).showSnackBar(
+            const SnackBar(content: Text('Impossible d ouvrir Google Maps.')),
+          );
+        }
       }
     }
   }
@@ -71,8 +73,8 @@ class _EventLocationCardState extends State<EventLocationCard> {
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          Padding(
-            padding: const EdgeInsets.all(16.0),
+          const Padding(
+            padding: EdgeInsets.all(16.0),
             child: Text(
               'Localisation',
               style: TextStyle(fontSize: 20, fontWeight: FontWeight.bold),
@@ -85,14 +87,14 @@ class _EventLocationCardState extends State<EventLocationCard> {
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
                 Text(widget.venueAddress, style: TextStyle(color: Colors.grey[600])),
-                SizedBox(height: 10),
+                const SizedBox(height: 10),
                 ElevatedButton.icon(
                   onPressed: _eventLocation != null ? _launchMaps : null,
-                  icon: Icon(Icons.navigation),
-                  label: Text('Itinéraire'),
+                  icon: const Icon(Icons.navigation),
+                  label: const Text('Itinéraire'),
                   style: ElevatedButton.styleFrom(
-                    primary: Theme.of(context).primaryColor,
-                    onSurface: Colors.grey,
+                    backgroundColor: Theme.of(context).primaryColor,
+                    disabledBackgroundColor: Colors.grey,
                     shape: RoundedRectangleBorder(
                       borderRadius: BorderRadius.circular(8),
                     ),
@@ -112,7 +114,6 @@ class _EventLocationCardState extends State<EventLocationCard> {
         height: 200,
         decoration: BoxDecoration(
           color: Colors.grey[200],
-          borderRadius: BorderRadius.circular(0),
         ),
         child: Center(
           child: Padding(
@@ -128,13 +129,13 @@ class _EventLocationCardState extends State<EventLocationCard> {
     }
 
     if (_eventLocation == null) {
-      return Container(
+      return const SizedBox(
         height: 200,
         child: Center(child: CircularProgressIndicator()),
       );
     }
 
-    return Container(
+    return SizedBox(
       height: 200,
       child: GoogleMap(
         onMapCreated: (controller) {
@@ -147,6 +148,7 @@ class _EventLocationCardState extends State<EventLocationCard> {
         markers: _markers,
         zoomControlsEnabled: false,
         scrollGesturesEnabled: false,
+        gestureRecognizers: const {},
       ),
     );
   }
