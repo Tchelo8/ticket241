@@ -3,6 +3,7 @@ import 'package:go_router/go_router.dart';
 import 'package:myapp/models/event_model.dart';
 import 'package:myapp/models/ticket_model.dart';
 import 'package:myapp/providers/favorites_provider.dart';
+import 'package:myapp/services/api_service.dart';
 import 'package:provider/provider.dart';
 import 'package:intl/intl.dart';
 
@@ -17,69 +18,46 @@ class EventDetailsScreen extends StatefulWidget {
 class EventDetailsScreenState extends State<EventDetailsScreen> {
   late List<Map<String, dynamic>> _ticketData;
   double _totalPrice = 0.0;
+  final ApiService _apiService = ApiService();
 
-  // Dummy data for suggested events
-  final List<Event> _suggestedEvents = [
-    Event(
-        id: 101,
-        slug: 'suggested-1',
-        name: 'Concert sous les pyramides',
-        coverImageUrl: 'assets/images/enb.jpg',
-        venueName: 'Gizeh, Caire',
-        startDate: DateTime(2025, 4, 10),
-        minPrice: 5000,
-        maxPrice: 15000,
-        category: 'Concert',
-        cityId: 1,
-        cityName: 'Le Caire',
-        cityCountry: 'Égypte',
-        availableSeats: 50,
-        soldSeats: 10,
-        viewCount: 120,
-        isFeatured: true,
-        isPromoted: false,
-        isSaleOpen: true,
-        isPastEvent: false,
-        isSoldOut: false),
-    Event(
-        id: 102,
-        slug: 'suggested-2',
-        name: 'Festival de Jazz de Mumbai',
-        coverImageUrl: 'assets/images/jazz.png',
-        venueName: 'Santorin, Grèce',
-        startDate: DateTime(2025, 5, 25),
-        minPrice: 4000,
-        maxPrice: 12000,
-        category: 'Festival',
-        cityId: 2,
-        cityName: 'Santorin',
-        cityCountry: 'Grèce',
-        availableSeats: 30,
-        soldSeats: 5,
-        viewCount: 85,
-        isFeatured: false,
-        isPromoted: true,
-        isSaleOpen: true,
-        isPastEvent: false,
-        isSoldOut: false),
-  ];
+  // State for dynamic UI
+  bool _isDescriptionExpanded = false;
+  bool _isGeneralInfoExpanded = false;
+  List<Event> _suggestedEvents = [];
+  bool _isLoadingSuggestions = true;
 
   @override
   void initState() {
     super.initState();
-    // Dynamically generate placeholder ticket types based on event prices
+    _initializeTickets();
+    _fetchSuggestedEvents();
+  }
+
+  void _initializeTickets() {
     double minPrice = widget.event.minPrice;
     double maxPrice = widget.event.maxPrice;
-
-    if (maxPrice <= minPrice) {
-      maxPrice = minPrice * 2;
-    }
+    if (maxPrice <= minPrice) maxPrice = minPrice * 2;
 
     _ticketData = [
       {'name': 'Ticket Standard', 'price': minPrice, 'quantity': 1},
       {'name': 'Pass VIP', 'price': maxPrice, 'quantity': 0},
     ];
     _calculateTotal();
+  }
+
+  Future<void> _fetchSuggestedEvents() async {
+    final response = await _apiService.getEvents();
+    if (mounted && response.success && response.data != null) {
+      setState(() {
+        // Exclude the current event from suggestions and take a few
+        _suggestedEvents = response.data!.where((e) => e.id != widget.event.id).take(5).toList();
+        _isLoadingSuggestions = false;
+      });
+    } else if (mounted) {
+        setState(() {
+            _isLoadingSuggestions = false;
+        });
+    }
   }
 
   void _updateTicketQuantity(int index, int change) {
@@ -99,8 +77,9 @@ class EventDetailsScreenState extends State<EventDetailsScreen> {
     _totalPrice = total;
   }
 
-  String _formatDate(DateTime date) {
-    return DateFormat('dd MMMM yyyy, HH:mm', 'fr_FR').format(date);
+  String _formatDate(DateTime? date, {String format = 'dd MMMM yyyy, HH:mm'}) {
+    if (date == null) return 'N/A';
+    return DateFormat(format, 'fr_FR').format(date);
   }
 
   @override
@@ -120,11 +99,11 @@ class EventDetailsScreenState extends State<EventDetailsScreen> {
                 _buildHeaderImage(context, widget.event),
                 _buildEventInfo(textColor),
                 _buildAboutSection(textColor, primaryColor),
-                _buildGeneralInfoSection(textColor, secondaryTextColor),
+                _buildGeneralInfoSection(textColor, secondaryTextColor, primaryColor),
                 _buildTicketSelectionSection(primaryColor, textColor),
                 _buildLocationSection(textColor, secondaryTextColor),
                 _buildSuggestionsSection(textColor, secondaryTextColor, primaryColor),
-                const SizedBox(height: 100),
+                const SizedBox(height: 100), // Bottom padding for action bar
               ],
             ),
           ),
@@ -134,46 +113,36 @@ class EventDetailsScreenState extends State<EventDetailsScreen> {
     );
   }
 
-  Widget _buildHeaderImage(BuildContext context, Event event) {
+    Widget _buildHeaderImage(BuildContext context, Event event) {
     final favoritesProvider = Provider.of<FavoritesProvider>(context);
     final isFavorite = favoritesProvider.isFavorite(event);
 
-    Widget imageWidget;
-    if (event.coverImageUrl.startsWith('assets/')) {
-      imageWidget = Image.asset(
-        event.coverImageUrl,
-        height: 300,
-        width: double.infinity,
-        fit: BoxFit.cover,
-      );
-    } else {
-      imageWidget = Image.network(
-        event.coverImageUrl,
-        height: 300,
-        width: double.infinity,
-        fit: BoxFit.cover,
-        errorBuilder: (context, error, stackTrace) => Image.asset(
-          'assets/images/enb.jpg',
+    return Stack(
+      children: [
+        Image.network(
+          event.coverImageUrl,
           height: 300,
           width: double.infinity,
           fit: BoxFit.cover,
+          errorBuilder: (context, error, stackTrace) => Image.asset(
+            'assets/images/enb.jpg', // Fallback image
+            height: 300,
+            width: double.infinity,
+            fit: BoxFit.cover,
+          ),
         ),
-      );
-    }
-
-    return Stack(
-      children: [
-        imageWidget,
+        // Gradient overlay for text readability
         Container(
           height: 300,
           decoration: BoxDecoration(
             gradient: LinearGradient(
               begin: Alignment.topCenter,
               end: Alignment.bottomCenter,
-              colors: [Colors.transparent, Colors.black.withAlpha((255 * 0.7).round())],
+              colors: [Colors.transparent, Colors.black.withOpacity(0.7)],
             ),
           ),
         ),
+        // Top action buttons
         Positioned(
           top: 40,
           left: 16,
@@ -182,7 +151,7 @@ class EventDetailsScreenState extends State<EventDetailsScreen> {
             mainAxisAlignment: MainAxisAlignment.spaceBetween,
             children: [
               CircleAvatar(
-                backgroundColor: Colors.black.withAlpha((255 * 0.5).round()),
+                backgroundColor: Colors.black.withOpacity(0.5),
                 child: IconButton(
                   icon: const Icon(Icons.arrow_back, color: Colors.white),
                   onPressed: () => context.pop(),
@@ -191,28 +160,18 @@ class EventDetailsScreenState extends State<EventDetailsScreen> {
               Row(
                 children: [
                   CircleAvatar(
-                    backgroundColor: Colors.black.withAlpha((255 * 0.5).round()),
+                    backgroundColor: Colors.black.withOpacity(0.5),
                     child: IconButton(
                       icon: Icon(
                         isFavorite ? Icons.favorite : Icons.favorite_border,
                         color: isFavorite ? Colors.red : Colors.white,
                       ),
-                      onPressed: () {
-                        favoritesProvider.toggleFavorite(event);
-                        if (!isFavorite) {
-                          ScaffoldMessenger.of(context).showSnackBar(
-                            const SnackBar(
-                              content: Text('Ajouté aux favoris'),
-                              duration: Duration(seconds: 2),
-                            ),
-                          );
-                        }
-                      },
+                      onPressed: () => favoritesProvider.toggleFavorite(event),
                     ),
                   ),
                   const SizedBox(width: 10),
                   CircleAvatar(
-                    backgroundColor: Colors.black.withAlpha((255 * 0.5).round()),
+                    backgroundColor: Colors.black.withOpacity(0.5),
                     child: IconButton(
                       icon: const Icon(Icons.more_horiz, color: Colors.white),
                       onPressed: () {},
@@ -223,6 +182,7 @@ class EventDetailsScreenState extends State<EventDetailsScreen> {
             ],
           ),
         ),
+        // Event title and date
         Positioned(
           bottom: 20,
           left: 20,
@@ -232,16 +192,12 @@ class EventDetailsScreenState extends State<EventDetailsScreen> {
             children: [
               Text(
                 event.name,
-                style: const TextStyle(
-                  color: Colors.white,
-                  fontSize: 28,
-                  fontWeight: FontWeight.bold,
-                ),
+                style: const TextStyle(color: Colors.white, fontSize: 28, fontWeight: FontWeight.bold),
               ),
               const SizedBox(height: 8),
               Text(
                 _formatDate(event.startDate),
-                style: TextStyle(color: Colors.white.withAlpha((255 * 0.9).round())),
+                style: TextStyle(color: Colors.white.withOpacity(0.9)),
               ),
             ],
           ),
@@ -261,18 +217,20 @@ class EventDetailsScreenState extends State<EventDetailsScreen> {
             child: const Icon(Icons.business, color: Color(0xFF1E90FF)),
           ),
           const SizedBox(width: 15),
-          Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              Text(
-                widget.event.venueName,
-                style: TextStyle(color: textColor, fontSize: 16, fontWeight: FontWeight.bold),
-              ),
-              Text(
-                '${widget.event.cityName}, ${widget.event.cityCountry}',
-                style: const TextStyle(color: Colors.grey, fontSize: 14),
-              ),
-            ],
+          Expanded(
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Text(
+                  widget.event.organizerName ?? 'Organisateur inconnu',
+                  style: TextStyle(color: textColor, fontSize: 16, fontWeight: FontWeight.bold),
+                ),
+                Text(
+                  'Organisateur',
+                  style: const TextStyle(color: Colors.grey, fontSize: 14),
+                ),
+              ],
+            ),
           ),
         ],
       ),
@@ -280,8 +238,8 @@ class EventDetailsScreenState extends State<EventDetailsScreen> {
   }
 
   Widget _buildAboutSection(Color textColor, Color primaryColor) {
-    const defaultDescription =
-        "Le festival de musique est un événement de renommée mondiale qui a lieu chaque année dans la ville animée de Libreville. C'est une destination incontournable pour les amateurs de musique du monde entier, attirant des dizaines de milliers de participants venus vivre son atmosphère électrisante.";
+    final String description = widget.event.fullDescription ?? "Aucune description disponible.";
+    final bool isLongDescription = description.length > 350;
 
     return Padding(
       padding: const EdgeInsets.symmetric(horizontal: 20.0),
@@ -291,19 +249,29 @@ class EventDetailsScreenState extends State<EventDetailsScreen> {
           Text('À propos', style: TextStyle(color: textColor, fontSize: 20, fontWeight: FontWeight.bold)),
           const SizedBox(height: 10),
           Text(
-            'Rejoignez-nous pour ${widget.event.name} à ${widget.event.venueName}. Profitez d\'une expérience exceptionnelle dans la catégorie ${widget.event.category}. Places disponibles : ${widget.event.availableSeats}.\n\n$defaultDescription',
-            style: TextStyle(color: textColor.withAlpha((255 * 0.7).round()), height: 1.5),
+            _isDescriptionExpanded || !isLongDescription
+                ? description
+                : '${description.substring(0, 350)}...',
+            style: TextStyle(color: textColor.withOpacity(0.7), height: 1.5),
           ),
-          TextButton(
-            onPressed: () {},
-            child: Text('Lire la suite', style: TextStyle(color: primaryColor)),
-          ),
+          if (isLongDescription)
+            TextButton(
+              onPressed: () {
+                setState(() {
+                  _isDescriptionExpanded = !_isDescriptionExpanded;
+                });
+              },
+              child: Text(
+                _isDescriptionExpanded ? 'Voir moins' : 'Lire la suite',
+                style: TextStyle(color: primaryColor),
+              ),
+            ),
         ],
       ),
     );
   }
 
-  Widget _buildGeneralInfoSection(Color textColor, Color secondaryTextColor) {
+  Widget _buildGeneralInfoSection(Color textColor, Color secondaryTextColor, Color primaryColor) {
     return Padding(
       padding: const EdgeInsets.symmetric(horizontal: 20.0, vertical: 10.0),
       child: Column(
@@ -311,23 +279,51 @@ class EventDetailsScreenState extends State<EventDetailsScreen> {
         children: [
           Text('Informations générales', style: TextStyle(color: textColor, fontSize: 20, fontWeight: FontWeight.bold)),
           const SizedBox(height: 15),
-          _buildInfoRow(Icons.calendar_today, 'Date: ${DateFormat('EEEE dd MMMM', 'fr_FR').format(widget.event.startDate)}', secondaryTextColor, textColor),
-          _buildInfoRow(Icons.access_time, 'Heure: ${DateFormat('HH:mm').format(widget.event.startDate)}', secondaryTextColor, textColor),
-          _buildInfoRow(Icons.location_on, 'Lieu: ${widget.event.venueName}, ${widget.event.cityName}', secondaryTextColor, textColor),
-          _buildInfoRow(Icons.event_seat, 'Places restantes: ${widget.event.availableSeats}', secondaryTextColor, textColor),
+          _buildInfoRow(Icons.calendar_today, 'Date', _formatDate(widget.event.startDate, format: 'EEEE dd MMMM yyyy'), secondaryTextColor, textColor),
+          _buildInfoRow(Icons.access_time, 'Heure', _formatDate(widget.event.startDate, format: 'HH:mm'), secondaryTextColor, textColor),
+          _buildInfoRow(Icons.location_on, 'Lieu', '${widget.event.venueName}, ${widget.event.cityName}', secondaryTextColor, textColor),
+          _buildInfoRow(Icons.event_seat, 'Places restantes', widget.event.availableSeats.toString(), secondaryTextColor, textColor),
+          if (_isGeneralInfoExpanded)
+            Column(
+              children: [
+                _buildInfoRow(Icons.sensor_door, 'Ouverture des portes', _formatDate(widget.event.doorsOpenTime, format: 'HH:mm'), secondaryTextColor, textColor),
+                 _buildInfoRow(Icons.location_city, 'Adresse', widget.event.venueAddress, secondaryTextColor, textColor),
+                 _buildInfoRow(Icons.policy, 'Remboursement', 'Jusqu\'à ${widget.event.refundDeadlineDays} jours avant', secondaryTextColor, textColor),
+              ],
+            ),
+          
+          TextButton(
+            onPressed: () {
+              setState(() {
+                _isGeneralInfoExpanded = !_isGeneralInfoExpanded;
+              });
+            },
+            child: Text(
+              _isGeneralInfoExpanded ? 'Voir moins' : 'Voir plus',
+              style: TextStyle(color: primaryColor, fontWeight: FontWeight.bold),
+            ),
+          ),
         ],
       ),
     );
   }
 
-  Widget _buildInfoRow(IconData icon, String text, Color iconColor, Color textColor) {
+  Widget _buildInfoRow(IconData icon, String label, String value, Color iconColor, Color textColor) {
     return Padding(
       padding: const EdgeInsets.only(bottom: 12.0),
       child: Row(
+        crossAxisAlignment: CrossAxisAlignment.start,
         children: [
           Icon(icon, color: iconColor, size: 20),
           const SizedBox(width: 15),
-          Expanded(child: Text(text, style: TextStyle(color: textColor, fontSize: 15))),
+          Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+                Text(label, style: TextStyle(color: textColor, fontSize: 15, fontWeight: FontWeight.bold)),
+                const SizedBox(height: 2),
+                Text(value, style: TextStyle(color: iconColor, fontSize: 14)),
+            ],
+          )
         ],
       ),
     );
@@ -424,7 +420,7 @@ class EventDetailsScreenState extends State<EventDetailsScreen> {
         children: [
           Text('Localisation', style: TextStyle(color: textColor, fontSize: 20, fontWeight: FontWeight.bold)),
           const SizedBox(height: 10),
-          Text('${widget.event.venueName}, ${widget.event.cityName}', style: TextStyle(color: secondaryTextColor)),
+          Text(widget.event.venueAddress, style: TextStyle(color: secondaryTextColor)),
           const SizedBox(height: 10),
           ClipRRect(
             borderRadius: BorderRadius.circular(15),
@@ -436,6 +432,13 @@ class EventDetailsScreenState extends State<EventDetailsScreen> {
   }
 
   Widget _buildSuggestionsSection(Color textColor, Color secondaryTextColor, Color primaryColor) {
+    if (_isLoadingSuggestions) {
+      return const Center(child: CircularProgressIndicator());
+    }
+    if (_suggestedEvents.isEmpty) {
+      return const SizedBox.shrink(); // Do not show section if no suggestions
+    }
+    
     return Padding(
       padding: const EdgeInsets.symmetric(vertical: 10.0),
       child: Column(
@@ -464,95 +467,46 @@ class EventDetailsScreenState extends State<EventDetailsScreen> {
   }
 
   Widget _buildSuggestionCard(BuildContext context, Event event, Color textColor, Color secondaryTextColor, Color primaryColor) {
-    final favoritesProvider = Provider.of<FavoritesProvider>(context);
-    final isFavorite = favoritesProvider.isFavorite(event);
 
-    Widget imageWidget;
-    if (event.coverImageUrl.startsWith('assets/')) {
-      imageWidget = Image.asset(
-        event.coverImageUrl,
-        height: 150,
+    return GestureDetector(
+      onTap: () => context.push('/details', extra: event),
+      child: Container(
         width: 200,
-        fit: BoxFit.cover,
-      );
-    } else {
-      imageWidget = Image.network(
-        event.coverImageUrl,
-        height: 150,
-        width: 200,
-        fit: BoxFit.cover,
-        errorBuilder: (context, error, stackTrace) => Image.asset(
-          'assets/images/enb.jpg',
-          height: 150,
-          width: 200,
-          fit: BoxFit.cover,
-        ),
-      );
-    }
-
-    return Container(
-      width: 200,
-      margin: const EdgeInsets.only(right: 15),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          Stack(
-            children: [
-              ClipRRect(
-                borderRadius: BorderRadius.circular(15),
-                child: imageWidget,
-              ),
-              Positioned(
-                top: 10,
-                right: 10,
-                child: GestureDetector(
-                  onTap: () {
-                    favoritesProvider.toggleFavorite(event);
-                    if (!isFavorite) {
-                      ScaffoldMessenger.of(context).showSnackBar(
-                        const SnackBar(
-                          content: Text('Ajouté aux favoris'),
-                          duration: Duration(seconds: 2),
-                        ),
-                      );
-                    }
-                  },
-                  child: CircleAvatar(
-                    backgroundColor: Colors.black.withAlpha((255 * 0.5).round()),
-                    radius: 15,
-                    child: Icon(
-                      isFavorite ? Icons.favorite : Icons.favorite_border,
-                      color: isFavorite ? Colors.red : Colors.white,
-                      size: 18,
+        margin: const EdgeInsets.only(right: 15),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Stack(
+              children: [
+                ClipRRect(
+                  borderRadius: BorderRadius.circular(15),
+                  child: Image.network(
+                    event.coverImageUrl,
+                    height: 150,
+                    width: 200,
+                    fit: BoxFit.cover,
+                    errorBuilder: (context, error, stackTrace) => Image.asset(
+                      'assets/images/enb.jpg', // Fallback image
+                      height: 150,
+                      width: 200,
+                      fit: BoxFit.cover,
                     ),
                   ),
                 ),
-              ),
-              Positioned(
-                bottom: 10,
-                left: 10,
-                child: Container(
-                  padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
-                  decoration: BoxDecoration(
-                    color: primaryColor,
-                    borderRadius: BorderRadius.circular(8),
-                  ),
-                  child: Text('À partir de ${event.minPrice.toStringAsFixed(0)} FCFA', style: const TextStyle(color: Colors.white, fontWeight: FontWeight.bold)),
-                ),
-              )
-            ],
-          ),
-          const SizedBox(height: 10),
-          Text(event.name, style: TextStyle(color: textColor, fontWeight: FontWeight.bold, fontSize: 16)),
-          const SizedBox(height: 5),
-          Row(
-            children: [
-              Icon(Icons.location_on, color: secondaryTextColor, size: 14),
-              const SizedBox(width: 5),
-              Text(event.venueName, style: TextStyle(color: secondaryTextColor, fontSize: 12)),
-            ],
-          )
-        ],
+              ],
+            ),
+            const SizedBox(height: 10),
+            Text(event.name, style: TextStyle(color: textColor, fontWeight: FontWeight.bold, fontSize: 16), maxLines: 1, overflow: TextOverflow.ellipsis),
+            const SizedBox(height: 5),
+            Row(
+              children: [
+                Icon(Icons.location_on, color: secondaryTextColor, size: 14),
+                const SizedBox(width: 5),
+                Expanded(child: Text(event.venueName, style: TextStyle(color: secondaryTextColor, fontSize: 12), maxLines: 1, overflow: TextOverflow.ellipsis)),
+              ],
+            )
+          ],
+        ),
       ),
     );
   }
@@ -566,6 +520,7 @@ class EventDetailsScreenState extends State<EventDetailsScreen> {
         padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 15),
         decoration: BoxDecoration(
             color: Colors.white,
+            boxShadow: [BoxShadow(color: Colors.grey.withOpacity(0.2), spreadRadius: 1, blurRadius: 10)],
             border: Border(top: BorderSide(color: Colors.grey[200]!))),
         child: Row(
           mainAxisAlignment: MainAxisAlignment.spaceBetween,
@@ -586,29 +541,30 @@ class EventDetailsScreenState extends State<EventDetailsScreen> {
                                 eventName: ticket['name'],
                                 ticketCount: ticket['quantity'],
                                 price: ticket['price'],
-                                // Remplissez les autres champs de EventTicket selon vos besoins
-                                imagePath: '',
-                                location: '',
-                                date: '',
-                                time: '',
-                                status: '',
-                                daysLeft: 0,
-                                isUpcoming: true,
+                                // These fields might need to be sourced from the main event object
+                                imagePath: widget.event.coverImageUrl,
+                                location: widget.event.venueName,
+                                date: _formatDate(widget.event.startDate, format: 'dd MMMM yyyy'),
+                                time: _formatDate(widget.event.startDate, format: 'HH:mm'),
+                                status: 'Payé',
+                                daysLeft: widget.event.startDate.difference(DateTime.now()).inDays,
+                                isUpcoming: !widget.event.isPastEvent,
                               ))
                           .toList();
 
-                      context.push('/checkout', extra: {
-                        'event': widget.event,
-                        'tickets': tickets,
-                      });
+                      if (tickets.isNotEmpty) {
+                        context.push('/checkout', extra: {
+                          'event': widget.event,
+                          'tickets': tickets,
+                        });
+                      }
                     }
                   : null,
               style: ElevatedButton.styleFrom(
                 backgroundColor: primaryColor,
                 padding: const EdgeInsets.symmetric(horizontal: 40, vertical: 15),
-                shape: RoundedRectangleBorder(
-                  borderRadius: BorderRadius.circular(10),
-                ),
+                shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
+                disabledBackgroundColor: Colors.grey[300],
               ),
               child: const Text('Acheter', style: TextStyle(color: Colors.white, fontSize: 16)),
             ),
