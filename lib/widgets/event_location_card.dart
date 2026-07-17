@@ -1,6 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:google_maps_flutter/google_maps_flutter.dart';
-import 'package:geocoding/geocoding.dart' as geocoding;
+// import 'package:geocoding/geocoding.dart' as geocoding; // Temporarily disabled
 import 'package:url_launcher/url_launcher.dart';
 
 class EventLocationCard extends StatefulWidget {
@@ -13,17 +13,18 @@ class EventLocationCard extends StatefulWidget {
 }
 
 class _EventLocationCardState extends State<EventLocationCard> {
-  GoogleMapController? _mapController;
-  Set<Marker> _markers = {};
-  LatLng? _eventLocation;
-  String? _errorMessage;
+  // GoogleMapController? _mapController;
+  // Set<Marker> _markers = {};
+  // LatLng? _eventLocation;
+  final String _errorMessage = 'La carte est temporairement désactivée.';
 
   @override
   void initState() {
     super.initState();
-    _geocodeAddress();
+    // _geocodeAddress(); // Temporarily disabled
   }
 
+  /* // Temporarily disabled
   Future<void> _geocodeAddress() async {
     try {
       List<geocoding.Location> locations = await geocoding.locationFromAddress(widget.venueAddress);
@@ -35,7 +36,7 @@ class _EventLocationCardState extends State<EventLocationCard> {
             Marker(
               markerId: const MarkerId('eventLocation'),
               position: _eventLocation!,
-              infoWindow: const InfoWindow(title: 'Lieu de l événement'),
+              infoWindow: const InfoWindow(title: 'Lieu de l'événement'),
             ),
           );
         });
@@ -47,22 +48,14 @@ class _EventLocationCardState extends State<EventLocationCard> {
     } catch (e) {
       print('Error geocoding address: $e');
       setState(() {
-        _errorMessage = 'Erreur de chargement de la carte.\nVeuillez configurer la clé API Google Maps.';
+        _errorMessage = 'Erreur de chargement de la carte.';
       });
     }
   }
+  */
 
   Future<void> _launchMaps() async {
-    if (_eventLocation != null) {
-      final uri = Uri.parse('https://www.google.com/maps/search/?api=1&query=${_eventLocation!.latitude},${_eventLocation!.longitude}');
-      if (!await launchUrl(uri, mode: LaunchMode.externalApplication)) {
-        if (mounted) {
-          ScaffoldMessenger.of(context).showSnackBar(
-            const SnackBar(content: Text('Impossible d ouvrir Google Maps.')),
-          );
-        }
-      }
-    }
+    // Disabled functionality
   }
 
   @override
@@ -89,7 +82,7 @@ class _EventLocationCardState extends State<EventLocationCard> {
                 Text(widget.venueAddress, style: TextStyle(color: Colors.grey[600])),
                 const SizedBox(height: 10),
                 ElevatedButton.icon(
-                  onPressed: _eventLocation != null ? _launchMaps : null,
+                  onPressed: null, // Button is disabled
                   icon: const Icon(Icons.navigation),
                   label: const Text('Itinéraire'),
                   style: ElevatedButton.styleFrom(
@@ -109,46 +102,20 @@ class _EventLocationCardState extends State<EventLocationCard> {
   }
 
   Widget _buildMapContent() {
-    if (_errorMessage != null) {
-      return Container(
-        height: 200,
-        decoration: BoxDecoration(
-          color: Colors.grey[200],
-        ),
-        child: Center(
-          child: Padding(
-            padding: const EdgeInsets.all(16.0),
-            child: Text(
-              _errorMessage!,
-              textAlign: TextAlign.center,
-              style: TextStyle(color: Colors.grey[700]),
-            ),
+    return Container(
+      height: 200,
+      decoration: BoxDecoration(
+        color: Colors.grey[200],
+      ),
+      child: Center(
+        child: Padding(
+          padding: const EdgeInsets.all(16.0),
+          child: Text(
+            _errorMessage,
+            textAlign: TextAlign.center,
+            style: TextStyle(color: Colors.grey[700]),
           ),
         ),
-      );
-    }
-
-    if (_eventLocation == null) {
-      return const SizedBox(
-        height: 200,
-        child: Center(child: CircularProgressIndicator()),
-      );
-    }
-
-    return SizedBox(
-      height: 200,
-      child: GoogleMap(
-        onMapCreated: (controller) {
-          _mapController = controller;
-        },
-        initialCameraPosition: CameraPosition(
-          target: _eventLocation!,
-          zoom: 15,
-        ),
-        markers: _markers,
-        zoomControlsEnabled: false,
-        scrollGesturesEnabled: false,
-        gestureRecognizers: const {},
       ),
     );
   }
