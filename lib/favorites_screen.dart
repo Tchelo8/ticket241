@@ -1,10 +1,11 @@
 import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
 import 'package:lottie/lottie.dart';
-import 'package:myapp/models/event_model.dart';
-import 'package:myapp/providers/favorites_provider.dart';
 import 'package:provider/provider.dart';
 import 'package:intl/intl.dart';
+
+import 'package:myapp/models/event_model.dart';
+import 'package:myapp/providers/favorites_provider.dart';
 
 class FavoritesScreen extends StatelessWidget {
   const FavoritesScreen({super.key});
@@ -91,7 +92,7 @@ class FavoritesScreen extends StatelessWidget {
           borderRadius: BorderRadius.circular(20),
           boxShadow: [
             BoxShadow(
-              color: Colors.grey.withAlpha(40),
+              color: const Color.fromRGBO(158, 158, 158, 0.4),
               spreadRadius: 1,
               blurRadius: 8,
               offset: const Offset(0, 4),
@@ -127,7 +128,7 @@ class FavoritesScreen extends StatelessWidget {
                     child: Container(
                       padding: const EdgeInsets.all(6),
                       decoration: BoxDecoration(
-                        color: Colors.white.withOpacity(0.9),
+                        color: const Color.fromRGBO(255, 255, 255, 0.9),
                         shape: BoxShape.circle,
                       ),
                       child: Icon(
@@ -178,7 +179,7 @@ class FavoritesScreen extends StatelessWidget {
                       Container(
                         padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
                         decoration: BoxDecoration(
-                          color: const Color(0xFF1E90FF).withOpacity(0.1),
+                          color: const Color.fromRGBO(30, 144, 255, 0.1),
                           borderRadius: BorderRadius.circular(8),
                         ),
                         child: Text(

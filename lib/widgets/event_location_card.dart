@@ -1,61 +1,20 @@
 import 'package:flutter/material.dart';
-import 'package:google_maps_flutter/google_maps_flutter.dart';
-// import 'package:geocoding/geocoding.dart' as geocoding; // Temporarily disabled
-import 'package:url_launcher/url_launcher.dart';
 
 class EventLocationCard extends StatefulWidget {
   final String venueAddress;
 
-  const EventLocationCard({Key? key, required this.venueAddress}) : super(key: key);
+  const EventLocationCard({super.key, required this.venueAddress});
 
   @override
-  _EventLocationCardState createState() => _EventLocationCardState();
+  EventLocationCardState createState() => EventLocationCardState();
 }
 
-class _EventLocationCardState extends State<EventLocationCard> {
-  // GoogleMapController? _mapController;
-  // Set<Marker> _markers = {};
-  // LatLng? _eventLocation;
+class EventLocationCardState extends State<EventLocationCard> {
   final String _errorMessage = 'La carte est temporairement désactivée.';
 
   @override
   void initState() {
     super.initState();
-    // _geocodeAddress(); // Temporarily disabled
-  }
-
-  /* // Temporarily disabled
-  Future<void> _geocodeAddress() async {
-    try {
-      List<geocoding.Location> locations = await geocoding.locationFromAddress(widget.venueAddress);
-      if (locations.isNotEmpty) {
-        final location = locations.first;
-        setState(() {
-          _eventLocation = LatLng(location.latitude, location.longitude);
-          _markers.add(
-            Marker(
-              markerId: const MarkerId('eventLocation'),
-              position: _eventLocation!,
-              infoWindow: const InfoWindow(title: 'Lieu de l'événement'),
-            ),
-          );
-        });
-      } else {
-        setState(() {
-          _errorMessage = 'Adresse introuvable.';
-        });
-      }
-    } catch (e) {
-      print('Error geocoding address: $e');
-      setState(() {
-        _errorMessage = 'Erreur de chargement de la carte.';
-      });
-    }
-  }
-  */
-
-  Future<void> _launchMaps() async {
-    // Disabled functionality
   }
 
   @override
@@ -79,7 +38,7 @@ class _EventLocationCardState extends State<EventLocationCard> {
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                Text(widget.venueAddress, style: TextStyle(color: Colors.grey[600])),
+                Text(widget.venueAddress, style: const TextStyle(color: Color.fromRGBO(117, 117, 117, 1))),
                 const SizedBox(height: 10),
                 ElevatedButton.icon(
                   onPressed: null, // Button is disabled
@@ -87,7 +46,7 @@ class _EventLocationCardState extends State<EventLocationCard> {
                   label: const Text('Itinéraire'),
                   style: ElevatedButton.styleFrom(
                     backgroundColor: Theme.of(context).primaryColor,
-                    disabledBackgroundColor: Colors.grey,
+                    disabledBackgroundColor: const Color.fromRGBO(158, 158, 158, 1),
                     shape: RoundedRectangleBorder(
                       borderRadius: BorderRadius.circular(8),
                     ),
@@ -105,7 +64,7 @@ class _EventLocationCardState extends State<EventLocationCard> {
     return Container(
       height: 200,
       decoration: BoxDecoration(
-        color: Colors.grey[200],
+        color: const Color.fromRGBO(238, 238, 238, 1),
       ),
       child: Center(
         child: Padding(
@@ -113,7 +72,7 @@ class _EventLocationCardState extends State<EventLocationCard> {
           child: Text(
             _errorMessage,
             textAlign: TextAlign.center,
-            style: TextStyle(color: Colors.grey[700]),
+            style: const TextStyle(color: Color.fromRGBO(97, 97, 97, 1)),
           ),
         ),
       ),

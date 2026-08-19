@@ -1,14 +1,15 @@
 import 'package:cached_network_image/cached_network_image.dart';
 import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
+import 'package:intl/intl.dart';
+import 'package:provider/provider.dart';
+import 'package:shimmer/shimmer.dart';
+
 import 'package:myapp/models/event_model.dart';
 import 'package:myapp/models/ticket_model.dart';
 import 'package:myapp/providers/favorites_provider.dart';
 import 'package:myapp/services/api_service.dart';
 import 'package:myapp/widgets/event_location_card.dart';
-import 'package:provider/provider.dart';
-import 'package:intl/intl.dart';
-import 'package:shimmer/shimmer.dart';
 
 class EventDetailsScreen extends StatefulWidget {
   final Event event;
@@ -37,13 +38,9 @@ class EventDetailsScreenState extends State<EventDetailsScreen> {
   }
 
   void _initializeTickets() {
-    double minPrice = widget.event.minPrice;
-    double maxPrice = widget.event.maxPrice;
-    if (maxPrice <= minPrice) maxPrice = minPrice * 2;
-
     _ticketData = [
-      {'name': 'Ticket Standard', 'price': minPrice, 'quantity': 1},
-      {'name': 'Pass VIP', 'price': maxPrice, 'quantity': 0},
+      {'name': 'Ticket Standard', 'price': widget.event.minPrice, 'quantity': 1},
+      {'name': 'Pass VIP', 'price': widget.event.maxPrice, 'quantity': 0},
     ];
     _calculateTotal();
   }
@@ -148,7 +145,7 @@ class EventDetailsScreenState extends State<EventDetailsScreen> {
             gradient: LinearGradient(
               begin: Alignment.topCenter,
               end: Alignment.bottomCenter,
-              colors: [Colors.transparent, Colors.black.withOpacity(0.7)],
+              colors: [Colors.transparent, const Color.fromRGBO(0, 0, 0, 0.7)],
             ),
           ),
         ),
@@ -161,7 +158,7 @@ class EventDetailsScreenState extends State<EventDetailsScreen> {
             mainAxisAlignment: MainAxisAlignment.spaceBetween,
             children: [
               CircleAvatar(
-                backgroundColor: Colors.black.withOpacity(0.5),
+                backgroundColor: const Color.fromRGBO(0, 0, 0, 0.5),
                 child: IconButton(
                   icon: const Icon(Icons.arrow_back, color: Colors.white),
                   onPressed: () => context.pop(),
@@ -170,7 +167,7 @@ class EventDetailsScreenState extends State<EventDetailsScreen> {
               Row(
                 children: [
                   CircleAvatar(
-                    backgroundColor: Colors.black.withOpacity(0.5),
+                    backgroundColor: const Color.fromRGBO(0, 0, 0, 0.5),
                     child: IconButton(
                       icon: Icon(
                         isFavorite ? Icons.favorite : Icons.favorite_border,
@@ -181,7 +178,7 @@ class EventDetailsScreenState extends State<EventDetailsScreen> {
                   ),
                   const SizedBox(width: 10),
                   CircleAvatar(
-                    backgroundColor: Colors.black.withOpacity(0.5),
+                    backgroundColor: const Color.fromRGBO(0, 0, 0, 0.5),
                     child: IconButton(
                       icon: const Icon(Icons.more_horiz, color: Colors.white),
                       onPressed: () {},
@@ -207,7 +204,7 @@ class EventDetailsScreenState extends State<EventDetailsScreen> {
               const SizedBox(height: 8),
               Text(
                 _formatDate(event.startDate),
-                style: TextStyle(color: Colors.white.withOpacity(0.9)),
+                style: const TextStyle(color: Color.fromRGBO(255, 255, 255, 0.9)),
               ),
             ],
           ),
@@ -235,9 +232,9 @@ class EventDetailsScreenState extends State<EventDetailsScreen> {
                   widget.event.organizerName ?? 'Organisateur inconnu',
                   style: TextStyle(color: textColor, fontSize: 16, fontWeight: FontWeight.bold),
                 ),
-                Text(
+                const Text(
                   'Organisateur',
-                  style: const TextStyle(color: Colors.grey, fontSize: 14),
+                  style: TextStyle(color: Colors.grey, fontSize: 14),
                 ),
               ],
             ),
@@ -262,7 +259,7 @@ class EventDetailsScreenState extends State<EventDetailsScreen> {
             _isDescriptionExpanded || !isLongDescription
                 ? description
                 : '${description.substring(0, 350)}...',
-            style: TextStyle(color: textColor.withOpacity(0.7), height: 1.5),
+            style: TextStyle(color: textColor.withAlpha(178), height: 1.5),
           ),
           if (isLongDescription)
             TextButton(
@@ -518,7 +515,7 @@ class EventDetailsScreenState extends State<EventDetailsScreen> {
         padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 15),
         decoration: BoxDecoration(
             color: Colors.white,
-            boxShadow: [BoxShadow(color: Colors.grey.withOpacity(0.2), spreadRadius: 1, blurRadius: 10)],
+            boxShadow: [BoxShadow(color: const Color.fromRGBO(158, 158, 158, 0.2), spreadRadius: 1, blurRadius: 10)],
             border: Border(top: BorderSide(color: Colors.grey[200]!))),
         child: Row(
           mainAxisAlignment: MainAxisAlignment.spaceBetween,

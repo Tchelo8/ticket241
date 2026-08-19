@@ -20,13 +20,12 @@ import 'package:myapp/models/event_model.dart';
 
 class AppRouter {
   final bool onboardingCompleted;
-  final AuthProvider authProvider; // 1. Accept the AuthProvider
+  final AuthProvider authProvider;
   late final GoRouter router;
 
   AppRouter({required this.onboardingCompleted, required this.authProvider}) {
     router = GoRouter(
       initialLocation: '/splash',
-      // 2. Pass the authProvider directly as the refreshListenable
       refreshListenable: authProvider,
       routes: [
         GoRoute(
@@ -54,8 +53,13 @@ class AppRouter {
           builder: (context, state) => const SignUpScreen(),
         ),
         GoRoute(
-          path: '/otp',
-          builder: (context, state) => const OtpVerificationScreen(),
+          path: '/otp-verification', // Updated route
+          builder: (context, state) {
+            // Extract phone number from extra
+            final extra = state.extra as Map<String, dynamic>?;
+            final phone = extra?['phone'] as String?;
+            return OtpVerificationScreen(phone: phone);
+          },
         ),
         GoRoute(
           path: '/app',
@@ -99,40 +103,38 @@ class AppRouter {
         ),
       ],
       redirect: (context, state) {
-        // 3. Use the authProvider field directly for redirection logic
         final isAuthenticated = authProvider.isAuthenticated;
         final location = state.matchedLocation;
 
-        // Handle Onboarding (Highest Priority)
         final onOnboarding = location == '/onboarding';
         if (!onboardingCompleted) {
-          return onOnboarding ? null : '/onboarding'; // Force to onboarding
+          return onOnboarding ? null : '/onboarding';
         }
         if (onboardingCompleted && onOnboarding) {
-          return '/'; // Already onboarded, send to starting page
+          return '/';
         }
 
-        // Splash screen is handled implicitly.
         if (location == '/splash') {
           return null;
         }
 
-        // Handle Authentication
-        final isAuthenticating = location == '/login' || location == '/signup' || location == '/' || location == '/forgot-password';
+        final isAuthenticating = [
+          '/', '/login', '/signup', '/forgot-password', '/otp-verification'
+        ].contains(location);
+
         final privateRoutes = [
           '/app', '/profile', '/edit-profile', '/notifications', 
           '/details', '/location', '/checkout', '/success'
         ];
 
         if (!isAuthenticated && privateRoutes.contains(location)) {
-          return '/'; // Redirect to starting page to let them login/signup
+          return '/';
         }
 
         if (isAuthenticated && isAuthenticating) {
-          return '/app'; // If user IS authenticated and tries to access public-only pages, redirect into app.
+          return '/app';
         }
 
-        // No redirect needed
         return null;
       },
     );

@@ -33,9 +33,8 @@ class MyApp extends StatelessWidget {
 
     return MultiProvider(
       providers: [
-        ChangeNotifierProvider(create: (context) => FavoritesProvider()),
-        // 3. Use the .value constructor to provide the existing AuthProvider instance.
         ChangeNotifierProvider.value(value: authProvider),
+        ChangeNotifierProvider(create: (context) => FavoritesProvider()),
       ],
       child: MaterialApp.router(
         title: 'Ticket241',

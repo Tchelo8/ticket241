@@ -6,53 +6,40 @@ import 'package:myapp/models/category_model.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import '../models/event_model.dart';
 
-/// Un modèle de classe pour encapsuler les réponses de l'API de manière structurée.
 class ApiResponse<T> {
   final bool success;
   final T? data;
   final String? message;
-  final String? error;
+  final Map<String, dynamic>? errors; // For validation errors
   final int? statusCode;
 
   ApiResponse({
     required this.success,
     this.data,
     this.message,
-    this.error,
+    this.errors,
     this.statusCode,
   });
 }
 
-/// Un service centralisé pour gérer tous les appels réseau de l'application.
-/// Il gère automatiquement la sélection de l'URL de base, l'ajout des headers
-/// d'authentification, et la normalisation des réponses.
 class ApiService {
-  /// Sélectionne dynamiquement l'URL de base en fonction de l'environnement de compilation.
   String get _baseUrl {
     if (kReleaseMode) {
-      // Environnement de Production
       return dotenv.env['URL_PROD_BASE'] ?? 'https://api.default-prod.com';
-    } else if (kProfileMode) {
-      // Environnement de Test/Profilage
-      return dotenv.env['URL_TEST_BASE'] ?? 'http://192.168.1.81:8080';
     } else {
-      // Environnement de Développement (Debug)
       return dotenv.env['URL_LOCAL_BASE'] ?? 'http://10.0.2.2:8080';
     }
   }
 
-  /// Construit les headers pour chaque requête, en ajoutant le token JWT si disponible.
   Future<Map<String, String>> _getHeaders() async {
     final prefs = await SharedPreferences.getInstance();
     final token = prefs.getString('access_token');
-    
     return {
       'Content-Type': 'application/json; charset=UTF-8',
       if (token != null) 'Authorization': 'Bearer $token',
     };
   }
 
-  /// La méthode privée et générique qui exécute les requêtes HTTP.
   Future<ApiResponse<T>> _request<T>(
     String endpoint, {
     String method = 'GET',
@@ -76,87 +63,109 @@ class ApiService {
         case 'DELETE':
           response = await http.delete(url, headers: headers);
           break;
-        case 'GET':
         default:
           response = await http.get(url, headers: headers);
           break;
       }
-      
-      // Décode le corps de la réponse en ignorant les erreurs de format (par ex. si vide)
+
       dynamic responseBody;
       try {
         responseBody = jsonDecode(utf8.decode(response.bodyBytes));
       } catch (e) {
         responseBody = null;
       }
-      
+
       if (response.statusCode >= 200 && response.statusCode < 300) {
         if (response.statusCode == 204 || responseBody == null) {
-          return ApiResponse<T>(success: true, statusCode: response.statusCode, message: 'Opération réussie.');
+            return ApiResponse<T>(success: true, statusCode: response.statusCode, message: 'Opération réussie.');
         }
-        
-        // Si un parseur de JSON est fourni pour un objet complexe, on l'utilise.
         final data = fromJson != null ? fromJson(responseBody) : responseBody as T;
-        
-        return ApiResponse<T>(
-          success: true,
-          data: data,
-          statusCode: response.statusCode,
-        );
+        return ApiResponse<T>(success: true, data: data, statusCode: response.statusCode);
       } else {
         return ApiResponse<T>(
           success: false,
-          error: responseBody?['message'] ?? 'Une erreur inconnue est survenue.',
+          message: responseBody?['message'],
+          errors: responseBody?['errors'] != null ? Map<String, dynamic>.from(responseBody['errors']) : null,
           statusCode: response.statusCode,
         );
       }
     } catch (e) {
-      // Gère les erreurs de connectivité (pas d'internet, serveur injoignable)
       return ApiResponse<T>(
         success: false,
-        error: 'Erreur réseau. Vérifiez votre connexion et réessayez.',
+        message: 'Erreur réseau. Vérifiez votre connexion et réessayez.',
       );
     }
   }
 
-  // --- Méthodes publiques pour les verbes HTTP ---
+  // --- Auth Methods ---
 
-  Future<ApiResponse<T>> get<T>(String endpoint, {T Function(dynamic json)? fromJson}) =>
-    _request<T>(endpoint, method: 'GET', fromJson: fromJson);
+  Future<ApiResponse<Map<String, dynamic>>> register(String firstName, String lastName, String email, String phone, String password) {
+    return _request(
+      '/api/auth/register',
+      method: 'POST',
+      body: {
+        'firstName': firstName,
+        'lastName': lastName,
+        'email': email,
+        'phone': phone,
+        'password': password,
+      },
+      fromJson: (json) => json as Map<String, dynamic>,
+    );
+  }
 
-  Future<ApiResponse<T>> post<T>(String endpoint, {Map<String, dynamic>? body, T Function(dynamic json)? fromJson}) =>
-    _request<T>(endpoint, method: 'POST', body: body, fromJson: fromJson);
+  Future<ApiResponse<Map<String, dynamic>>> verifyOtp(String phone, String code) {
+    return _request(
+      '/api/auth/verify-otp',
+      method: 'POST',
+      body: {'phone': phone, 'code': code},
+      fromJson: (json) => json as Map<String, dynamic>,
+    );
+  }
 
-  Future<ApiResponse<T>> put<T>(String endpoint, {Map<String, dynamic>? body, T Function(dynamic json)? fromJson}) =>
-    _request<T>(endpoint, method: 'PUT', body: body, fromJson: fromJson);
-  
-  Future<ApiResponse<T>> delete<T>(String endpoint) =>
-    _request<T>(endpoint, method: 'DELETE');
+    Future<ApiResponse<Map<String, dynamic>>> resendOtp(String phone) {
+    return _request(
+      '/api/auth/resend-otp',
+      method: 'POST',
+      body: {'phone': phone},
+      fromJson: (json) => json as Map<String, dynamic>,
+    );
+  }
 
+  Future<ApiResponse<Map<String, dynamic>>> login(String phone, String password) {
+    return _request(
+      '/api/auth/login',
+      method: 'POST',
+      body: {'phone': phone, 'password': password},
+      fromJson: (json) => json as Map<String, dynamic>,
+    );
+  }
 
-  /// Récupère la liste des villes actives depuis l'API.
+  Future<ApiResponse> forgotPassword(String phone) {
+    return _request(
+      '/api/auth/forgot-password',
+      method: 'POST',
+      body: {'phone': phone},
+    );
+  }
+
+  // --- Other Methods ---
+
   Future<ApiResponse<List<String>>> getActiveCities() {
-    return get<List<String>>(
+    return _request<List<String>>(
       '/api/events/cities/get/all/active',
       fromJson: (json) {
         if (json is List) {
-          return List<String>.from(json.map((item) {
-            if (item is Map<String, dynamic> && item.containsKey('name')) {
-              return item['name'].toString();
-            } else if (item is String) {
-              return item;
-            }
-            return '';
-          })).where((name) => name.isNotEmpty).toList();
+          return List<String>.from(json.map((item) => item['name'].toString()));
         }
-        throw const FormatException('Réponse invalide, une liste de villes était attendue.');
+        throw const FormatException('Invalid response format for cities');
       },
     );
   }
 
-  /// Récupère la liste des événements, avec un filtre optionnel par ville.
   Future<ApiResponse<List<Event>>> getEvents({String? city}) async {
-    final List<Event> allEvents = [];
+    // ... (rest of the method is unchanged)
+        final List<Event> allEvents = [];
     int currentPage = 0;
     int totalPages = 1; // On commence avec 1, sera mis à jour après le premier appel
 
@@ -168,7 +177,7 @@ class ApiService {
           endpoint += '&city=${Uri.encodeComponent(city)}';
         }
 
-        final response = await get<Map<String, dynamic>>(
+        final response = await _request<Map<String, dynamic>>(
           endpoint,
           fromJson: (json) => json as Map<String, dynamic>
         );
@@ -198,7 +207,7 @@ class ApiService {
           // Si une requête échoue, on retourne une erreur avec les événements déjà chargés
           return ApiResponse<List<Event>>(
             success: false,
-            error: response.error ?? 'Erreur lors du chargement de la page $currentPage.',
+            message: response.message ?? 'Erreur lors du chargement de la page $currentPage.',
             data: allEvents, // On renvoie ce qu'on a pu récupérer
             statusCode: response.statusCode,
           );
@@ -213,40 +222,26 @@ class ApiService {
     } catch (e) {
       return ApiResponse<List<Event>>(
         success: false,
-        error: 'Erreur réseau ou de formatage. Vérifiez votre connexion et la structure de la réponse de l API.',
+        message: 'Erreur réseau ou de formatage. Vérifiez votre connexion et la structure de la réponse de l API.',
         data: allEvents, // On renvoie ce qu'on a pu récupérer
       );
     }
   }
 
-  /// Récupère la liste des catégories d'événements depuis l'API.
   Future<ApiResponse<List<Category>>> getCategories() {
-    return get<List<Category>>(
+    return _request<List<Category>>(
       '/api/events/categories/get/all',
       fromJson: (json) {
         List<dynamic> categoryList;
-
-        // Gère une réponse paginée: {"content": [...]}
         if (json is Map<String, dynamic> && json.containsKey('content')) {
           categoryList = json['content'] as List<dynamic>;
-        } 
-        // Gère une réponse non paginée: [...] 
-        else if (json is List) {
+        } else if (json is List) {
           categoryList = json;
         } else {
-          throw const FormatException('Format de réponse des catégories non supporté.');
+          throw const FormatException('Unsupported format for categories response');
         }
-
         return categoryList.map((item) => Category.fromJson(item)).toList();
       },
-    );
-  }
-
-  /// Envoie une demande de réinitialisation de mot de passe.
-  Future<ApiResponse> forgotPassword(String phone) {
-    return post(
-      '/api/auth/forgot-password',
-      body: {'phone': phone},
     );
   }
 }

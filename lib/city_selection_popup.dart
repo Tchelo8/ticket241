@@ -7,10 +7,10 @@ class CitySelectionPopup extends StatefulWidget {
   const CitySelectionPopup({super.key, required this.currentCity});
 
   @override
-  _CitySelectionPopupState createState() => _CitySelectionPopupState();
+  State<CitySelectionPopup> createState() => CitySelectionPopupState();
 }
 
-class _CitySelectionPopupState extends State<CitySelectionPopup> {
+class CitySelectionPopupState extends State<CitySelectionPopup> {
   final ApiService _apiService = ApiService();
   Future<List<String>>? _citiesFuture;
   late String _selectedCity;

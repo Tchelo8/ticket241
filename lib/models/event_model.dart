@@ -1,5 +1,3 @@
-import 'dart:convert';
-
 class Event {
   final int id;
   final String? uuid;

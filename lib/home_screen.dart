@@ -2,15 +2,16 @@ import 'dart:ui';
 
 import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
-import 'package:myapp/models/event_model.dart';
-import 'package:flutter_staggered_animations/flutter_staggered_animations.dart';
-import 'package:myapp/providers/favorites_provider.dart';
-import 'package:myapp/services/api_service.dart';
 import 'package:provider/provider.dart';
-import 'package:myapp/city_selection_popup.dart';
 import 'package:intl/intl.dart';
 import 'package:cached_network_image/cached_network_image.dart';
 import 'package:shimmer/shimmer.dart';
+import 'package:flutter_staggered_animations/flutter_staggered_animations.dart';
+
+import 'package:myapp/models/event_model.dart';
+import 'package:myapp/providers/favorites_provider.dart';
+import 'package:myapp/services/api_service.dart';
+import 'package:myapp/city_selection_popup.dart';
 
 class HomeScreen extends StatefulWidget {
   final Function(int) onNavigate;
@@ -40,12 +41,10 @@ class _HomeScreenState extends State<HomeScreen> {
     final response = await _apiService.getEvents(city: city ?? _selectedCity);
     if (mounted) {
       setState(() {
-        if (response.success && response.data != null) {
-          _allEvents = response.data!;
-        } else {
-          _allEvents = []; // On vide la liste en cas d'erreur
+        _allEvents = (response.success && response.data != null) ? response.data! : [];
+        if (!response.success) {
           ScaffoldMessenger.of(context).showSnackBar(
-            SnackBar(content: Text(response.error ?? 'Erreur lors du chargement des événements')),
+            SnackBar(content: Text(response.message ?? 'Erreur lors du chargement des événements')),
           );
         }
         _isLoading = false;
@@ -87,31 +86,41 @@ class _HomeScreenState extends State<HomeScreen> {
     }
   }
 
-  @override
-  Widget build(BuildContext context) {
-    // --- Le filtrage est maintenant géré par l'API, on prépare juste les listes pour l'UI ---
+  List<Event> _getUpcomingEvents() {
     final now = DateTime.now();
-    
-    // Événements futurs (non passés)
-    final upcomingEvents = _allEvents.where((e) => e.startDate.isAfter(now)).toList();
-    upcomingEvents.sort((a, b) => a.startDate.compareTo(b.startDate)); // Les plus proches en premier
+    final upcoming = _allEvents.where((e) => e.startDate.isAfter(now)).toList();
+    upcoming.sort((a, b) => a.startDate.compareTo(b.startDate));
+    return upcoming;
+  }
 
-    // Événements populaires (ceux marqués comme "featured" ou avec le plus de vues)
-    final popularEvents = _allEvents.where((e) => e.isFeatured && e.startDate.isAfter(now)).toList();
-    if (popularEvents.isEmpty) {
-        // Fallback: trier par nombre de vues si aucun n'est "featured"
+  List<Event> _getPopularEvents() {
+    final now = DateTime.now();
+    final popular = _allEvents.where((e) => e.isFeatured && e.startDate.isAfter(now)).toList();
+    if (popular.isEmpty) {
         final sortedByViews = _allEvents.where((e) => e.startDate.isAfter(now)).toList();
         sortedByViews.sort((a, b) => b.viewCount.compareTo(a.viewCount));
-        popularEvents.addAll(sortedByViews.take(5)); // Prendre les 5 plus populaires
+        popular.addAll(sortedByViews.take(5));
     }
+    return popular;
+  }
 
-    // Événements de sport
-    final sportEvents = _allEvents.where((e) => e.category.toUpperCase() == 'SPORT' && e.startDate.isAfter(now)).toList();
+  List<Event> _getSportEvents() {
+    final now = DateTime.now();
+    return _allEvents.where((e) => e.category.toUpperCase() == 'SPORT' && e.startDate.isAfter(now)).toList();
+  }
 
-    // Événements culturels (ex: Concert, Théâtre)
+  List<Event> _getCultureEvents() {
+    final now = DateTime.now();
     const cultureCategories = {'CONCERT', 'THÉÂTRE', 'FESTIVAL'};
-    final cultureEvents = _allEvents.where((e) => cultureCategories.contains(e.category.toUpperCase()) && e.startDate.isAfter(now)).toList();
+    return _allEvents.where((e) => cultureCategories.contains(e.category.toUpperCase()) && e.startDate.isAfter(now)).toList();
+  }
 
+  @override
+  Widget build(BuildContext context) {
+    final upcomingEvents = _getUpcomingEvents();
+    final popularEvents = _getPopularEvents();
+    final sportEvents = _getSportEvents();
+    final cultureEvents = _getCultureEvents();
 
     return Scaffold(
       backgroundColor: Colors.grey[100],
@@ -209,7 +218,7 @@ class _HomeScreenState extends State<HomeScreen> {
                 shape: BoxShape.circle,
                 boxShadow: [
                   BoxShadow(
-                    color: Colors.grey.withAlpha(50),
+                    color: const Color.fromRGBO(158, 158, 158, 0.2),
                     spreadRadius: 1,
                     blurRadius: 5,
                   )
@@ -318,7 +327,7 @@ class _HomeScreenState extends State<HomeScreen> {
             borderRadius: BorderRadius.circular(16),
             boxShadow: [
               BoxShadow(
-                color: Colors.grey.withAlpha(40),
+                color: const Color.fromRGBO(158, 158, 158, 0.16),
                 spreadRadius: 1,
                 blurRadius: 8,
                 offset: const Offset(0, 4),
@@ -354,7 +363,7 @@ class _HomeScreenState extends State<HomeScreen> {
                       borderRadius: BorderRadius.circular(12),
                       child: Container(
                         decoration: BoxDecoration(
-                          color: Colors.black.withAlpha(50),
+                          color: const Color.fromRGBO(0, 0, 0, 0.2),
                         ),
                       ),
                     ),
@@ -363,7 +372,7 @@ class _HomeScreenState extends State<HomeScreen> {
                     width: 45,
                     height: 45,
                     decoration: BoxDecoration(
-                      color: Colors.white.withAlpha(220),
+                      color: const Color.fromRGBO(255, 255, 255, 0.88),
                       borderRadius: BorderRadius.circular(8),
                     ),
                     child: Column(mainAxisAlignment: MainAxisAlignment.center, children: [
@@ -444,7 +453,6 @@ class _HomeScreenState extends State<HomeScreen> {
     final isFavorite = favoritesProvider.isFavorite(event);
     final isPast = DateTime.now().isAfter(event.startDate);
 
-    // Ce widget réutilise la logique de `explorer_screen` pour la cohérence
     return GestureDetector(
       onTap: isPast ? null : () => context.push('/details', extra: event),
       child: Container(
@@ -455,7 +463,7 @@ class _HomeScreenState extends State<HomeScreen> {
             borderRadius: BorderRadius.circular(20),
             boxShadow: [
               BoxShadow(
-                color: Colors.grey.withAlpha(40),
+                color: const Color.fromRGBO(158, 158, 158, 0.16),
                 spreadRadius: 1,
                 blurRadius: 8,
                 offset: const Offset(0, 4),
@@ -501,12 +509,12 @@ class _HomeScreenState extends State<HomeScreen> {
                       child: BackdropFilter(
                         filter: ImageFilter.blur(sigmaX: 1, sigmaY: 1),
                         child: Container(
-                          color: Colors.black.withOpacity(0.3),
+                          color: const Color.fromRGBO(0, 0, 0, 0.3),
                           alignment: Alignment.center,
                           child: Container(
                             padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
                             decoration: BoxDecoration(
-                              color: Colors.redAccent.withOpacity(0.8),
+                              color: const Color.fromRGBO(255, 82, 82, 0.8),
                               borderRadius: BorderRadius.circular(30),
                             ),
                             child: const Text(
@@ -539,7 +547,7 @@ class _HomeScreenState extends State<HomeScreen> {
                       child: Container(
                         padding: const EdgeInsets.all(6),
                         decoration: BoxDecoration(
-                          color: Colors.white.withAlpha(230),
+                          color: const Color.fromRGBO(255, 255, 255, 0.9),
                           shape: BoxShape.circle,
                         ),
                         child: Icon(
@@ -590,7 +598,7 @@ class _HomeScreenState extends State<HomeScreen> {
                         Container(
                           padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
                           decoration: BoxDecoration(
-                            color: isPast ? Colors.grey[300] : const Color(0xFF1E90FF).withAlpha(30),
+                            color: isPast ? Colors.grey[300] : const Color.fromRGBO(30, 144, 255, 0.12),
                             borderRadius: BorderRadius.circular(8),
                           ),
                           child: Text('${event.minPrice.toStringAsFixed(0)} FCFA', style: TextStyle(color: isPast ? Colors.grey[700] : const Color(0xFF1E90FF), fontWeight: FontWeight.bold, fontSize: 11)),

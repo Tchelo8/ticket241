@@ -1,8 +1,9 @@
 
 import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
-import 'package:myapp/providers/auth_provider.dart';
 import 'package:provider/provider.dart';
+
+import 'package:myapp/providers/auth_provider.dart';
 
 class ProfileScreen extends StatelessWidget {
   final void Function(int)? onTabSelected;
@@ -27,9 +28,9 @@ class ProfileScreen extends StatelessWidget {
                 style: TextStyle(fontSize: 22, fontWeight: FontWeight.bold),
               ),
               const SizedBox(height: 12),
-              Text(
+              const Text(
                 'Êtes-vous sûr de vouloir vous déconnecter ?',
-                style: TextStyle(fontSize: 16, color: Colors.grey[600]),
+                style: TextStyle(fontSize: 16, color: Color.fromRGBO(117, 117, 117, 1)),
                 textAlign: TextAlign.center,
               ),
               const SizedBox(height: 24),
@@ -40,7 +41,7 @@ class ProfileScreen extends StatelessWidget {
                       onPressed: () => Navigator.pop(context), // Dismiss the sheet
                       style: OutlinedButton.styleFrom(
                         padding: const EdgeInsets.symmetric(vertical: 14),
-                        side: BorderSide(color: Colors.grey[300]!),
+                        side: const BorderSide(color: Color.fromRGBO(224, 224, 224, 1)),
                         shape: RoundedRectangleBorder(
                           borderRadius: BorderRadius.circular(12),
                         ),
@@ -95,7 +96,7 @@ class ProfileScreen extends StatelessWidget {
     final fullName = user != null ? '${user['firstName']} ${user['lastName']}' : 'Utilisateur Anonyme';
 
     return Scaffold(
-      backgroundColor: Colors.grey[50],
+      backgroundColor: const Color.fromRGBO(250, 250, 250, 1),
       appBar: AppBar(
         title: const Text(
           'Profil',
@@ -167,7 +168,7 @@ class ProfileScreen extends StatelessWidget {
       children: [
         CircleAvatar(
           radius: 50,
-          backgroundColor: const Color(0xFF1E90FF).withAlpha((255 * 0.15).round()),
+          backgroundColor: const Color.fromRGBO(30, 144, 255, 0.15),
           child: Text(
             initials,
             style: const TextStyle(
@@ -203,7 +204,7 @@ class ProfileScreen extends StatelessWidget {
           color: textColor,
         ),
       ),
-      trailing: Icon(Icons.arrow_forward_ios, color: Colors.grey[400], size: 16),
+      trailing: const Icon(Icons.arrow_forward_ios, color: Color.fromRGBO(189, 189, 189, 1), size: 16),
       onTap: onTap,
       contentPadding: const EdgeInsets.symmetric(vertical: 6, horizontal: 8),
     );

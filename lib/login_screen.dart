@@ -36,35 +36,35 @@ class _LoginScreenState extends State<LoginScreen> {
       _isLoading = true;
     });
 
-    final authProvider = Provider.of<AuthProvider>(context, listen: false);
-    
-    final apiResponse = await authProvider.login(
-      _phoneController.text,
-      _passwordController.text,
-    );
+    try {
+      await Provider.of<AuthProvider>(context, listen: false).login(
+        _phoneController.text,
+        _passwordController.text,
+      );
+      // On success, the refreshListenable will handle the navigation.
+      // We can show a success toast here if needed.
+      Fluttertoast.showToast(
+        msg: "Connexion réussie !",
+        toastLength: Toast.LENGTH_SHORT,
+        gravity: ToastGravity.BOTTOM,
+        backgroundColor: Colors.green,
+        textColor: Colors.white,
+      );
 
-    if (mounted) {
-       setState(() {
-        _isLoading = false;
-      });
-
-      if (apiResponse.success) {
-        Fluttertoast.showToast(
-          msg: "Connexion réussie !",
-          toastLength: Toast.LENGTH_SHORT,
-          gravity: ToastGravity.BOTTOM,
-          backgroundColor: Colors.green,
-          textColor: Colors.white,
-        );
-        // Redirection is handled by GoRouter's refreshListenable
-      } else {
-        Fluttertoast.showToast(
-          msg: apiResponse.error ?? "Une erreur inconnue est survenue.",
-          toastLength: Toast.LENGTH_LONG,
-          gravity: ToastGravity.BOTTOM,
-          backgroundColor: Colors.red,
-          textColor: Colors.white,
-        );
+    } catch (e) {
+      // Display error toast
+      Fluttertoast.showToast(
+        msg: e.toString(),
+        toastLength: Toast.LENGTH_LONG,
+        gravity: ToastGravity.BOTTOM,
+        backgroundColor: Colors.red,
+        textColor: Colors.white,
+      );
+    } finally {
+      if (mounted) {
+        setState(() {
+          _isLoading = false;
+        });
       }
     }
   }
@@ -159,7 +159,7 @@ class _LoginScreenState extends State<LoginScreen> {
                             shape: RoundedRectangleBorder(
                               borderRadius: BorderRadius.circular(8),
                             ),
-                            disabledBackgroundColor: const Color(0xFF1E90FF).withOpacity(0.5),
+                            disabledBackgroundColor: const Color.fromRGBO(30, 144, 255, 0.5),
                           ),
                           child: _isLoading 
                               ? const SizedBox(

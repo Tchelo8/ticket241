@@ -1,14 +1,14 @@
-
+import 'dart:async';
 import 'dart:convert';
 import 'package:flutter/material.dart';
-import 'package:myapp/services/api_service.dart'; // Importez le service API
+import 'package:myapp/services/api_service.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
 class AuthProvider with ChangeNotifier {
   final ApiService _apiService = ApiService();
   Map<String, dynamic>? _user;
   String? _token;
-  bool _isLoading = true; // Commence à true pour vérifier l'état de connexion initial
+  bool _isLoading = true; // Start true to check initial login state
 
   Map<String, dynamic>? get user => _user;
   String? get token => _token;
@@ -16,7 +16,7 @@ class AuthProvider with ChangeNotifier {
   bool get isAuthenticated => _token != null && _user != null;
 
   AuthProvider() {
-    _tryAutoLogin(); // Tente de se connecter automatiquement au démarrage
+    _tryAutoLogin();
   }
 
   void _setLoading(bool loading) {
@@ -24,7 +24,6 @@ class AuthProvider with ChangeNotifier {
     notifyListeners();
   }
 
-  /// Tente de charger le token et les données utilisateur depuis le stockage local.
   Future<void> _tryAutoLogin() async {
     final prefs = await SharedPreferences.getInstance();
     if (!prefs.containsKey('access_token') || !prefs.containsKey('user_data')) {
@@ -42,50 +41,90 @@ class AuthProvider with ChangeNotifier {
     notifyListeners();
   }
 
-  /// Gère le processus de connexion.
-  Future<ApiResponse> login(String phone, String password) async {
-    _setLoading(true);
+  Future<void> register({
+    required String firstName,
+    required String lastName,
+    required String email,
+    required String phone,
+    required String password,
+  }) async {
+    final response = await _apiService.register(firstName, lastName, email, phone, password);
 
-    final response = await _apiService.post(
-      '/api/auth/login',
-      body: {'phone': phone, 'password': password},
-    );
+    if (!response.success) {
+      if (response.errors != null) {
+        // Validation errors (400)
+        throw response.errors!;
+      } else {
+        // General message error (409, 503, etc.)
+        throw response.message ?? 'An unknown error occurred during registration.';
+      }
+    }
+    // Success means OTP was sent, UI will navigate to OTP screen
+  }
+
+  Future<void> verifyOtp(String phone, String code) async {
+    final response = await _apiService.verifyOtp(phone, code);
 
     if (response.success && response.data != null) {
-      final responseData = response.data as Map<String, dynamic>;
-      
-      // On extrait le token de la réponse
+      final responseData = response.data!;
       _token = responseData['token'];
-      
-      // La réponse entière est l'objet utilisateur
-      _user = responseData; 
+      _user = responseData; // The whole response is the user object
 
       if (_token != null && _user != null) {
-        await _saveSession(_token!, _user!); // On sauvegarde la session
-        notifyListeners(); // On notifie les listeners que l'état a changé !
+        await _saveSession(_token!, _user!); // Save the session
+        notifyListeners(); // Notify that auth state has changed
+      } else {
+        throw 'Token or user data is missing in the server response.';
       }
-    } 
-
-    _setLoading(false);
-    return response; // On retourne la réponse complète à l'UI
+    } else {
+      throw response.message ?? 'An unknown error occurred during OTP verification.';
+    }
   }
 
-  /// Envoie une demande de réinitialisation de mot de passe.
-  Future<ApiResponse> forgotPassword(String phone) async {
-    // Pas besoin de gérer un état de chargement global ici, 
-    // car la page de mot de passe oublié a son propre état local.
+  Future<void> resendOtp(String phone) async {
+     final response = await _apiService.resendOtp(phone);
+     if (!response.success) {
+       throw response.message ?? 'Failed to resend OTP.';
+     }
+  }
+
+
+  Future<void> login(String phone, String password) async {
+    final response = await _apiService.login(phone, password);
+
+    if (response.success && response.data != null) {
+      final responseData = response.data!;
+      _token = responseData['token'];
+      _user = responseData; // The whole response is the user object
+
+      if (_token != null && _user != null) {
+        await _saveSession(_token!, _user!); // Save the session
+        notifyListeners(); // Notify that auth state has changed
+      } else {
+         throw 'Token or user data is missing in the server response.';
+      }
+    } else {
+       if (response.errors != null) {
+        throw response.errors!;
+      } else {
+        throw response.message ?? 'An unknown error occurred during login.';
+      }
+    }
+  }
+
+  Future<void> forgotPassword(String phone) async {
     final response = await _apiService.forgotPassword(phone);
-    return response;
+     if (!response.success) {
+       throw response.message ?? 'Failed to process forgot password request.';
+     }
   }
 
-  /// Sauvegarde la session dans le stockage local.
   Future<void> _saveSession(String token, Map<String, dynamic> user) async {
     final prefs = await SharedPreferences.getInstance();
     await prefs.setString('access_token', token);
     await prefs.setString('user_data', jsonEncode(user));
   }
 
-  /// Gère la déconnexion.
   Future<void> logout() async {
     _setLoading(true);
     final prefs = await SharedPreferences.getInstance();

@@ -35,20 +35,20 @@ class NotificationsScreen extends StatelessWidget {
                 fit: BoxFit.contain,
               ),
               const SizedBox(height: 20),
-              Text(
+              const Text(
                 'Aucune notification',
                 style: TextStyle(
                   fontSize: 22,
                   fontWeight: FontWeight.bold,
-                  color: Colors.grey[600],
+                  color: Color.fromRGBO(117, 117, 117, 1),
                 ),
               ),
               const SizedBox(height: 10),
-              Text(
+              const Text(
                 'Vos notifications apparaîtront ici.',
                 style: TextStyle(
                   fontSize: 16,
-                  color: Colors.grey[500],
+                  color: Color.fromRGBO(158, 158, 158, 1),
                 ),
                 textAlign: TextAlign.center,
               ),

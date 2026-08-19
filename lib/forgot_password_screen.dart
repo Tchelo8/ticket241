@@ -33,28 +33,32 @@ class _ForgotPasswordScreenState extends State<ForgotPasswordScreen> {
       _isLoading = true;
     });
 
-    final authProvider = Provider.of<AuthProvider>(context, listen: false);
+    try {
+      await Provider.of<AuthProvider>(context, listen: false)
+          .forgotPassword(_phoneController.text);
 
-    // This will call the backend and get a response
-    final apiResponse = await authProvider.forgotPassword(_phoneController.text);
-
-    if (mounted) {
-      setState(() {
-        _isLoading = false;
-      });
-
-      // Show the message from the backend (success or error)
       Fluttertoast.showToast(
-        msg: apiResponse.message ?? apiResponse.error ?? "Une erreur est survenue.",
+        msg: "Instructions envoyées avec succès !",
         toastLength: Toast.LENGTH_LONG,
         gravity: ToastGravity.BOTTOM,
-        backgroundColor: apiResponse.success ? Colors.green : Colors.red,
+        backgroundColor: Colors.green,
         textColor: Colors.white,
       );
+      if(mounted) context.pop();
 
-      // Navigate back to login screen on success
-      if (apiResponse.success) {
-        context.pop();
+    } catch (e) {
+       Fluttertoast.showToast(
+        msg: e.toString(),
+        toastLength: Toast.LENGTH_LONG,
+        gravity: ToastGravity.BOTTOM,
+        backgroundColor: Colors.red,
+        textColor: Colors.white,
+      );
+    } finally {
+       if (mounted) {
+        setState(() {
+          _isLoading = false;
+        });
       }
     }
   }
@@ -129,7 +133,7 @@ class _ForgotPasswordScreenState extends State<ForgotPasswordScreen> {
                       shape: RoundedRectangleBorder(
                         borderRadius: BorderRadius.circular(8),
                       ),
-                      disabledBackgroundColor: const Color(0xFF1E90FF).withOpacity(0.5),
+                      disabledBackgroundColor: const Color.fromRGBO(30, 144, 255, 0.5),
                     ),
                     child: _isLoading
                         ? const SizedBox(

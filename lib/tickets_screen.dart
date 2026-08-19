@@ -1,10 +1,10 @@
 
+import 'package:cached_network_image/cached_network_image.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_staggered_animations/flutter_staggered_animations.dart';
 import 'package:go_router/go_router.dart';
 import 'package:lottie/lottie.dart';
 import 'package:myapp/models/ticket_model.dart';
-import 'package:cached_network_image/cached_network_image.dart';
 import 'package:shimmer/shimmer.dart';
 
 class TicketsScreen extends StatefulWidget {
@@ -19,9 +19,7 @@ class TicketsScreen extends StatefulWidget {
 class TicketsScreenState extends State<TicketsScreen> {
   bool _isUpcoming = true;
 
-  final List<EventTicket> _tickets = [
-    // This is example data. In a real app, this would be fetched from a service.
-  ];
+  final List<EventTicket> _tickets = [];
 
   @override
   Widget build(BuildContext context) {
@@ -36,7 +34,8 @@ class TicketsScreenState extends State<TicketsScreen> {
         automaticallyImplyLeading: false,
         title: const Text(
           'Mes Billets',
-          style: TextStyle(color: Colors.black, fontWeight: FontWeight.bold, fontSize: 24),
+          style: TextStyle(
+              color: Colors.black, fontWeight: FontWeight.bold, fontSize: 24),
         ),
         actions: const [],
       ),
@@ -53,8 +52,13 @@ class TicketsScreenState extends State<TicketsScreen> {
                   return FadeTransition(opacity: animation, child: child);
                 },
                 child: _isUpcoming
-                    ? (upcomingTickets.isEmpty ? _buildEmptyState() : _buildTicketList(upcomingTickets, key: const ValueKey("upcoming")))
-                    : (pastTickets.isEmpty ? _buildEmptyState() : _buildTicketList(pastTickets, key: const ValueKey("past"))),
+                    ? (upcomingTickets.isEmpty
+                        ? _buildEmptyState()
+                        : _buildTicketList(upcomingTickets,
+                            key: const ValueKey("upcoming")))
+                    : (pastTickets.isEmpty
+                        ? _buildEmptyState()
+                        : _buildTicketList(pastTickets, key: const ValueKey("past"))),
               ),
             ),
           ],
@@ -77,23 +81,29 @@ class TicketsScreenState extends State<TicketsScreen> {
           const SizedBox(height: 20),
           const Text(
             'Aucun billet pour le moment',
-            style: TextStyle(fontSize: 18, fontWeight: FontWeight.w600, color: Colors.black54),
+            style: TextStyle(
+                fontSize: 18,
+                fontWeight: FontWeight.w600,
+                color: Color.fromRGBO(0, 0, 0, 0.54)),
           ),
           const SizedBox(height: 10),
           const Text(
             'Il semble que vous n\'ayez pas encore de billets. Explorez les événements pour en trouver !',
             textAlign: TextAlign.center,
-            style: TextStyle(fontSize: 14, color: Colors.black45),
+            style: TextStyle(fontSize: 14, color: Color.fromRGBO(0, 0, 0, 0.45)),
           ),
           const SizedBox(height: 20),
           ElevatedButton(
             onPressed: () => widget.onNavigate(0),
             style: ElevatedButton.styleFrom(
               backgroundColor: const Color(0xFF1E90FF),
-              shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
-              padding: const EdgeInsets.symmetric(horizontal: 30, vertical: 12),
+              shape: RoundedRectangleBorder(
+                  borderRadius: BorderRadius.circular(10)),
+              padding:
+                  const EdgeInsets.symmetric(horizontal: 30, vertical: 12),
             ),
-            child: const Text('Explorer les événements', style: TextStyle(color: Colors.white)),
+            child:
+                const Text('Explorer les événements', style: TextStyle(color: Colors.white)),
           ),
         ],
       ),
@@ -137,8 +147,9 @@ class TicketsScreenState extends State<TicketsScreen> {
           },
         ),
         ListTile(
-          leading: Icon(Icons.cancel_outlined, color: Colors.red.shade700),
-          title: Text('Annuler la réservation', style: TextStyle(color: Colors.red.shade700)),
+          leading: const Icon(Icons.cancel_outlined, color: Color.fromRGBO(211, 47, 47, 1)),
+          title: const Text('Annuler la réservation',
+              style: TextStyle(color: Color.fromRGBO(211, 47, 47, 1))),
           onTap: () {
             context.pop();
           },
@@ -179,7 +190,7 @@ class TicketsScreenState extends State<TicketsScreen> {
     return Container(
       padding: const EdgeInsets.all(4),
       decoration: BoxDecoration(
-        color: Colors.grey[200],
+        color: const Color.fromRGBO(238, 238, 238, 1),
         borderRadius: BorderRadius.circular(10),
       ),
       child: Row(
@@ -206,11 +217,11 @@ class TicketsScreenState extends State<TicketsScreen> {
             borderRadius: BorderRadius.circular(8),
             boxShadow: isSelected
                 ? [
-                    BoxShadow(
-                      color: Colors.grey.withAlpha((255 * 0.3).round()),
+                    const BoxShadow(
+                      color: Color.fromRGBO(158, 158, 158, 0.3),
                       spreadRadius: 1,
                       blurRadius: 3,
-                      offset: const Offset(0, 1),
+                      offset: Offset(0, 1),
                     )
                   ]
                 : [],
@@ -221,7 +232,9 @@ class TicketsScreenState extends State<TicketsScreen> {
             style: TextStyle(
               fontSize: 16,
               fontWeight: FontWeight.w600,
-              color: isSelected ? const Color(0xFF1E90FF) : Colors.grey[600],
+              color: isSelected
+                  ? const Color(0xFF1E90FF)
+                  : const Color.fromRGBO(117, 117, 117, 1),
             ),
           ),
         ),
@@ -257,13 +270,13 @@ class TicketsScreenState extends State<TicketsScreen> {
       decoration: BoxDecoration(
         color: Colors.white,
         borderRadius: BorderRadius.circular(20),
-        border: Border.all(color: Colors.grey.shade200),
+        border: Border.all(color: const Color.fromRGBO(238, 238, 238, 1)),
         boxShadow: [
-          BoxShadow(
-            color: Colors.grey.withAlpha((255 * 0.08).round()),
+          const BoxShadow(
+            color: Color.fromRGBO(158, 158, 158, 0.08),
             spreadRadius: 1,
             blurRadius: 10,
-            offset: const Offset(0, 4),
+            offset: Offset(0, 4),
           ),
         ],
       ),
@@ -280,8 +293,8 @@ class TicketsScreenState extends State<TicketsScreen> {
                   height: 80,
                   fit: BoxFit.cover,
                   placeholder: (context, url) => Shimmer.fromColors(
-                    baseColor: Colors.grey[300]!,
-                    highlightColor: Colors.grey[100]!,
+                    baseColor: const Color.fromRGBO(224, 224, 224, 1),
+                    highlightColor: const Color.fromRGBO(245, 245, 245, 1),
                     child: Container(color: Colors.white),
                   ),
                   errorWidget: (context, url, error) => Image.asset(
@@ -299,22 +312,31 @@ class TicketsScreenState extends State<TicketsScreen> {
                   children: [
                     Row(
                       children: [
-                        const Icon(Icons.location_on, color: Colors.grey, size: 16),
+                        const Icon(Icons.location_on,
+                            color: Color.fromRGBO(158, 158, 158, 1), size: 16),
                         const SizedBox(width: 5),
                         Expanded(
-                          child: Text(ticket.location, style: const TextStyle(color: Colors.grey), overflow: TextOverflow.ellipsis),
+                          child: Text(ticket.location,
+                              style: const TextStyle(
+                                  color: Color.fromRGBO(158, 158, 158, 1)),
+                              overflow: TextOverflow.ellipsis),
                         ),
                         const SizedBox(width: 10),
                         Container(
-                          padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
+                          padding: const EdgeInsets.symmetric(
+                              horizontal: 10, vertical: 4),
                           decoration: BoxDecoration(
-                            color: ticket.isUpcoming ? Colors.green.withAlpha((255 * 0.1).round()) : Colors.orange.withAlpha((255 * 0.1).round()),
+                            color: ticket.isUpcoming
+                                ? const Color.fromRGBO(76, 175, 80, 0.1)
+                                : const Color.fromRGBO(255, 152, 0, 0.1),
                             borderRadius: BorderRadius.circular(8),
                           ),
                           child: Text(
                             ticket.status,
                             style: TextStyle(
-                              color: ticket.isUpcoming ? Colors.green : Colors.orange,
+                              color: ticket.isUpcoming
+                                  ? Colors.green
+                                  : Colors.orange,
                               fontWeight: FontWeight.bold,
                               fontSize: 12,
                             ),
@@ -323,20 +345,28 @@ class TicketsScreenState extends State<TicketsScreen> {
                       ],
                     ),
                     const SizedBox(height: 8),
-                    Text(ticket.eventName, style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 18, color: Colors.black87)),
+                    Text(ticket.eventName,
+                        style: const TextStyle(
+                            fontWeight: FontWeight.bold,
+                            fontSize: 18,
+                            color: Colors.black87)),
                     const SizedBox(height: 8),
-                    Text("${ticket.date}, ${ticket.time}", style: const TextStyle(color: Colors.black54, fontSize: 14)),
+                    Text("${ticket.date}, ${ticket.time}",
+                        style: const TextStyle(
+                            color: Color.fromRGBO(0, 0, 0, 0.54), fontSize: 14)),
                   ],
                 ),
               ),
             ],
           ),
           const SizedBox(height: 15),
-          const Divider(height: 1, color: Colors.grey, indent: 20, endIndent: 20),
+          const Divider(
+              height: 1, color: Color.fromRGBO(158, 158, 158, 1), indent: 20, endIndent: 20),
           const SizedBox(height: 10),
           Row(
             children: [
-              _buildInfoChip("${ticket.ticketCount} billet${ticket.ticketCount > 1 ? 's' : ''}"),
+              _buildInfoChip(
+                  "${ticket.ticketCount} billet${ticket.ticketCount > 1 ? 's' : ''}"),
               if (ticket.isUpcoming) _buildInfoChip("J-${ticket.daysLeft}"),
               const Spacer(),
               Flexible(
@@ -348,27 +378,34 @@ class TicketsScreenState extends State<TicketsScreen> {
                       // Handle 'Laisser un avis' action
                     }
                   },
-                  icon: Icon(ticket.isUpcoming ? Icons.download_outlined : Icons.rate_review_outlined, size: 20),
+                  icon: Icon(
+                      ticket.isUpcoming
+                          ? Icons.download_outlined
+                          : Icons.rate_review_outlined,
+                      size: 20),
                   label: Text(
                     ticket.isUpcoming ? 'Telecharger' : 'Laisser un avis',
                     overflow: TextOverflow.ellipsis,
                   ),
                   style: ElevatedButton.styleFrom(
-                    backgroundColor: const Color(0xFF1E90FF).withAlpha((255 * 0.1).round()),
+                    backgroundColor:
+                        const Color.fromRGBO(30, 144, 255, 0.1),
                     foregroundColor: const Color(0xFF1E90FF),
                     elevation: 0,
-                    shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
+                    shape: RoundedRectangleBorder(
+                        borderRadius: BorderRadius.circular(10)),
                   ),
                 ),
               ),
               const SizedBox(width: 10),
               Container(
                 decoration: BoxDecoration(
-                  border: Border.all(color: Colors.grey.shade300),
+                  border: Border.all(
+                      color: const Color.fromRGBO(224, 224, 224, 1)),
                   borderRadius: BorderRadius.circular(10),
                 ),
                 child: IconButton(
-                  icon: const Icon(Icons.more_vert, color: Colors.black54),
+                  icon: const Icon(Icons.more_vert, color: Color.fromRGBO(0, 0, 0, 0.54)),
                   onPressed: () => _showOptionsBottomSheet(context, ticket),
                 ),
               )
@@ -384,10 +421,11 @@ class TicketsScreenState extends State<TicketsScreen> {
       margin: const EdgeInsets.only(right: 10),
       padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
       decoration: BoxDecoration(
-        color: Colors.grey.withAlpha((255 * 0.1).round()),
+        color: const Color.fromRGBO(158, 158, 158, 0.1),
         borderRadius: BorderRadius.circular(20),
       ),
-      child: Text(label, style: const TextStyle(fontSize: 12, color: Colors.black54)),
+      child: Text(label,
+          style: const TextStyle(fontSize: 12, color: Color.fromRGBO(0, 0, 0, 0.54))),
     );
   }
 }

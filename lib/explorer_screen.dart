@@ -2,13 +2,14 @@ import 'dart:ui';
 
 import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
+import 'package:provider/provider.dart';
+import 'package:cached_network_image/cached_network_image.dart';
+import 'package:shimmer/shimmer.dart';
+
 import 'package:myapp/models/category_model.dart';
 import 'package:myapp/models/event_model.dart';
 import 'package:myapp/providers/favorites_provider.dart';
-import 'package:provider/provider.dart';
 import 'package:myapp/services/api_service.dart';
-import 'package:cached_network_image/cached_network_image.dart';
-import 'package:shimmer/shimmer.dart';
 
 class ExplorerScreen extends StatefulWidget {
   const ExplorerScreen({super.key});
@@ -23,7 +24,7 @@ class ExplorerScreenState extends State<ExplorerScreen> {
   List<Category> _categories = [];
   bool _isLoadingEvents = true;
   bool _isLoadingCategories = true;
-  String _selectedCity = 'Libreville';
+  final String _selectedCity = 'Libreville';
 
   List<Event> _filteredEvents = [];
   String? _selectedCategory;
@@ -41,31 +42,52 @@ class ExplorerScreenState extends State<ExplorerScreen> {
       _isLoadingCategories = true;
     });
 
-    final eventsFuture = _apiService.getEvents(city: city ?? _selectedCity);
-    final categoriesFuture = _apiService.getCategories();
+    try {
+      final responses = await Future.wait([
+        _apiService.getEvents(city: city ?? _selectedCity),
+        _apiService.getCategories(),
+      ]);
 
-    final results = await Future.wait([eventsFuture, categoriesFuture]);
+      final eventsResponse = responses[0] as ApiResponse<List<Event>>;
+      final categoriesResponse = responses[1] as ApiResponse<List<Category>>;
 
-    final eventsResponse = results[0] as ApiResponse<List<Event>>;
-    final categoriesResponse = results[1] as ApiResponse<List<Category>>;
+      if (!mounted) return;
 
-    if (mounted) {
       setState(() {
-        if (eventsResponse.success && eventsResponse.data != null) {
-          _allEvents = eventsResponse.data!;
+        _allEvents = (eventsResponse.success && eventsResponse.data != null) ? eventsResponse.data! : [];
+        if (!eventsResponse.success && mounted) {
+          ScaffoldMessenger.of(context).showSnackBar(
+            SnackBar(content: Text(eventsResponse.message ?? 'Le chargement des événements a échoué.')),
+          );
         }
+
+        _categories = (categoriesResponse.success && categoriesResponse.data != null) ? categoriesResponse.data! : [];
+        if (_categories.isNotEmpty && _selectedCategory == null) {
+          _selectedCategory = _categories.first.name;
+        }
+        if (!categoriesResponse.success && mounted) {
+          ScaffoldMessenger.of(context).showSnackBar(
+            SnackBar(content: Text(categoriesResponse.message ?? 'Le chargement des catégories a échoué.')),
+          );
+        }
+
         _isLoadingEvents = false;
-
-        if (categoriesResponse.success && categoriesResponse.data != null) {
-          _categories = categoriesResponse.data!;
-          if (_categories.isNotEmpty && _selectedCategory == null) {
-            _selectedCategory = _categories.first.name;
-          }
-        }
         _isLoadingCategories = false;
-
         _applyFilters();
       });
+    } catch (e) {
+      if (mounted) {
+        setState(() {
+          _isLoadingEvents = false;
+          _isLoadingCategories = false;
+          _allEvents = [];
+          _categories = [];
+          _applyFilters();
+        });
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(content: Text('Une erreur est survenue: ${e.toString()}')),
+        );
+      }
     }
   }
 
@@ -95,15 +117,6 @@ class ExplorerScreenState extends State<ExplorerScreen> {
       _searchQuery = query;
       _applyFilters();
     });
-  }
-
-  void _onCityChanged(String newCity) {
-    if (newCity != _selectedCity) {
-      setState(() {
-        _selectedCity = newCity;
-        _fetchData(city: newCity);
-      });
-    }
   }
 
   @override
@@ -145,9 +158,9 @@ class ExplorerScreenState extends State<ExplorerScreen> {
       onChanged: _onSearchChanged,
       decoration: InputDecoration(
         hintText: 'Rechercher...',
-        prefixIcon: const Icon(Icons.search, color: Colors.grey),
+        prefixIcon: const Icon(Icons.search, color: Color.fromRGBO(158, 158, 158, 1)),
         filled: true,
-        fillColor: Colors.grey[200],
+        fillColor: const Color.fromRGBO(238, 238, 238, 1),
         border: OutlineInputBorder(
           borderRadius: BorderRadius.circular(30),
           borderSide: BorderSide.none,
@@ -191,8 +204,8 @@ class ExplorerScreenState extends State<ExplorerScreen> {
         width: 40,
         fit: BoxFit.cover,
         placeholder: (context, url) => Shimmer.fromColors(
-          baseColor: Colors.grey[300]!,
-          highlightColor: Colors.grey[100]!,
+          baseColor: const Color.fromRGBO(224, 224, 224, 1),
+          highlightColor: const Color.fromRGBO(245, 245, 245, 1),
           child: Container(
             color: Colors.white,
           ),
@@ -222,16 +235,16 @@ class ExplorerScreenState extends State<ExplorerScreen> {
           color: isSelected ? const Color(0xFF1E90FF) : Colors.white,
           borderRadius: BorderRadius.circular(15),
           border: Border.all(
-            color: isSelected ? const Color(0xFF1E90FF) : Colors.grey[300]!,
+            color: isSelected ? const Color(0xFF1E90FF) : const Color.fromRGBO(224, 224, 224, 1),
             width: 1.5,
           ),
           boxShadow: isSelected
               ? [
-                  BoxShadow(
-                    color: const Color(0xFF1E90FF).withAlpha(100),
+                  const BoxShadow(
+                    color: Color.fromRGBO(30, 144, 255, 0.4),
                     spreadRadius: 2,
                     blurRadius: 5,
-                    offset: const Offset(0, 3),
+                    offset: Offset(0, 3),
                   )
                 ]
               : [],
@@ -287,11 +300,11 @@ class ExplorerScreenState extends State<ExplorerScreen> {
           color: Colors.white,
           borderRadius: BorderRadius.circular(20),
           boxShadow: [
-            BoxShadow(
-              color: Colors.grey.withAlpha(50),
+            const BoxShadow(
+              color: Color.fromRGBO(158, 158, 158, 0.2),
               spreadRadius: 1,
               blurRadius: 8,
-              offset: const Offset(0, 4),
+              offset: Offset(0, 4),
             )
           ],
         ),
@@ -312,16 +325,16 @@ class ExplorerScreenState extends State<ExplorerScreen> {
                     width: double.infinity,
                     fit: BoxFit.cover,
                     placeholder: (context, url) => Shimmer.fromColors(
-                      baseColor: Colors.grey[300]!,
-                      highlightColor: Colors.grey[100]!,
+                      baseColor: const Color.fromRGBO(224, 224, 224, 1),
+                      highlightColor: const Color.fromRGBO(245, 245, 245, 1),
                       child: Container(
                         color: Colors.white,
                       ),
                     ),
                     errorWidget: (context, url, error) => Container(
                       height: 120,
-                      color: Colors.grey[300],
-                      child: const Icon(Icons.broken_image, color: Colors.grey),
+                      color: const Color.fromRGBO(224, 224, 224, 1),
+                      child: const Icon(Icons.broken_image, color: Color.fromRGBO(158, 158, 158, 1)),
                     ),
                   ),
                 ),
@@ -335,7 +348,7 @@ class ExplorerScreenState extends State<ExplorerScreen> {
                       child: BackdropFilter(
                         filter: ImageFilter.blur(sigmaX: 1, sigmaY: 1),
                         child: Container(
-                          color: Colors.black.withOpacity(0.3),
+                          color: const Color.fromRGBO(0, 0, 0, 0.3),
                           alignment: Alignment.center,
                           child: Container(
                             padding: const EdgeInsets.symmetric(
@@ -343,7 +356,7 @@ class ExplorerScreenState extends State<ExplorerScreen> {
                                 vertical: 6
                             ),
                             decoration: BoxDecoration(
-                              color: Colors.redAccent.withOpacity(0.8),
+                              color: const Color.fromRGBO(255, 82, 82, 0.8),
                               borderRadius: BorderRadius.circular(30),
                             ),
                             child: const Text(
@@ -375,8 +388,8 @@ class ExplorerScreenState extends State<ExplorerScreen> {
                       },
                       child: Container(
                         padding: const EdgeInsets.all(6),
-                        decoration: BoxDecoration(
-                          color: Colors.white.withAlpha(230),
+                        decoration: const BoxDecoration(
+                          color: Color.fromRGBO(255, 255, 255, 0.9),
                           shape: BoxShape.circle,
                         ),
                         child: Icon(
@@ -399,7 +412,7 @@ class ExplorerScreenState extends State<ExplorerScreen> {
                     style: TextStyle(
                         fontSize: 14,
                         fontWeight: FontWeight.bold,
-                        color: isPast ? Colors.grey[600] : Colors.black,
+                        color: isPast ? const Color.fromRGBO(117, 117, 117, 1) : Colors.black,
                     ),
                     maxLines: 1,
                     overflow: TextOverflow.ellipsis,
@@ -407,7 +420,7 @@ class ExplorerScreenState extends State<ExplorerScreen> {
                   const SizedBox(height: 5),
                   Text(
                     event.venueName,
-                    style: TextStyle(color: Colors.grey[500], fontSize: 11),
+                    style: const TextStyle(color: Color.fromRGBO(189, 189, 189, 1), fontSize: 11),
                     maxLines: 1,
                     overflow: TextOverflow.ellipsis,
                   ),
@@ -417,13 +430,13 @@ class ExplorerScreenState extends State<ExplorerScreen> {
                     child: Container(
                       padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
                       decoration: BoxDecoration(
-                        color: (isPast ? Colors.grey[300] : const Color(0xFF1E90FF).withAlpha(30)),
+                        color: (isPast ? const Color.fromRGBO(224, 224, 224, 1) : const Color.fromRGBO(30, 144, 255, 0.1)),
                         borderRadius: BorderRadius.circular(8),
                       ),
                       child: Text(
                         '${event.minPrice.toStringAsFixed(0)} FCFA',
                         style: TextStyle(
-                          color: isPast ? Colors.grey[700] : const Color(0xFF1E90FF),
+                          color: isPast ? const Color.fromRGBO(97, 97, 97, 1) : const Color(0xFF1E90FF),
                           fontWeight: FontWeight.bold,
                           fontSize: 10,
                         ),

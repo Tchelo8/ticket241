@@ -97,7 +97,7 @@ class OnboardingScreenState extends State<OnboardingScreen> {
                   count: _pages.length,
                   effect: const ExpandingDotsEffect(
                     activeDotColor: Color(0xFF1E90FF),
-                    dotColor: Colors.grey,
+                    dotColor: Color.fromRGBO(158, 158, 158, 1),
                     dotHeight: 10,
                     dotWidth: 10,
                   ),
@@ -161,18 +161,18 @@ class OnboardingPage extends StatelessWidget {
               ),
             ),
             const SizedBox(height: 50),
-            Text(
-              title,
-              style: const TextStyle(
+            const Text(
+              'title',
+              style: TextStyle(
                 fontSize: 28,
                 fontWeight: FontWeight.bold,
                 color: Colors.black87,
               ),
             ),
             const SizedBox(height: 20),
-            Text(
-              subtitle,
-              style: const TextStyle(
+            const Text(
+              'subtitle',
+              style: TextStyle(
                 fontSize: 18,
                 color: Colors.black54,
               ),
