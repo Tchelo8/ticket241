@@ -18,6 +18,7 @@ class _LoginScreenState extends State<LoginScreen> {
   final _phoneController = TextEditingController();
   final _passwordController = TextEditingController();
   bool _isPasswordVisible = false;
+  bool _isLoading = false;
 
   @override
   void dispose() {
@@ -27,9 +28,13 @@ class _LoginScreenState extends State<LoginScreen> {
   }
 
   Future<void> _submitLogin() async {
-    if (!_formKey.currentState!.validate()) {
+    if (!_formKey.currentState!.validate() || _isLoading) {
       return;
     }
+
+    setState(() {
+      _isLoading = true;
+    });
 
     final authProvider = Provider.of<AuthProvider>(context, listen: false);
     
@@ -39,6 +44,10 @@ class _LoginScreenState extends State<LoginScreen> {
     );
 
     if (mounted) {
+       setState(() {
+        _isLoading = false;
+      });
+
       if (apiResponse.success) {
         Fluttertoast.showToast(
           msg: "Connexion réussie !",
@@ -47,8 +56,7 @@ class _LoginScreenState extends State<LoginScreen> {
           backgroundColor: Colors.green,
           textColor: Colors.white,
         );
-        // La redirection est maintenant gérée automatiquement par GoRouter
-        // grâce au refreshListenable. Plus besoin de context.go() ici.
+        // Redirection is handled by GoRouter's refreshListenable
       } else {
         Fluttertoast.showToast(
           msg: apiResponse.error ?? "Une erreur inconnue est survenue.",
@@ -63,8 +71,6 @@ class _LoginScreenState extends State<LoginScreen> {
 
   @override
   Widget build(BuildContext context) {
-    final authProvider = context.watch<AuthProvider>();
-
     return Scaffold(
       backgroundColor: Colors.white,
       body: SafeArea(
@@ -145,26 +151,33 @@ class _LoginScreenState extends State<LoginScreen> {
                     },
                   ),
                   const SizedBox(height: 20),
-                  authProvider.isLoading
-                      ? const Center(child: CircularProgressIndicator())
-                      : ElevatedButton(
-                          onPressed: _submitLogin,
+                   ElevatedButton(
+                          onPressed: _isLoading ? null : _submitLogin,
                           style: ElevatedButton.styleFrom(
                             padding: const EdgeInsets.symmetric(vertical: 16),
                             backgroundColor: const Color(0xFF1E90FF), 
                             shape: RoundedRectangleBorder(
                               borderRadius: BorderRadius.circular(8),
                             ),
+                            disabledBackgroundColor: const Color(0xFF1E90FF).withOpacity(0.5),
                           ),
-                          child: const Text(
-                            'Se connecter',
-                            style: TextStyle(fontSize: 16, color: Colors.white),
-                          ),
+                          child: _isLoading 
+                              ? const SizedBox(
+                                  height: 20,
+                                  width: 20,
+                                  child: CircularProgressIndicator(
+                                    color: Colors.white,
+                                    strokeWidth: 3,
+                                  ),
+                                )
+                              : const Text(
+                                  'Se connecter',
+                                  style: TextStyle(fontSize: 16, color: Colors.white),
+                                ),
                         ),
                   const SizedBox(height: 20),
                   TextButton(
-                    onPressed: () {
-                    },
+                    onPressed: () => context.push('/forgot-password'), // Navigate to the new screen
                     child: const Text(
                       'Mot de passe oublié ?',
                       style: TextStyle(color: Color(0xFF1E90FF)),

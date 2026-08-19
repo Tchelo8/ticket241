@@ -1,3 +1,5 @@
+import 'dart:ui';
+
 import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
 import 'package:myapp/models/event_model.dart';
@@ -7,6 +9,8 @@ import 'package:myapp/services/api_service.dart';
 import 'package:provider/provider.dart';
 import 'package:myapp/city_selection_popup.dart';
 import 'package:intl/intl.dart';
+import 'package:cached_network_image/cached_network_image.dart';
+import 'package:shimmer/shimmer.dart';
 
 class HomeScreen extends StatefulWidget {
   final Function(int) onNavigate;
@@ -19,154 +23,42 @@ class HomeScreen extends StatefulWidget {
 class _HomeScreenState extends State<HomeScreen> {
   String _selectedCity = 'Libreville';
   final ApiService _apiService = ApiService();
-  List<Event> _events = [];
+  List<Event> _allEvents = [];
   bool _isLoading = true;
-
-  // Dummy data
-  static final List<Event> _upcomingEvents = [
-    Event(
-        id: 0,
-        slug: 'upcoming-1',
-        name: 'Concert Live Acoustique',
-        coverImageUrl: 'assets/images/enb.jpg',
-        venueName: 'Entre Nous Bar, Angondjé',
-        startDate: DateTime(2025, 3, 29),
-        minPrice: 5000.0,
-        category: 'Concert',
-        cityId: 1,
-        cityName: 'Libreville',
-        cityCountry: 'Gabon',
-        soldSeats: 0,
-        availableSeats: 100,
-        maxPrice: 5000.0,
-        isFeatured: false,
-        isPromoted: false,
-        viewCount: 0,
-        isSaleOpen: true,
-        isPastEvent: false,
-        isSoldOut: false),
-    Event(
-        id: 0,
-        slug: 'upcoming-2',
-        name: 'Festival International de Sibang',
-        coverImageUrl: 'assets/images/sibang.jpg',
-        venueName: 'Jardin Botanique, Libreville',
-        startDate: DateTime(2025, 4, 15),
-        minPrice: 10000.0,
-        category: 'Festival',
-        cityId: 1,
-        cityName: 'Libreville',
-        cityCountry: 'Gabon',
-        soldSeats: 0,
-        availableSeats: 100,
-        maxPrice: 10000.0,
-        isFeatured: false,
-        isPromoted: false,
-        viewCount: 0,
-        isSaleOpen: true,
-        isPastEvent: false,
-        isSoldOut: false),
-    Event(
-        id: 0,
-        slug: 'upcoming-3',
-        name: 'Concert Oiseau Rare',
-        coverImageUrl: 'assets/images/oiseau.jpg',
-        venueName: 'Casino Croisette, LBV',
-        startDate: DateTime(2025, 2, 14),
-        minPrice: 15000.0,
-        category: 'Concert',
-        cityId: 1,
-        cityName: 'Libreville',
-        cityCountry: 'Gabon',
-        soldSeats: 0,
-        availableSeats: 100,
-        maxPrice: 15000.0,
-        isFeatured: false,
-        isPromoted: false,
-        viewCount: 0,
-        isSaleOpen: true,
-        isPastEvent: false,
-        isSoldOut: false),
-  ];
-
-  static final List<Event> _sportEvents = [
-    Event(
-        id: 0,
-        slug: 'sport-1',
-        name: 'CMS vs US Bitam',
-        coverImageUrl: 'assets/images/sibang.jpg',
-        venueName: 'Stade amitié',
-        startDate: DateTime(2025, 5, 5),
-        minPrice: 1000.0,
-        category: 'Sport',
-        cityId: 1,
-        cityName: 'Libreville',
-        cityCountry: 'Gabon',
-        soldSeats: 0,
-        availableSeats: 100,
-        maxPrice: 1000.0,
-        isFeatured: false,
-        isPromoted: false,
-        viewCount: 0,
-        isSaleOpen: true,
-        isPastEvent: false,
-        isSoldOut: false),
-  ];
-
-  static final List<Event> _cultureEvents = [
-    Event(
-        id: 0,
-        slug: 'culture-1',
-        name: 'Concert oiseau rare',
-        coverImageUrl: 'assets/images/oiseau.jpg',
-        venueName: 'Casino Croisette',
-        startDate: DateTime(2025, 2, 14),
-        minPrice: 15000.0,
-        category: 'Concert',
-        cityId: 1,
-        cityName: 'Libreville',
-        cityCountry: 'Gabon',
-        soldSeats: 0,
-        availableSeats: 100,
-        maxPrice: 15000.0,
-        isFeatured: false,
-        isPromoted: false,
-        viewCount: 0,
-        isSaleOpen: true,
-        isPastEvent: false,
-        isSoldOut: false),
-  ];
 
   @override
   void initState() {
     super.initState();
+    Intl.defaultLocale = 'fr_FR';
     _fetchEvents();
   }
 
-  Future<void> _fetchEvents() async {
+  Future<void> _fetchEvents({String? city}) async {
     setState(() {
       _isLoading = true;
     });
-    final response = await _apiService.getEvents();
-    if (response.success && response.data != null) {
+    final response = await _apiService.getEvents(city: city ?? _selectedCity);
+    if (mounted) {
       setState(() {
-        _events = response.data!;
+        if (response.success && response.data != null) {
+          _allEvents = response.data!;
+        } else {
+          _allEvents = []; // On vide la liste en cas d'erreur
+          ScaffoldMessenger.of(context).showSnackBar(
+            SnackBar(content: Text(response.error ?? 'Erreur lors du chargement des événements')),
+          );
+        }
         _isLoading = false;
       });
-    } else {
-      setState(() {
-        _isLoading = false;
-      });
-      if (mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(content: Text(response.error ?? 'Erreur lors du chargement des événements')),
-        );
-      }
     }
   }
 
   String _formatDate(DateTime date) {
-    return DateFormat('dd MMM', 'fr_FR').format(date);
+    return DateFormat('dd MMM, yyyy').format(date);
+  }
+
+  String _formatDateUpcoming(DateTime date) {
+    return DateFormat('dd MMM').format(date);
   }
 
   void _showCitySelection(BuildContext context) async {
@@ -181,73 +73,98 @@ class _HomeScreenState extends State<HomeScreen> {
           maxChildSize: 0.8,
           expand: false,
           builder: (context, scrollController) {
-            return const CitySelectionPopup();
+            return CitySelectionPopup(currentCity: _selectedCity); // Passe la ville actuelle
           },
         );
       },
     );
 
-    if (result != null) {
+    if (result != null && result != _selectedCity) {
       setState(() {
         _selectedCity = result;
+        _fetchEvents(city: _selectedCity); // On recharge les événements pour la nouvelle ville
       });
     }
   }
 
   @override
   Widget build(BuildContext context) {
-    final popularEvents = _events;
+    // --- Le filtrage est maintenant géré par l'API, on prépare juste les listes pour l'UI ---
+    final now = DateTime.now();
+    
+    // Événements futurs (non passés)
+    final upcomingEvents = _allEvents.where((e) => e.startDate.isAfter(now)).toList();
+    upcomingEvents.sort((a, b) => a.startDate.compareTo(b.startDate)); // Les plus proches en premier
+
+    // Événements populaires (ceux marqués comme "featured" ou avec le plus de vues)
+    final popularEvents = _allEvents.where((e) => e.isFeatured && e.startDate.isAfter(now)).toList();
+    if (popularEvents.isEmpty) {
+        // Fallback: trier par nombre de vues si aucun n'est "featured"
+        final sortedByViews = _allEvents.where((e) => e.startDate.isAfter(now)).toList();
+        sortedByViews.sort((a, b) => b.viewCount.compareTo(a.viewCount));
+        popularEvents.addAll(sortedByViews.take(5)); // Prendre les 5 plus populaires
+    }
+
+    // Événements de sport
+    final sportEvents = _allEvents.where((e) => e.category.toUpperCase() == 'SPORT' && e.startDate.isAfter(now)).toList();
+
+    // Événements culturels (ex: Concert, Théâtre)
+    const cultureCategories = {'CONCERT', 'THÉÂTRE', 'FESTIVAL'};
+    final cultureEvents = _allEvents.where((e) => cultureCategories.contains(e.category.toUpperCase()) && e.startDate.isAfter(now)).toList();
+
 
     return Scaffold(
       backgroundColor: Colors.grey[100],
       body: SafeArea(
         child: RefreshIndicator(
-          onRefresh: _fetchEvents,
-          child: SingleChildScrollView(
-            physics: const AlwaysScrollableScrollPhysics(),
-            child: AnimationLimiter(
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: AnimationConfiguration.toStaggeredList(
-                  duration: const Duration(milliseconds: 375),
-                  childAnimationBuilder: (widget) => SlideAnimation(
-                    verticalOffset: 50.0,
-                    child: FadeInAnimation(
-                      child: widget,
+          onRefresh: () => _fetchEvents(), // Le refresh recharge pour la ville actuelle
+          child: _isLoading
+              ? const Center(child: CircularProgressIndicator())
+              : _allEvents.isEmpty
+                ? const Center(child: Text("Aucun événement trouvé pour cette ville."))
+                : SingleChildScrollView(
+                  physics: const AlwaysScrollableScrollPhysics(),
+                  child: AnimationLimiter(
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: AnimationConfiguration.toStaggeredList(
+                        duration: const Duration(milliseconds: 375),
+                        childAnimationBuilder: (widget) => SlideAnimation(
+                          verticalOffset: 50.0,
+                          child: FadeInAnimation(
+                            child: widget,
+                          ),
+                        ),
+                        children: [
+                          _buildHeader(context),
+                          _buildSearchBar(),
+                          const SizedBox(height: 24),
+
+                          if(upcomingEvents.isNotEmpty)
+                            ...[_buildSectionHeader("Événements à venir"),
+                            _buildUpcomingEventsList(upcomingEvents)],
+
+                          if(popularEvents.isNotEmpty)
+                            ...[const SizedBox(height: 24),
+                            _buildSectionHeader("Populaire actuellement", showSeeAll: true),
+                            _buildPopularEventsList(context, events: popularEvents)],
+                          
+                          if(sportEvents.isNotEmpty)
+                            ...[const SizedBox(height: 24),
+                            _buildSectionHeader("Sport", showSeeAll: true),
+                            _buildPopularEventsList(context, events: sportEvents)],
+
+                          if(cultureEvents.isNotEmpty)
+                            ...[const SizedBox(height: 24),
+                            _buildSectionHeader("Culture", showSeeAll: true),
+                            _buildPopularEventsList(context, events: cultureEvents)],
+
+                          const SizedBox(height: 24),
+                        ],
+                      ),
                     ),
                   ),
-                  children: [
-                    _buildHeader(context),
-                    _buildSearchBar(),
-                    const SizedBox(height: 24),
-                    _buildSectionHeader("Événements à venir"),
-                    _buildUpcomingEventsList(_upcomingEvents),
-                    const SizedBox(height: 24),
-                    _buildSectionHeader("Populaire actuellement", showSeeAll: true),
-                    if (_isLoading)
-                      const Center(
-                        child: Padding(
-                          padding: EdgeInsets.all(32.0),
-                          child: CircularProgressIndicator(),
-                        ),
-                      )
-                    else
-                      _buildPopularEventsList(context, events: popularEvents),
-                    const SizedBox(height: 24),
-                    _buildSectionHeader("Pour vous", showSeeAll: true),
-                    _buildPopularEventsList(context, events: _upcomingEvents.reversed.toList()),
-                    const SizedBox(height: 24),
-                    _buildSectionHeader("Sport", showSeeAll: true),
-                    _buildPopularEventsList(context, events: _sportEvents),
-                    const SizedBox(height: 24),
-                    _buildSectionHeader("Culture", showSeeAll: true),
-                    _buildPopularEventsList(context, events: _cultureEvents),
-                    const SizedBox(height: 24),
-                  ],
                 ),
-              ),
-            ),
-          ),
         ),
       ),
     );
@@ -292,7 +209,7 @@ class _HomeScreenState extends State<HomeScreen> {
                 shape: BoxShape.circle,
                 boxShadow: [
                   BoxShadow(
-                    color: Colors.grey.withAlpha((255 * 0.2).round()),
+                    color: Colors.grey.withAlpha(50),
                     spreadRadius: 1,
                     blurRadius: 5,
                   )
@@ -315,7 +232,7 @@ class _HomeScreenState extends State<HomeScreen> {
       child: TextField(
         readOnly: true,
         onTap: () {
-          widget.onNavigate(1);
+          widget.onNavigate(1); // Naviguer vers l'onglet Explorer
         },
         decoration: InputDecoration(
           hintText: 'Rechercher des événements...',
@@ -386,15 +303,13 @@ class _HomeScreenState extends State<HomeScreen> {
   }
 
   Widget _buildUpcomingEventCard(BuildContext context, {required Event event}) {
-    final formattedDate = event.startDate != null ? _formatDate(event.startDate!) : '';
+    final formattedDate = _formatDateUpcoming(event.startDate);
     final dateParts = formattedDate.split(' ');
     final day = dateParts.isNotEmpty ? dateParts[0] : '';
     final month = dateParts.length > 1 ? dateParts[1] : '';
 
     return GestureDetector(
-      onTap: () {
-        context.push('/details', extra: event);
-      },
+      onTap: () => context.push('/details', extra: event),
       child: Container(
         width: 300,
         margin: const EdgeInsets.only(right: 16),
@@ -403,7 +318,7 @@ class _HomeScreenState extends State<HomeScreen> {
             borderRadius: BorderRadius.circular(16),
             boxShadow: [
               BoxShadow(
-                color: Colors.grey.withAlpha((255 * 0.15).round()),
+                color: Colors.grey.withAlpha(40),
                 spreadRadius: 1,
                 blurRadius: 8,
                 offset: const Offset(0, 4),
@@ -418,19 +333,28 @@ class _HomeScreenState extends State<HomeScreen> {
                 children: [
                   ClipRRect(
                     borderRadius: BorderRadius.circular(12),
-                    child: event.coverImageUrl != null && event.coverImageUrl!.startsWith('assets/')
-                        ? Image.asset(event.coverImageUrl!, width: 80, height: 96, fit: BoxFit.cover)
-                        : (event.coverImageUrl != null
-                            ? Image.network(event.coverImageUrl!,
-                                width: 80, height: 96, fit: BoxFit.cover, errorBuilder: (context, error, stackTrace) => const Icon(Icons.broken_image, size: 40))
-                            : Container(width: 80, height: 96, color: Colors.grey[300], child: const Icon(Icons.image))),
+                    child: CachedNetworkImage(
+                      imageUrl: event.coverImageUrl,
+                      width: 80,
+                      height: 96,
+                      fit: BoxFit.cover,
+                      placeholder: (context, url) => Shimmer.fromColors(
+                        baseColor: Colors.grey[300]!,
+                        highlightColor: Colors.grey[100]!,
+                        child: Container(
+                          color: Colors.white,
+                        ),
+                      ),
+                      errorWidget: (context, url, error) => Container(
+                          width: 80, height: 96, color: Colors.grey[300], child: const Icon(Icons.image, color: Colors.grey)),
+                    ),
                   ),
                   Positioned.fill(
                     child: ClipRRect(
                       borderRadius: BorderRadius.circular(12),
                       child: Container(
                         decoration: BoxDecoration(
-                          color: Colors.black.withAlpha((255 * 0.2).round()),
+                          color: Colors.black.withAlpha(50),
                         ),
                       ),
                     ),
@@ -439,7 +363,7 @@ class _HomeScreenState extends State<HomeScreen> {
                     width: 45,
                     height: 45,
                     decoration: BoxDecoration(
-                      color: Colors.white.withAlpha((255 * 0.85).round()),
+                      color: Colors.white.withAlpha(220),
                       borderRadius: BorderRadius.circular(8),
                     ),
                     child: Column(mainAxisAlignment: MainAxisAlignment.center, children: [
@@ -451,47 +375,34 @@ class _HomeScreenState extends State<HomeScreen> {
               ),
               const SizedBox(width: 12),
               Expanded(
-                child: SingleChildScrollView(
-                  child: Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [
-                      Text(
-                        event.name.length > 20 ? '${event.name.substring(0, 20)}...' : event.name,
-                        style: const TextStyle(fontSize: 16, fontWeight: FontWeight.bold),
-                        maxLines: 2,
-                        overflow: TextOverflow.ellipsis,
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  mainAxisAlignment: MainAxisAlignment.center,
+                  children: [
+                    Text(
+                      event.name,
+                      style: const TextStyle(
+                        fontSize: 16,
+                        fontWeight: FontWeight.bold,
                       ),
-                      const SizedBox(height: 8),
-                      Row(
-                        children: [
-                          const Icon(Icons.location_on_outlined, size: 16, color: Colors.grey),
-                          const SizedBox(width: 4),
-                          Expanded(
-                            child: Text(
-                              event.venueName ?? '',
-                              style: const TextStyle(color: Colors.grey, fontSize: 13),
-                              overflow: TextOverflow.ellipsis,
-                            ),
+                      maxLines: 2,
+                      overflow: TextOverflow.ellipsis,
+                    ),
+                    const SizedBox(height: 8),
+                    Row(
+                      children: [
+                        Icon(Icons.location_on_outlined, size: 16, color: Colors.grey[600]),
+                        const SizedBox(width: 4),
+                        Expanded(
+                          child: Text(
+                            event.venueName,
+                            style: TextStyle(color: Colors.grey[600], fontSize: 13),
+                            overflow: TextOverflow.ellipsis,
                           ),
-                        ],
-                      ),
-                      const SizedBox(height: 8),
-                      Align(
-                        alignment: Alignment.bottomRight,
-                        child: ElevatedButton(
-                          onPressed: () {},
-                          style: ElevatedButton.styleFrom(
-                            backgroundColor: const Color(0xFF1E90FF).withAlpha((255 * 0.1).round()),
-                            foregroundColor: const Color(0xFF1E90FF),
-                            elevation: 0,
-                            padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
-                            shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)),
-                          ),
-                          child: const Text('Précommander', style: TextStyle(fontSize: 11)),
                         ),
-                      ),
-                    ],
-                  ),
+                      ],
+                    ),
+                  ],
                 ),
               ),
             ],
@@ -531,12 +442,11 @@ class _HomeScreenState extends State<HomeScreen> {
   Widget _buildPopularEventCard(BuildContext context, {required Event event}) {
     final favoritesProvider = Provider.of<FavoritesProvider>(context);
     final isFavorite = favoritesProvider.isFavorite(event);
-    final formattedDate = event.startDate != null ? _formatDate(event.startDate!) : '';
+    final isPast = DateTime.now().isAfter(event.startDate);
 
+    // Ce widget réutilise la logique de `explorer_screen` pour la cohérence
     return GestureDetector(
-      onTap: () {
-        context.push('/details', extra: event);
-      },
+      onTap: isPast ? null : () => context.push('/details', extra: event),
       child: Container(
         width: 220,
         margin: const EdgeInsets.only(right: 16),
@@ -545,7 +455,7 @@ class _HomeScreenState extends State<HomeScreen> {
             borderRadius: BorderRadius.circular(20),
             boxShadow: [
               BoxShadow(
-                color: Colors.grey.withAlpha((255 * 0.15).round()),
+                color: Colors.grey.withAlpha(40),
                 spreadRadius: 1,
                 blurRadius: 8,
                 offset: const Offset(0, 4),
@@ -555,88 +465,140 @@ class _HomeScreenState extends State<HomeScreen> {
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
             Stack(
+              alignment: Alignment.center,
               children: [
                 ClipRRect(
                   borderRadius: const BorderRadius.only(
                     topLeft: Radius.circular(20),
                     topRight: Radius.circular(20),
                   ),
-                  child: event.coverImageUrl != null && event.coverImageUrl!.startsWith('assets/')
-                      ? Image.asset(event.coverImageUrl!, height: 120, width: double.infinity, fit: BoxFit.cover)
-                      : (event.coverImageUrl != null
-                          ? Image.network(event.coverImageUrl!,
-                              height: 120, width: double.infinity, fit: BoxFit.cover, errorBuilder: (context, error, stackTrace) => const Icon(Icons.broken_image, size: 50))
-                          : Container(height: 120, width: double.infinity, color: Colors.grey[300], child: const Icon(Icons.image))),
-                ),
-                Positioned(
-                  top: 8,
-                  right: 8,
-                  child: GestureDetector(
-                    onTap: () {
-                      favoritesProvider.toggleFavorite(event);
-                      if (!isFavorite) {
-                        ScaffoldMessenger.of(context).showSnackBar(
-                          const SnackBar(
-                            content: Text('Ajouté aux favoris'),
-                            duration: Duration(seconds: 2),
-                          ),
-                        );
-                      }
-                    },
-                    child: Container(
-                      padding: const EdgeInsets.all(6),
-                      decoration: BoxDecoration(
-                        color: Colors.white.withAlpha((255 * 0.9).round()),
-                        shape: BoxShape.circle,
+                  child: CachedNetworkImage(
+                    imageUrl: event.coverImageUrl,
+                    height: 120,
+                    width: double.infinity,
+                    fit: BoxFit.cover,
+                    placeholder: (context, url) => Shimmer.fromColors(
+                      baseColor: Colors.grey[300]!,
+                      highlightColor: Colors.grey[100]!,
+                      child: Container(
+                        color: Colors.white,
                       ),
-                      child: Icon(
-                        isFavorite ? Icons.favorite : Icons.favorite_border,
-                        color: isFavorite ? Colors.red : Colors.black,
-                        size: 22,
-                      ),
+                    ),
+                    errorWidget: (context, url, error) => Container(
+                      height: 120,
+                      color: Colors.grey[300],
+                      child: const Icon(Icons.broken_image, color: Colors.grey),
                     ),
                   ),
                 ),
+                if (isPast)
+                  Positioned.fill(
+                    child: ClipRRect(
+                      borderRadius: const BorderRadius.only(
+                        topLeft: Radius.circular(20),
+                        topRight: Radius.circular(20),
+                      ),
+                      child: BackdropFilter(
+                        filter: ImageFilter.blur(sigmaX: 1, sigmaY: 1),
+                        child: Container(
+                          color: Colors.black.withOpacity(0.3),
+                          alignment: Alignment.center,
+                          child: Container(
+                            padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
+                            decoration: BoxDecoration(
+                              color: Colors.redAccent.withOpacity(0.8),
+                              borderRadius: BorderRadius.circular(30),
+                            ),
+                            child: const Text(
+                              'Passé',
+                              style: TextStyle(
+                                color: Colors.white,
+                                fontWeight: FontWeight.bold,
+                                fontSize: 14,
+                              ),
+                            ),
+                          ),
+                        ),
+                      ),
+                    ),
+                  ),
+                if (!isPast)
+                  Positioned(
+                    top: 8,
+                    right: 8,
+                    child: GestureDetector(
+                      onTap: () {
+                        favoritesProvider.toggleFavorite(event);
+                        ScaffoldMessenger.of(context).showSnackBar(
+                          const SnackBar(
+                            content: Text('Favoris mis à jour'),
+                            duration: Duration(seconds: 2),
+                          ),
+                        );
+                      },
+                      child: Container(
+                        padding: const EdgeInsets.all(6),
+                        decoration: BoxDecoration(
+                          color: Colors.white.withAlpha(230),
+                          shape: BoxShape.circle,
+                        ),
+                        child: Icon(
+                          isFavorite ? Icons.favorite : Icons.favorite_border,
+                          color: isFavorite ? Colors.red : Colors.black,
+                          size: 22,
+                        ),
+                      ),
+                    ),
+                  ),
               ],
             ),
             Padding(
               padding: const EdgeInsets.all(12.0),
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  Text(formattedDate, style: const TextStyle(fontSize: 12, color: Color(0xFF1E90FF), fontWeight: FontWeight.w600)),
-                  const SizedBox(height: 8),
-                  Text(
-                    event.name.length > 20 ? '${event.name.substring(0, 20)}...' : event.name,
-                    style: const TextStyle(fontSize: 17, fontWeight: FontWeight.bold),
-                    maxLines: 1,
-                    overflow: TextOverflow.ellipsis,
-                  ),
-                  const SizedBox(height: 12),
-                  Row(
-                    mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                    children: [
-                      Row(
-                        children: [
-                          const Icon(Icons.location_on_outlined, size: 16, color: Colors.grey),
-                          const SizedBox(width: 4),
-                          SizedBox(
-                            width: 80,
-                            child: Text(event.venueName ?? '', style: const TextStyle(color: Colors.grey, fontSize: 12), overflow: TextOverflow.ellipsis),
-                          ),
-                        ],
+              child: Opacity(
+                opacity: isPast ? 0.6 : 1.0,
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Text(
+                        _formatDate(event.startDate),
+                        style: TextStyle(fontSize: 12, color: isPast? Colors.grey[700] : const Color(0xFF1E90FF), fontWeight: FontWeight.w600)),
+                    const SizedBox(height: 8),
+                    Text(
+                      event.name,
+                      style: TextStyle(
+                        fontSize: 17,
+                        fontWeight: FontWeight.bold,
+                        color: isPast ? Colors.grey[700] : Colors.black,
                       ),
-                      Container(
-                        padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
-                        decoration: BoxDecoration(
-                          color: const Color(0xFF1E90FF).withAlpha((255 * 0.1).round()),
-                          borderRadius: BorderRadius.circular(8),
+                      maxLines: 1,
+                      overflow: TextOverflow.ellipsis,
+                    ),
+                    const SizedBox(height: 12),
+                    Row(
+                      mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                      children: [
+                        Row(
+                          children: [
+                            Icon(Icons.location_on_outlined, size: 16, color: Colors.grey[600]),
+                            const SizedBox(width: 4),
+                            SizedBox(
+                              width: 80,
+                              child: Text(event.venueName, style: TextStyle(color: Colors.grey[600], fontSize: 12), overflow: TextOverflow.ellipsis),
+                            ),
+                          ],
                         ),
-                        child: Text('${event.minPrice?.toStringAsFixed(0) ?? '0'} FCFA', style: const TextStyle(color: Color(0xFF1E90FF), fontWeight: FontWeight.bold, fontSize: 11)),
-                      )
-                    ],
-                  ),
-                ],
+                        Container(
+                          padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+                          decoration: BoxDecoration(
+                            color: isPast ? Colors.grey[300] : const Color(0xFF1E90FF).withAlpha(30),
+                            borderRadius: BorderRadius.circular(8),
+                          ),
+                          child: Text('${event.minPrice.toStringAsFixed(0)} FCFA', style: TextStyle(color: isPast ? Colors.grey[700] : const Color(0xFF1E90FF), fontWeight: FontWeight.bold, fontSize: 11)),
+                        )
+                      ],
+                    ),
+                  ],
+                ),
               ),
             )
           ],

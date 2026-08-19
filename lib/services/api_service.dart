@@ -1,7 +1,8 @@
 import 'dart:convert';
-import 'package:flutter/foundation.dart';
+import 'package:flutter/foundation.dart' hide Category;
 import 'package:flutter_dotenv/flutter_dotenv.dart';
 import 'package:http/http.dart' as http;
+import 'package:myapp/models/category_model.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import '../models/event_model.dart';
 
@@ -153,17 +154,99 @@ class ApiService {
     );
   }
 
-  /// Récupère la liste des événements depuis l'API.
-  Future<ApiResponse<List<Event>>> getEvents() {
-    return get<List<Event>>(
-      '/api/events/all',
-      fromJson: (json) {
-        if (json is Map<String, dynamic> && json.containsKey('content')) {
-          final List content = json['content'];
-          return content.map((item) => Event.fromJson(item)).toList();
+  /// Récupère la liste des événements, avec un filtre optionnel par ville.
+  Future<ApiResponse<List<Event>>> getEvents({String? city}) async {
+    final List<Event> allEvents = [];
+    int currentPage = 0;
+    int totalPages = 1; // On commence avec 1, sera mis à jour après le premier appel
+
+    try {
+      while (currentPage < totalPages) {
+        // Construit l'endpoint avec la pagination et le filtre de ville si fourni.
+        String endpoint = '/api/events/all?page=$currentPage&size=20';
+        if (city != null && city.isNotEmpty) {
+          endpoint += '&city=${Uri.encodeComponent(city)}';
         }
-        throw const FormatException('Réponse invalide, un champ "content" était attendu.');
+
+        final response = await get<Map<String, dynamic>>(
+          endpoint,
+          fromJson: (json) => json as Map<String, dynamic>
+        );
+
+        if (response.success && response.data != null) {
+          final data = response.data!;
+          
+          if (data.containsKey('content') && data['content'] is List) {
+            final List content = data['content'];
+            allEvents.addAll(content.map((item) => Event.fromJson(item)).toList());
+          } else {
+            // Si la structure est inattendue, on arrête
+            throw const FormatException('Le champ "content" est manquant ou invalide dans la réponse.');
+          }
+
+          // Mise à jour du nombre total de pages
+          if (data.containsKey('totalPages') && data['totalPages'] is int) {
+            totalPages = data['totalPages'];
+          } else {
+            // S'il n'y a pas d'info de pagination, on assume qu'il n'y a qu'une seule page
+            break; 
+          }
+          
+          currentPage++;
+
+        } else {
+          // Si une requête échoue, on retourne une erreur avec les événements déjà chargés
+          return ApiResponse<List<Event>>(
+            success: false,
+            error: response.error ?? 'Erreur lors du chargement de la page $currentPage.',
+            data: allEvents, // On renvoie ce qu'on a pu récupérer
+            statusCode: response.statusCode,
+          );
+        }
+      }
+
+      return ApiResponse<List<Event>>(
+        success: true,
+        data: allEvents,
+      );
+
+    } catch (e) {
+      return ApiResponse<List<Event>>(
+        success: false,
+        error: 'Erreur réseau ou de formatage. Vérifiez votre connexion et la structure de la réponse de l API.',
+        data: allEvents, // On renvoie ce qu'on a pu récupérer
+      );
+    }
+  }
+
+  /// Récupère la liste des catégories d'événements depuis l'API.
+  Future<ApiResponse<List<Category>>> getCategories() {
+    return get<List<Category>>(
+      '/api/events/categories/get/all',
+      fromJson: (json) {
+        List<dynamic> categoryList;
+
+        // Gère une réponse paginée: {"content": [...]}
+        if (json is Map<String, dynamic> && json.containsKey('content')) {
+          categoryList = json['content'] as List<dynamic>;
+        } 
+        // Gère une réponse non paginée: [...] 
+        else if (json is List) {
+          categoryList = json;
+        } else {
+          throw const FormatException('Format de réponse des catégories non supporté.');
+        }
+
+        return categoryList.map((item) => Category.fromJson(item)).toList();
       },
+    );
+  }
+
+  /// Envoie une demande de réinitialisation de mot de passe.
+  Future<ApiResponse> forgotPassword(String phone) {
+    return post(
+      '/api/auth/forgot-password',
+      body: {'phone': phone},
     );
   }
 }

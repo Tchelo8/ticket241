@@ -9,6 +9,7 @@ class EventTicket {
   final int ticketCount;
   final int daysLeft;
   final bool isUpcoming;
+  final double price;
 
   EventTicket({
     required this.imagePath,
@@ -20,5 +21,6 @@ class EventTicket {
     required this.ticketCount,
     required this.daysLeft,
     required this.isUpcoming,
+    required this.price,
   });
 }
