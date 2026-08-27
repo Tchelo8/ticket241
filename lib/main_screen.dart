@@ -5,6 +5,7 @@ import 'package:myapp/tickets_screen.dart';
 import 'package:myapp/profile_screen.dart';
 import 'package:myapp/explorer_screen.dart';
 import 'package:myapp/favorites_screen.dart'; // Import the new screen
+import 'package:myapp/widgets/app_bottom_nav.dart';
 
 class MainScreen extends StatefulWidget {
   const MainScreen({super.key});
@@ -37,41 +38,9 @@ class MainScreenState extends State<MainScreen> {
         index: _currentIndex,
         children: screens,
       ),
-      bottomNavigationBar: BottomNavigationBar(
+      bottomNavigationBar: AppBottomNav(
         currentIndex: _currentIndex,
         onTap: _onTabTapped,
-        type: BottomNavigationBarType.fixed,
-        selectedItemColor: const Color(0xFF1E90FF),
-        unselectedItemColor: Colors.grey[600],
-        selectedLabelStyle: const TextStyle(fontWeight: FontWeight.w600),
-        unselectedLabelStyle: const TextStyle(fontWeight: FontWeight.w500),
-        items: const [
-          BottomNavigationBarItem(
-            icon: Icon(Icons.home_outlined),
-            activeIcon: Icon(Icons.home),
-            label: 'Accueil',
-          ),
-          BottomNavigationBarItem(
-            icon: Icon(Icons.search_outlined),
-            activeIcon: Icon(Icons.search),
-            label: 'Explorer',
-          ),
-          BottomNavigationBarItem(
-            icon: Icon(Icons.favorite_border_outlined),
-            activeIcon: Icon(Icons.favorite),
-            label: 'Favoris',
-          ),
-          BottomNavigationBarItem(
-            icon: Icon(Icons.local_activity_outlined),
-            activeIcon: Icon(Icons.local_activity),
-            label: 'Billets',
-          ),
-          BottomNavigationBarItem(
-            icon: Icon(Icons.person_outline),
-            activeIcon: Icon(Icons.person),
-            label: 'Profil',
-          ),
-        ],
       ),
     );
   }
