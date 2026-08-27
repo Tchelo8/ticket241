@@ -29,11 +29,11 @@ class SplashScreenState extends State<SplashScreen> with TickerProviderStateMixi
     ]).animate(_popController);
     _popController.forward();
 
-    _barController = AnimationController(vsync: this, duration: AppMotion.tBar);
+    _barController = AnimationController(vsync: this, duration: const Duration(milliseconds: 5800));
     _barValue = Tween<double>(begin: 0.06, end: 1.0).animate(CurvedAnimation(parent: _barController, curve: AppMotion.standard));
     _barController.forward();
 
-    Timer(const Duration(milliseconds: 2100), () {
+    Timer(const Duration(milliseconds: 6000), () {
       if (mounted) context.go('/onboarding');
     });
   }
