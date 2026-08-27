@@ -378,7 +378,10 @@ class EventTrendingRow extends StatelessWidget {
   final int rank;
   final String imageUrl;
   final String title;
-  final String trendPercent;
+  /// Métrique réelle affichée à côté de la date (ex. nombre de vues) — le
+  /// prototype montre un delta 24h fictif ("+186 %") qu'aucune donnée de
+  /// l'API ne permet de calculer ; on affiche ici une métrique véridique.
+  final String metricLabel;
   final DateTime date;
   final num price;
   final VoidCallback? onTap;
@@ -388,7 +391,7 @@ class EventTrendingRow extends StatelessWidget {
     required this.rank,
     required this.imageUrl,
     required this.title,
-    required this.trendPercent,
+    required this.metricLabel,
     required this.date,
     required this.price,
     this.onTap,
@@ -421,7 +424,7 @@ class EventTrendingRow extends StatelessWidget {
                   const SizedBox(height: 2),
                   Row(
                     children: [
-                      Text(trendPercent,
+                      Text(metricLabel,
                           style: const TextStyle(fontSize: 12, fontWeight: FontWeight.w600, color: Color(0xFFD6006C))),
                       const SizedBox(width: 6),
                       Text(DateFormat('d MMM', 'fr_FR').format(date), style: TextStyle(fontSize: 12, color: c.ink3)),

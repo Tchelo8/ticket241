@@ -1,17 +1,31 @@
-import 'dart:ui';
-
 import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
 import 'package:provider/provider.dart';
 import 'package:intl/intl.dart';
-import 'package:cached_network_image/cached_network_image.dart';
-import 'package:shimmer/shimmer.dart';
+import 'package:phosphor_flutter/phosphor_flutter.dart';
 import 'package:flutter_staggered_animations/flutter_staggered_animations.dart';
 
 import 'package:myapp/models/event_model.dart';
 import 'package:myapp/providers/favorites_provider.dart';
 import 'package:myapp/services/api_service.dart';
 import 'package:myapp/city_selection_popup.dart';
+import 'package:myapp/theme/app_theme.dart';
+import 'package:myapp/theme/design_tokens.dart';
+import 'package:myapp/widgets/press_rule_header.dart';
+import 'package:myapp/widgets/section_header.dart';
+import 'package:myapp/widgets/event_cards.dart';
+import 'package:myapp/widgets/interpolated_page_indicator.dart';
+import 'package:myapp/widgets/themed_network_image.dart';
+
+const Map<String, String> _cityRegions = {
+  'Libreville': 'Estuaire',
+  'Port-Gentil': 'Ogooué-Maritime',
+  'Franceville': 'Haut-Ogooué',
+  'Oyem': 'Woleu-Ntem',
+  'Lambaréné': 'Moyen-Ogooué',
+  'Moanda': 'Haut-Ogooué',
+  'Tchibanga': 'Nyanga',
+};
 
 class HomeScreen extends StatefulWidget {
   final Function(int) onNavigate;
@@ -26,12 +40,19 @@ class _HomeScreenState extends State<HomeScreen> {
   final ApiService _apiService = ApiService();
   List<Event> _allEvents = [];
   bool _isLoading = true;
+  final PageController _heroController = PageController(viewportFraction: 0.89);
 
   @override
   void initState() {
     super.initState();
     Intl.defaultLocale = 'fr_FR';
     _fetchEvents();
+  }
+
+  @override
+  void dispose() {
+    _heroController.dispose();
+    super.dispose();
   }
 
   Future<void> _fetchEvents({String? city}) async {
@@ -52,14 +73,6 @@ class _HomeScreenState extends State<HomeScreen> {
     }
   }
 
-  String _formatDate(DateTime date) {
-    return DateFormat('dd MMM, yyyy').format(date);
-  }
-
-  String _formatDateUpcoming(DateTime date) {
-    return DateFormat('dd MMM').format(date);
-  }
-
   void _showCitySelection(BuildContext context) async {
     final result = await showModalBottomSheet<String>(
       context: context,
@@ -67,12 +80,12 @@ class _HomeScreenState extends State<HomeScreen> {
       backgroundColor: Colors.transparent,
       builder: (context) {
         return DraggableScrollableSheet(
-          initialChildSize: 0.6,
+          initialChildSize: 0.78,
           minChildSize: 0.4,
-          maxChildSize: 0.8,
+          maxChildSize: 0.78,
           expand: false,
           builder: (context, scrollController) {
-            return CitySelectionPopup(currentCity: _selectedCity); // Passe la ville actuelle
+            return CitySelectionPopup(currentCity: _selectedCity);
           },
         );
       },
@@ -81,7 +94,7 @@ class _HomeScreenState extends State<HomeScreen> {
     if (result != null && result != _selectedCity) {
       setState(() {
         _selectedCity = result;
-        _fetchEvents(city: _selectedCity); // On recharge les événements pour la nouvelle ville
+        _fetchEvents(city: _selectedCity);
       });
     }
   }
@@ -97,11 +110,18 @@ class _HomeScreenState extends State<HomeScreen> {
     final now = DateTime.now();
     final popular = _allEvents.where((e) => e.isFeatured && e.startDate.isAfter(now)).toList();
     if (popular.isEmpty) {
-        final sortedByViews = _allEvents.where((e) => e.startDate.isAfter(now)).toList();
-        sortedByViews.sort((a, b) => b.viewCount.compareTo(a.viewCount));
-        popular.addAll(sortedByViews.take(5));
+      final sortedByViews = _allEvents.where((e) => e.startDate.isAfter(now)).toList();
+      sortedByViews.sort((a, b) => b.viewCount.compareTo(a.viewCount));
+      popular.addAll(sortedByViews.take(5));
     }
     return popular;
+  }
+
+  List<Event> _getTrendingEvents() {
+    final now = DateTime.now();
+    final trending = _allEvents.where((e) => e.startDate.isAfter(now)).toList();
+    trending.sort((a, b) => b.viewCount.compareTo(a.viewCount));
+    return trending.take(4).toList();
   }
 
   List<Event> _getSportEvents() {
@@ -115,119 +135,143 @@ class _HomeScreenState extends State<HomeScreen> {
     return _allEvents.where((e) => cultureCategories.contains(e.category.toUpperCase()) && e.startDate.isAfter(now)).toList();
   }
 
+  void _toggleFavorite(BuildContext context, Event event) {
+    final favoritesProvider = Provider.of<FavoritesProvider>(context, listen: false);
+    favoritesProvider.toggleFavorite(event);
+    ScaffoldMessenger.of(context).showSnackBar(
+      const SnackBar(content: Text('Favoris mis à jour'), duration: Duration(seconds: 2)),
+    );
+  }
+
   @override
   Widget build(BuildContext context) {
+    final c = context.appColors;
     final upcomingEvents = _getUpcomingEvents();
     final popularEvents = _getPopularEvents();
+    final trendingEvents = _getTrendingEvents();
     final sportEvents = _getSportEvents();
     final cultureEvents = _getCultureEvents();
 
     return Scaffold(
-      backgroundColor: Colors.grey[100],
+      backgroundColor: c.bg,
       body: SafeArea(
         child: RefreshIndicator(
-          onRefresh: () => _fetchEvents(), // Le refresh recharge pour la ville actuelle
+          color: c.acc,
+          onRefresh: () => _fetchEvents(),
           child: _isLoading
               ? const Center(child: CircularProgressIndicator())
               : _allEvents.isEmpty
-                ? const Center(child: Text("Aucun événement trouvé pour cette ville."))
-                : SingleChildScrollView(
-                  physics: const AlwaysScrollableScrollPhysics(),
-                  child: AnimationLimiter(
-                    child: Column(
-                      crossAxisAlignment: CrossAxisAlignment.start,
-                      children: AnimationConfiguration.toStaggeredList(
-                        duration: const Duration(milliseconds: 375),
-                        childAnimationBuilder: (widget) => SlideAnimation(
-                          verticalOffset: 50.0,
-                          child: FadeInAnimation(
-                            child: widget,
+                  ? Center(child: Text('Aucun événement trouvé pour cette ville.', style: TextStyle(color: c.ink2)))
+                  : SingleChildScrollView(
+                      physics: const AlwaysScrollableScrollPhysics(),
+                      child: AnimationLimiter(
+                        child: Column(
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          children: AnimationConfiguration.toStaggeredList(
+                            duration: const Duration(milliseconds: 375),
+                            childAnimationBuilder: (widget) =>
+                                SlideAnimation(verticalOffset: 30.0, child: FadeInAnimation(child: widget)),
+                            children: [
+                              _buildHeader(context),
+                              PressRuleHeader(
+                                left: DateFormat('EEEE d MMMM', 'fr_FR').format(DateTime.now()),
+                                right: '${_cityRegions[_selectedCity] ?? _selectedCity} · ${_allEvents.length} events',
+                              ),
+                              const SizedBox(height: 14),
+                              _buildSearchBar(),
+                              const SizedBox(height: 20),
+                              if (popularEvents.isNotEmpty) ...[
+                                SectionHeader(title: 'À l\'affiche'),
+                                _buildPosterCarousel(context, popularEvents),
+                                const SizedBox(height: 8),
+                                Center(
+                                  child: InterpolatedPageIndicator(controller: _heroController, count: popularEvents.length),
+                                ),
+                                const SizedBox(height: 8),
+                              ],
+                              if (trendingEvents.isNotEmpty)
+                                Padding(
+                                  padding: const EdgeInsets.symmetric(horizontal: AppSpacing.screen),
+                                  child: Column(
+                                    crossAxisAlignment: CrossAxisAlignment.start,
+                                    children: [
+                                      SectionHeader(title: 'Tendances actuelles', trailingLabel: '↗ vues', trailingColor: const Color(0xFFD6006C)),
+                                      for (var i = 0; i < trendingEvents.length; i++)
+                                        EventTrendingRow(
+                                          rank: i + 1,
+                                          imageUrl: trendingEvents[i].coverImageUrl,
+                                          title: trendingEvents[i].name,
+                                          metricLabel: '${trendingEvents[i].viewCount} vues',
+                                          date: trendingEvents[i].startDate,
+                                          price: trendingEvents[i].minPrice,
+                                          onTap: () => context.push('/details', extra: trendingEvents[i]),
+                                        ),
+                                    ],
+                                  ),
+                                ),
+                              if (upcomingEvents.isNotEmpty)
+                                _buildWeekSection(context, 'Cette semaine', null, upcomingEvents),
+                              if (cultureEvents.isNotEmpty)
+                                _buildWeekSection(context, 'Concerts', () => widget.onNavigate(1), cultureEvents),
+                              if (sportEvents.isNotEmpty)
+                                _buildWeekSection(context, 'Sport', () => widget.onNavigate(1), sportEvents),
+                              if (upcomingEvents.isNotEmpty) _buildCalendarSection(context, upcomingEvents),
+                              _buildOrganizerBlock(context),
+                              const SizedBox(height: 24),
+                            ],
                           ),
                         ),
-                        children: [
-                          _buildHeader(context),
-                          _buildSearchBar(),
-                          const SizedBox(height: 24),
-
-                          if(upcomingEvents.isNotEmpty)
-                            ...[_buildSectionHeader("Événements à venir"),
-                            _buildUpcomingEventsList(upcomingEvents)],
-
-                          if(popularEvents.isNotEmpty)
-                            ...[const SizedBox(height: 24),
-                            _buildSectionHeader("Populaire actuellement", showSeeAll: true),
-                            _buildPopularEventsList(context, events: popularEvents)],
-                          
-                          if(sportEvents.isNotEmpty)
-                            ...[const SizedBox(height: 24),
-                            _buildSectionHeader("Sport", showSeeAll: true),
-                            _buildPopularEventsList(context, events: sportEvents)],
-
-                          if(cultureEvents.isNotEmpty)
-                            ...[const SizedBox(height: 24),
-                            _buildSectionHeader("Culture", showSeeAll: true),
-                            _buildPopularEventsList(context, events: cultureEvents)],
-
-                          const SizedBox(height: 24),
-                        ],
                       ),
                     ),
-                  ),
-                ),
         ),
       ),
     );
   }
 
   Widget _buildHeader(BuildContext context) {
+    final c = context.appColors;
     return Padding(
-      padding: const EdgeInsets.symmetric(horizontal: 24.0, vertical: 16.0),
+      padding: const EdgeInsets.fromLTRB(AppSpacing.screen, 12, AppSpacing.screen, 8),
       child: Row(
         mainAxisAlignment: MainAxisAlignment.spaceBetween,
         children: [
           GestureDetector(
             onTap: () => _showCitySelection(context),
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                Text(
-                  'Trouver des événements près de',
-                  style: TextStyle(color: Colors.grey[600], fontSize: 14),
-                ),
-                const SizedBox(height: 4),
-                Row(
-                  children: [
-                    Text(
-                      _selectedCity,
-                      style: const TextStyle(
-                        fontSize: 20,
-                        fontWeight: FontWeight.bold,
-                        color: Colors.black87,
-                      ),
-                    ),
-                    const SizedBox(width: 8),
-                    const Icon(Icons.expand_more, color: Colors.black87),
-                  ],
-                ),
-              ],
+            child: Container(
+              height: 40,
+              padding: const EdgeInsets.symmetric(horizontal: 12),
+              decoration: BoxDecoration(
+                color: c.card,
+                borderRadius: BorderRadius.circular(AppRadii.pill),
+                border: Border.all(color: c.line, width: 1),
+              ),
+              child: Row(
+                mainAxisSize: MainAxisSize.min,
+                children: [
+                  Icon(PhosphorIconsRegular.mapPin, size: 18, color: c.acc),
+                  const SizedBox(width: 6),
+                  Text(
+                    _selectedCity,
+                    style: TextStyle(fontSize: 16, fontWeight: FontWeight.w600, color: c.ink),
+                  ),
+                  const SizedBox(width: 4),
+                  Icon(PhosphorIconsRegular.caretDown, size: 14, color: c.ink2),
+                ],
+              ),
             ),
           ),
-          Container(
-            decoration: BoxDecoration(
-                color: Colors.white,
-                shape: BoxShape.circle,
-                boxShadow: [
-                  BoxShadow(
-                    color: const Color.fromRGBO(158, 158, 158, 0.2),
-                    spreadRadius: 1,
-                    blurRadius: 5,
-                  )
-                ]),
-            child: IconButton(
-              icon: const Icon(Icons.notifications_outlined, color: Colors.black),
-              onPressed: () {
-                context.push('/notifications');
-              },
+          GestureDetector(
+            onTap: () => context.push('/notifications'),
+            child: Stack(
+              clipBehavior: Clip.none,
+              children: [
+                Container(
+                  width: 40,
+                  height: 40,
+                  decoration: BoxDecoration(color: c.card, shape: BoxShape.circle, border: Border.all(color: c.line, width: 1)),
+                  child: Icon(PhosphorIconsRegular.bell, size: 19, color: c.ink),
+                ),
+              ],
             ),
           ),
         ],
@@ -236,184 +280,24 @@ class _HomeScreenState extends State<HomeScreen> {
   }
 
   Widget _buildSearchBar() {
+    final c = context.appColors;
     return Padding(
-      padding: const EdgeInsets.symmetric(horizontal: 24.0),
-      child: TextField(
-        readOnly: true,
-        onTap: () {
-          widget.onNavigate(1); // Naviguer vers l'onglet Explorer
-        },
-        decoration: InputDecoration(
-          hintText: 'Rechercher des événements...',
-          prefixIcon: const Icon(Icons.search, color: Colors.grey),
-          filled: true,
-          fillColor: Colors.white,
-          border: OutlineInputBorder(
-            borderRadius: BorderRadius.circular(30),
-            borderSide: BorderSide.none,
+      padding: const EdgeInsets.symmetric(horizontal: AppSpacing.screen),
+      child: GestureDetector(
+        onTap: () => widget.onNavigate(1),
+        child: Container(
+          height: 50,
+          padding: const EdgeInsets.symmetric(horizontal: 16),
+          decoration: BoxDecoration(
+            color: c.card,
+            borderRadius: BorderRadius.circular(AppRadii.pill),
+            border: Border.all(color: c.line2, width: 1),
           ),
-        ),
-      ),
-    );
-  }
-
-  Widget _buildSectionHeader(String title, {bool showSeeAll = false}) {
-    return Padding(
-      padding: const EdgeInsets.fromLTRB(24.0, 0, 8.0, 0),
-      child: Row(
-        mainAxisAlignment: MainAxisAlignment.spaceBetween,
-        children: [
-          Text(
-            title,
-            style: const TextStyle(
-              fontSize: 20,
-              fontWeight: FontWeight.bold,
-              color: Colors.black87,
-            ),
-          ),
-          if (showSeeAll)
-            TextButton(
-              onPressed: () => widget.onNavigate(1),
-              child: const Text(
-                'Voir tout',
-                style: TextStyle(color: Color(0xFF1E90FF), fontWeight: FontWeight.w600),
-              ),
-            ),
-        ],
-      ),
-    );
-  }
-
-  Widget _buildUpcomingEventsList(List<Event> events) {
-    return SizedBox(
-      height: 120,
-      child: AnimationLimiter(
-        child: ListView.builder(
-          scrollDirection: Axis.horizontal,
-          physics: const BouncingScrollPhysics(),
-          itemCount: events.length,
-          itemBuilder: (context, index) {
-            final event = events[index];
-            return AnimationConfiguration.staggeredList(
-              position: index,
-              duration: const Duration(milliseconds: 375),
-              child: SlideAnimation(
-                horizontalOffset: 50.0,
-                child: FadeInAnimation(
-                  child: _buildUpcomingEventCard(context, event: event),
-                ),
-              ),
-            );
-          },
-          padding: const EdgeInsets.only(left: 24, top: 12),
-        ),
-      ),
-    );
-  }
-
-  Widget _buildUpcomingEventCard(BuildContext context, {required Event event}) {
-    final formattedDate = _formatDateUpcoming(event.startDate);
-    final dateParts = formattedDate.split(' ');
-    final day = dateParts.isNotEmpty ? dateParts[0] : '';
-    final month = dateParts.length > 1 ? dateParts[1] : '';
-
-    return GestureDetector(
-      onTap: () => context.push('/details', extra: event),
-      child: Container(
-        width: 300,
-        margin: const EdgeInsets.only(right: 16),
-        decoration: BoxDecoration(
-            color: Colors.white,
-            borderRadius: BorderRadius.circular(16),
-            boxShadow: [
-              BoxShadow(
-                color: const Color.fromRGBO(158, 158, 158, 0.16),
-                spreadRadius: 1,
-                blurRadius: 8,
-                offset: const Offset(0, 4),
-              )
-            ]),
-        child: Padding(
-          padding: const EdgeInsets.all(12.0),
           child: Row(
             children: [
-              Stack(
-                alignment: Alignment.center,
-                children: [
-                  ClipRRect(
-                    borderRadius: BorderRadius.circular(12),
-                    child: CachedNetworkImage(
-                      imageUrl: event.coverImageUrl,
-                      width: 80,
-                      height: 96,
-                      fit: BoxFit.cover,
-                      placeholder: (context, url) => Shimmer.fromColors(
-                        baseColor: Colors.grey[300]!,
-                        highlightColor: Colors.grey[100]!,
-                        child: Container(
-                          color: Colors.white,
-                        ),
-                      ),
-                      errorWidget: (context, url, error) => Container(
-                          width: 80, height: 96, color: Colors.grey[300], child: const Icon(Icons.image, color: Colors.grey)),
-                    ),
-                  ),
-                  Positioned.fill(
-                    child: ClipRRect(
-                      borderRadius: BorderRadius.circular(12),
-                      child: Container(
-                        decoration: BoxDecoration(
-                          color: const Color.fromRGBO(0, 0, 0, 0.2),
-                        ),
-                      ),
-                    ),
-                  ),
-                  Container(
-                    width: 45,
-                    height: 45,
-                    decoration: BoxDecoration(
-                      color: const Color.fromRGBO(255, 255, 255, 0.88),
-                      borderRadius: BorderRadius.circular(8),
-                    ),
-                    child: Column(mainAxisAlignment: MainAxisAlignment.center, children: [
-                      Text(day, style: const TextStyle(fontSize: 18, fontWeight: FontWeight.bold, color: Color(0xFF1E90FF))),
-                      Text(month.toUpperCase(), style: const TextStyle(fontSize: 12, fontWeight: FontWeight.bold, color: Color(0xFF1E90FF))),
-                    ]),
-                  ),
-                ],
-              ),
-              const SizedBox(width: 12),
-              Expanded(
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  mainAxisAlignment: MainAxisAlignment.center,
-                  children: [
-                    Text(
-                      event.name,
-                      style: const TextStyle(
-                        fontSize: 16,
-                        fontWeight: FontWeight.bold,
-                      ),
-                      maxLines: 2,
-                      overflow: TextOverflow.ellipsis,
-                    ),
-                    const SizedBox(height: 8),
-                    Row(
-                      children: [
-                        Icon(Icons.location_on_outlined, size: 16, color: Colors.grey[600]),
-                        const SizedBox(width: 4),
-                        Expanded(
-                          child: Text(
-                            event.venueName,
-                            style: TextStyle(color: Colors.grey[600], fontSize: 13),
-                            overflow: TextOverflow.ellipsis,
-                          ),
-                        ),
-                      ],
-                    ),
-                  ],
-                ),
-              ),
+              Icon(PhosphorIconsRegular.magnifyingGlass, size: 18, color: c.ink3),
+              const SizedBox(width: 10),
+              Text('Concert, match, festival…', style: TextStyle(fontSize: 15, color: c.ink3)),
             ],
           ),
         ),
@@ -421,194 +305,145 @@ class _HomeScreenState extends State<HomeScreen> {
     );
   }
 
-  Widget _buildPopularEventsList(BuildContext context, {required List<Event> events}) {
+  Widget _buildPosterCarousel(BuildContext context, List<Event> events) {
     return SizedBox(
-      height: 250,
-      child: AnimationLimiter(
-        child: ListView.builder(
-          scrollDirection: Axis.horizontal,
-          physics: const BouncingScrollPhysics(),
-          itemCount: events.length,
-          itemBuilder: (context, index) {
-            final event = events[index];
-            return AnimationConfiguration.staggeredList(
-              position: index,
-              duration: const Duration(milliseconds: 375),
-              child: SlideAnimation(
-                horizontalOffset: 50.0,
-                child: FadeInAnimation(
-                  child: _buildPopularEventCard(context, event: event),
-                ),
-              ),
-            );
-          },
-          padding: const EdgeInsets.only(left: 24, top: 12),
-        ),
+      height: 340,
+      child: PageView.builder(
+        controller: _heroController,
+        padEnds: false,
+        itemCount: events.length,
+        itemBuilder: (context, index) {
+          final event = events[index];
+          final isNew = index == 0;
+          final isAlmostFull = event.availableSeats > 0 && event.availableSeats < (event.totalSeats * 0.15);
+          return Padding(
+            padding: const EdgeInsets.only(left: AppSpacing.screen, right: 6),
+            child: EventPosterCard(
+              imageUrl: event.coverImageUrl,
+              category: event.categoryDisplayName,
+              title: event.name,
+              venue: event.venueName,
+              date: event.startDate,
+              price: event.minPrice,
+              interestedCount: event.favoriteCount,
+              badgeLabel: isAlmostFull ? 'Presque complet' : (isNew ? 'Nouveau' : null),
+              badgeIsWarning: isAlmostFull,
+              isFavorite: context.watch<FavoritesProvider>().isFavorite(event),
+              onFavoriteToggle: () => _toggleFavorite(context, event),
+              onTap: () => context.push('/details', extra: event),
+            ),
+          );
+        },
       ),
     );
   }
 
-  Widget _buildPopularEventCard(BuildContext context, {required Event event}) {
-    final favoritesProvider = Provider.of<FavoritesProvider>(context);
-    final isFavorite = favoritesProvider.isFavorite(event);
-    final isPast = DateTime.now().isAfter(event.startDate);
-
-    return GestureDetector(
-      onTap: isPast ? null : () => context.push('/details', extra: event),
-      child: Container(
-        width: 220,
-        margin: const EdgeInsets.only(right: 16),
-        decoration: BoxDecoration(
-            color: Colors.white,
-            borderRadius: BorderRadius.circular(20),
-            boxShadow: [
-              BoxShadow(
-                color: const Color.fromRGBO(158, 158, 158, 0.16),
-                spreadRadius: 1,
-                blurRadius: 8,
-                offset: const Offset(0, 4),
-              )
-            ]),
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            Stack(
-              alignment: Alignment.center,
-              children: [
-                ClipRRect(
-                  borderRadius: const BorderRadius.only(
-                    topLeft: Radius.circular(20),
-                    topRight: Radius.circular(20),
-                  ),
-                  child: CachedNetworkImage(
-                    imageUrl: event.coverImageUrl,
-                    height: 120,
-                    width: double.infinity,
-                    fit: BoxFit.cover,
-                    placeholder: (context, url) => Shimmer.fromColors(
-                      baseColor: Colors.grey[300]!,
-                      highlightColor: Colors.grey[100]!,
-                      child: Container(
-                        color: Colors.white,
-                      ),
-                    ),
-                    errorWidget: (context, url, error) => Container(
-                      height: 120,
-                      color: Colors.grey[300],
-                      child: const Icon(Icons.broken_image, color: Colors.grey),
-                    ),
-                  ),
+  Widget _buildWeekSection(BuildContext context, String title, VoidCallback? onSeeAll, List<Event> events) {
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        Padding(
+          padding: const EdgeInsets.symmetric(horizontal: AppSpacing.screen),
+          child: SectionHeader(title: title, trailingLabel: onSeeAll != null ? 'Tout voir' : null, onTrailingTap: onSeeAll),
+        ),
+        SizedBox(
+          height: 250,
+          child: ListView.builder(
+            scrollDirection: Axis.horizontal,
+            physics: const BouncingScrollPhysics(),
+            padding: const EdgeInsets.symmetric(horizontal: AppSpacing.screen),
+            itemCount: events.length,
+            itemBuilder: (context, index) {
+              final event = events[index];
+              return Padding(
+                padding: const EdgeInsets.only(right: 14),
+                child: EventWeekCard(
+                  imageUrl: event.coverImageUrl,
+                  title: event.name,
+                  venue: event.venueName,
+                  date: event.startDate,
+                  price: event.minPrice,
+                  isFavorite: context.watch<FavoritesProvider>().isFavorite(event),
+                  onFavoriteToggle: () => _toggleFavorite(context, event),
+                  onTap: () => context.push('/details', extra: event),
                 ),
-                if (isPast)
-                  Positioned.fill(
-                    child: ClipRRect(
-                      borderRadius: const BorderRadius.only(
-                        topLeft: Radius.circular(20),
-                        topRight: Radius.circular(20),
-                      ),
-                      child: BackdropFilter(
-                        filter: ImageFilter.blur(sigmaX: 1, sigmaY: 1),
-                        child: Container(
-                          color: const Color.fromRGBO(0, 0, 0, 0.3),
-                          alignment: Alignment.center,
-                          child: Container(
-                            padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
-                            decoration: BoxDecoration(
-                              color: const Color.fromRGBO(255, 82, 82, 0.8),
-                              borderRadius: BorderRadius.circular(30),
-                            ),
-                            child: const Text(
-                              'Passé',
-                              style: TextStyle(
-                                color: Colors.white,
-                                fontWeight: FontWeight.bold,
-                                fontSize: 14,
-                              ),
-                            ),
-                          ),
-                        ),
-                      ),
-                    ),
-                  ),
-                if (!isPast)
-                  Positioned(
-                    top: 8,
-                    right: 8,
-                    child: GestureDetector(
-                      onTap: () {
-                        favoritesProvider.toggleFavorite(event);
-                        ScaffoldMessenger.of(context).showSnackBar(
-                          const SnackBar(
-                            content: Text('Favoris mis à jour'),
-                            duration: Duration(seconds: 2),
-                          ),
-                        );
-                      },
-                      child: Container(
-                        padding: const EdgeInsets.all(6),
-                        decoration: BoxDecoration(
-                          color: const Color.fromRGBO(255, 255, 255, 0.9),
-                          shape: BoxShape.circle,
-                        ),
-                        child: Icon(
-                          isFavorite ? Icons.favorite : Icons.favorite_border,
-                          color: isFavorite ? Colors.red : Colors.black,
-                          size: 22,
-                        ),
-                      ),
-                    ),
-                  ),
-              ],
-            ),
-            Padding(
-              padding: const EdgeInsets.all(12.0),
-              child: Opacity(
-                opacity: isPast ? 0.6 : 1.0,
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
+              );
+            },
+          ),
+        ),
+      ],
+    );
+  }
+
+  Widget _buildCalendarSection(BuildContext context, List<Event> events) {
+    final c = context.appColors;
+    return Padding(
+      padding: const EdgeInsets.symmetric(horizontal: AppSpacing.screen),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          SectionHeader(title: 'Le calendrier'),
+          for (final event in events.take(6))
+            GestureDetector(
+              onTap: () => context.push('/details', extra: event),
+              child: Container(
+                padding: const EdgeInsets.symmetric(vertical: 12),
+                decoration: BoxDecoration(border: Border(bottom: BorderSide(color: c.line, width: 1))),
+                child: Row(
                   children: [
-                    Text(
-                        _formatDate(event.startDate),
-                        style: TextStyle(fontSize: 12, color: isPast? Colors.grey[700] : const Color(0xFF1E90FF), fontWeight: FontWeight.w600)),
-                    const SizedBox(height: 8),
-                    Text(
-                      event.name,
-                      style: TextStyle(
-                        fontSize: 17,
-                        fontWeight: FontWeight.bold,
-                        color: isPast ? Colors.grey[700] : Colors.black,
+                    SizedBox(
+                      width: 44,
+                      child: Column(
+                        children: [
+                          Text(DateFormat('d').format(event.startDate),
+                              style: TextStyle(fontSize: 24, fontWeight: FontWeight.w700, color: c.ink)),
+                          Text(DateFormat('MMM', 'fr_FR').format(event.startDate).toUpperCase(),
+                              style: TextStyle(fontSize: 9.5, fontWeight: FontWeight.w600, color: c.ink3)),
+                        ],
                       ),
-                      maxLines: 1,
-                      overflow: TextOverflow.ellipsis,
                     ),
-                    const SizedBox(height: 12),
-                    Row(
-                      mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                      children: [
-                        Row(
-                          children: [
-                            Icon(Icons.location_on_outlined, size: 16, color: Colors.grey[600]),
-                            const SizedBox(width: 4),
-                            SizedBox(
-                              width: 80,
-                              child: Text(event.venueName, style: TextStyle(color: Colors.grey[600], fontSize: 12), overflow: TextOverflow.ellipsis),
-                            ),
-                          ],
-                        ),
-                        Container(
-                          padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
-                          decoration: BoxDecoration(
-                            color: isPast ? Colors.grey[300] : const Color.fromRGBO(30, 144, 255, 0.12),
-                            borderRadius: BorderRadius.circular(8),
-                          ),
-                          child: Text('${event.minPrice.toStringAsFixed(0)} FCFA', style: TextStyle(color: isPast ? Colors.grey[700] : const Color(0xFF1E90FF), fontWeight: FontWeight.bold, fontSize: 11)),
-                        )
-                      ],
+                    Container(width: 1, height: 42, color: c.line, margin: const EdgeInsets.symmetric(horizontal: 12)),
+                    Expanded(
+                      child: Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          Text(event.name, maxLines: 1, overflow: TextOverflow.ellipsis, style: Theme.of(context).textTheme.titleSmall),
+                          const SizedBox(height: 2),
+                          Text(DateFormat('HH:mm').format(event.startDate), style: TextStyle(fontSize: 12.5, color: c.ink2)),
+                        ],
+                      ),
+                    ),
+                    ClipRRect(
+                      borderRadius: BorderRadius.circular(AppRadii.control),
+                      child: SizedBox(width: 58, height: 58, child: ThemedNetworkImage(url: event.coverImageUrl)),
                     ),
                   ],
                 ),
               ),
-            )
+            ),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildOrganizerBlock(BuildContext context) {
+    final c = context.appColors;
+    return Padding(
+      padding: const EdgeInsets.fromLTRB(AppSpacing.screen, 12, AppSpacing.screen, 0),
+      child: Container(
+        padding: const EdgeInsets.all(16),
+        decoration: BoxDecoration(
+          color: c.surf,
+          border: Border.all(color: c.line2, width: 1),
+          borderRadius: BorderRadius.circular(AppRadii.card),
+        ),
+        child: Row(
+          children: [
+            Expanded(
+              child: Text('Vous organisez un événement ?', style: Theme.of(context).textTheme.titleSmall),
+            ),
+            const SizedBox(width: 12),
+            OutlinedButton(onPressed: () {}, child: const Text('Créer un événement')),
           ],
         ),
       ),
