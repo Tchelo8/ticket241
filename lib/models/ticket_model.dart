@@ -10,6 +10,8 @@ class EventTicket {
   final int daysLeft;
   final bool isUpcoming;
   final double price;
+  final String reference;
+  final DateTime eventStartDate;
 
   EventTicket({
     required this.imagePath,
@@ -22,5 +24,37 @@ class EventTicket {
     required this.daysLeft,
     required this.isUpcoming,
     required this.price,
+    required this.reference,
+    required this.eventStartDate,
   });
+
+  Map<String, dynamic> toJson() => {
+        'imagePath': imagePath,
+        'eventName': eventName,
+        'location': location,
+        'date': date,
+        'time': time,
+        'status': status,
+        'ticketCount': ticketCount,
+        'daysLeft': daysLeft,
+        'isUpcoming': isUpcoming,
+        'price': price,
+        'reference': reference,
+        'eventStartDate': eventStartDate.toIso8601String(),
+      };
+
+  factory EventTicket.fromJson(Map<String, dynamic> json) => EventTicket(
+        imagePath: json['imagePath'] as String,
+        eventName: json['eventName'] as String,
+        location: json['location'] as String,
+        date: json['date'] as String,
+        time: json['time'] as String,
+        status: json['status'] as String,
+        ticketCount: json['ticketCount'] as int,
+        daysLeft: json['daysLeft'] as int,
+        isUpcoming: json['isUpcoming'] as bool,
+        price: (json['price'] as num).toDouble(),
+        reference: json['reference'] as String,
+        eventStartDate: DateTime.parse(json['eventStartDate'] as String),
+      );
 }

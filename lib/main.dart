@@ -3,6 +3,7 @@ import 'package:flutter_dotenv/flutter_dotenv.dart';
 import 'package:myapp/app_router.dart';
 import 'package:myapp/providers/auth_provider.dart';
 import 'package:myapp/providers/favorites_provider.dart';
+import 'package:myapp/providers/tickets_provider.dart';
 import 'package:myapp/providers/theme_provider.dart';
 import 'package:myapp/theme/app_theme.dart';
 import 'package:provider/provider.dart';
@@ -37,6 +38,7 @@ class MyApp extends StatelessWidget {
       providers: [
         ChangeNotifierProvider.value(value: authProvider),
         ChangeNotifierProvider(create: (context) => FavoritesProvider()),
+        ChangeNotifierProvider(create: (context) => TicketsProvider()),
         ChangeNotifierProvider(create: (context) => ThemeProvider()),
       ],
       child: Consumer<ThemeProvider>(

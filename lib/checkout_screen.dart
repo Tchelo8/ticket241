@@ -67,6 +67,8 @@ class CheckoutScreenState extends State<CheckoutScreen> {
           daysLeft: ticket.daysLeft,
           isUpcoming: ticket.isUpcoming,
           price: ticket.price,
+          reference: ticket.reference,
+          eventStartDate: ticket.eventStartDate,
         );
       }
       if (_localTickets.isEmpty) context.pop();
@@ -90,6 +92,7 @@ class CheckoutScreenState extends State<CheckoutScreen> {
       'amount': _totalAmount,
       'method': _selectedPaymentMethod,
       'phone': _phoneController.text,
+      'tickets': _localTickets,
     });
     if (mounted) setState(() => _isProcessing = false);
   }

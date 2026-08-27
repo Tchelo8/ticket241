@@ -556,6 +556,7 @@ class EventDetailsScreenState extends State<EventDetailsScreen> {
   }
 
   void _goToCheckout(BuildContext context) {
+    final cityCode = widget.event.cityName.substring(0, widget.event.cityName.length >= 3 ? 3 : widget.event.cityName.length).toUpperCase();
     final tickets = _ticketData
         .where((ticket) => (ticket['quantity'] as int) > 0)
         .map((ticket) => EventTicket(
@@ -569,6 +570,8 @@ class EventDetailsScreenState extends State<EventDetailsScreen> {
               status: 'Payé',
               daysLeft: widget.event.startDate.difference(DateTime.now()).inDays,
               isUpcoming: !widget.event.isPastEvent,
+              reference: 'TK241-${widget.event.id.toString().padLeft(4, '0')}${(ticket['name'] as String).hashCode.toRadixString(16).substring(0, 2).toUpperCase()}-$cityCode',
+              eventStartDate: widget.event.startDate,
             ))
         .toList();
 

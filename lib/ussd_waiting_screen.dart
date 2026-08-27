@@ -3,9 +3,12 @@ import 'dart:async';
 import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
 import 'package:phosphor_flutter/phosphor_flutter.dart';
+import 'package:provider/provider.dart';
 
 import 'package:myapp/checkout_screen.dart';
 import 'package:myapp/models/event_model.dart';
+import 'package:myapp/models/ticket_model.dart';
+import 'package:myapp/providers/tickets_provider.dart';
 import 'package:myapp/theme/app_theme.dart';
 import 'package:myapp/theme/design_tokens.dart';
 import 'package:myapp/widgets/ussd_waiting_rings.dart';
@@ -19,6 +22,7 @@ class UssdWaitingScreen extends StatefulWidget {
   final double amount;
   final PaymentMethod method;
   final String phone;
+  final List<EventTicket> tickets;
 
   const UssdWaitingScreen({
     super.key,
@@ -26,6 +30,7 @@ class UssdWaitingScreen extends StatefulWidget {
     required this.amount,
     required this.method,
     required this.phone,
+    required this.tickets,
   });
 
   @override
@@ -51,11 +56,12 @@ class _UssdWaitingScreenState extends State<UssdWaitingScreen> {
     });
     _successTimer = Timer(const Duration(milliseconds: 5200), () {
       if (!mounted) return;
+      context.read<TicketsProvider>().addTickets(widget.tickets);
       context.go('/success', extra: {
         'event': widget.event,
         'amount': widget.amount,
         'method': widget.method,
-        'phone': widget.phone,
+        'tickets': widget.tickets,
       });
     });
   }

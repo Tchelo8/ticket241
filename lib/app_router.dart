@@ -15,6 +15,8 @@ import 'package:myapp/splash_screen.dart';
 import 'package:myapp/checkout_screen.dart';
 import 'package:myapp/success_screen.dart';
 import 'package:myapp/ussd_waiting_screen.dart';
+import 'package:myapp/ticket_qr_screen.dart';
+import 'package:myapp/pdf_viewer_screen.dart';
 import 'package:myapp/edit_profile_screen.dart';
 import 'package:myapp/providers/auth_provider.dart';
 import 'package:myapp/models/event_model.dart';
@@ -107,6 +109,7 @@ class AppRouter {
               amount: extra['amount'] as double,
               method: extra['method'] as PaymentMethod,
               phone: extra['phone'] as String,
+              tickets: extra['tickets'] as List<EventTicket>,
             );
           },
         ),
@@ -118,8 +121,20 @@ class AppRouter {
               event: extra?['event'] as Event?,
               amount: extra?['amount'] as double?,
               method: extra?['method'] as PaymentMethod?,
+              tickets: extra?['tickets'] as List<EventTicket>?,
             );
           },
+        ),
+        GoRoute(
+          path: '/ticket-qr',
+          builder: (context, state) {
+            final ticket = state.extra as EventTicket;
+            return TicketQrScreen(ticket: ticket);
+          },
+        ),
+        GoRoute(
+          path: '/pdf-viewer',
+          builder: (context, state) => const PdfViewerScreen(),
         ),
       ],
       redirect: (context, state) {
@@ -144,7 +159,8 @@ class AppRouter {
 
         final privateRoutes = [
           '/app', '/profile', '/edit-profile', '/notifications',
-          '/details', '/location', '/checkout', '/ussd-waiting', '/success'
+          '/details', '/location', '/checkout', '/ussd-waiting', '/success',
+          '/ticket-qr', '/pdf-viewer',
         ];
 
         if (!isAuthenticated && privateRoutes.contains(location)) {

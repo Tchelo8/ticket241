@@ -1,197 +1,149 @@
 import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
-import 'package:lottie/lottie.dart';
+import 'package:phosphor_flutter/phosphor_flutter.dart';
 import 'package:provider/provider.dart';
 import 'package:intl/intl.dart';
 
 import 'package:myapp/models/event_model.dart';
 import 'package:myapp/providers/favorites_provider.dart';
+import 'package:myapp/theme/app_theme.dart';
+import 'package:myapp/theme/design_tokens.dart';
+import 'package:myapp/widgets/empty_state_template.dart';
+import 'package:myapp/widgets/themed_network_image.dart';
 
 class FavoritesScreen extends StatelessWidget {
   const FavoritesScreen({super.key});
 
   @override
   Widget build(BuildContext context) {
-    final favoritesProvider = Provider.of<FavoritesProvider>(context);
+    final c = context.appColors;
+    final favoritesProvider = context.watch<FavoritesProvider>();
     final favoriteEvents = favoritesProvider.favorites;
 
     return Scaffold(
-      appBar: AppBar(
-        title: const Text('Favoris'),
-        backgroundColor: Colors.white,
-        foregroundColor: Colors.black,
-        elevation: 0,
-      ),
-      backgroundColor: Colors.white,
-      body: favoriteEvents.isEmpty
-          ? _buildEmptyFavorites(context)
-          : _buildFavoritesList(context, favoriteEvents),
-    );
-  }
-
-  Widget _buildEmptyFavorites(BuildContext context) {
-    return Center(
-      child: Padding(
-        padding: const EdgeInsets.all(24.0),
+      backgroundColor: c.bg,
+      body: SafeArea(
         child: Column(
-          mainAxisAlignment: MainAxisAlignment.center,
+          crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            Lottie.asset(
-              'assets/animations/nofav.json',
-              width: 250,
-              height: 250,
-              fit: BoxFit.contain,
+            Padding(
+              padding: const EdgeInsets.fromLTRB(AppSpacing.screen, 8, AppSpacing.screen, 12),
+              child: Text('Favoris', style: Theme.of(context).textTheme.headlineMedium),
             ),
-            const SizedBox(height: 20),
-            const Text(
-              'Aucun événement ajouté',
-              style: TextStyle(
-                fontSize: 22,
-                fontWeight: FontWeight.bold,
-              ),
-              textAlign: TextAlign.center,
-            ),
-            const SizedBox(height: 10),
-            Text(
-              'Naviguez parmi les événements et ajoutez vos favoris pour les retrouver ici.',
-              style: TextStyle(
-                fontSize: 16,
-                color: Colors.grey[600],
-              ),
-              textAlign: TextAlign.center,
+            Expanded(
+              child: favoriteEvents.isEmpty
+                  ? Center(
+                      child: EmptyStateTemplate(
+                        lottieAsset: 'assets/animations/nofav.json',
+                        titleLine1: 'Rien de gardé',
+                        titleLine2: 'pour l\'instant.',
+                        body: 'Ajoutez des événements à vos favoris pour les retrouver ici.',
+                        primaryLabel: 'Explorer les événements',
+                        primaryIcon: PhosphorIconsRegular.compass,
+                        onPrimary: () => context.go('/app'),
+                      ),
+                    )
+                  : ListView.builder(
+                      padding: const EdgeInsets.fromLTRB(AppSpacing.screen, 0, AppSpacing.screen, 24),
+                      itemCount: favoriteEvents.length,
+                      itemBuilder: (context, index) => Padding(
+                        padding: const EdgeInsets.only(bottom: 14),
+                        child: _FavoriteCard(event: favoriteEvents[index]),
+                      ),
+                    ),
             ),
           ],
         ),
       ),
     );
   }
+}
 
-  Widget _buildFavoritesList(BuildContext context, List<Event> events) {
-    return ListView.builder(
-      padding: const EdgeInsets.all(20),
-      itemCount: events.length,
-      itemBuilder: (context, index) {
-        final event = events[index];
-        return _buildFavoriteEventCard(context, event: event);
-      },
-    );
-  }
+class _FavoriteCard extends StatelessWidget {
+  final Event event;
+  const _FavoriteCard({required this.event});
 
-  Widget _buildFavoriteEventCard(BuildContext context, {required Event event}) {
-    final favoritesProvider = Provider.of<FavoritesProvider>(context);
+  @override
+  Widget build(BuildContext context) {
+    final c = context.appColors;
+    final favoritesProvider = context.watch<FavoritesProvider>();
     final isFavorite = favoritesProvider.isFavorite(event);
 
     return GestureDetector(
-      onTap: () {
-        context.push('/details', extra: event); // Correctly navigate with event object
-      },
+      onTap: () => context.push('/details', extra: event),
       child: Container(
-        margin: const EdgeInsets.only(bottom: 20),
         decoration: BoxDecoration(
-          color: Colors.white,
-          borderRadius: BorderRadius.circular(20),
-          boxShadow: [
-            BoxShadow(
-              color: const Color.fromRGBO(158, 158, 158, 0.4),
-              spreadRadius: 1,
-              blurRadius: 8,
-              offset: const Offset(0, 4),
-            )
-          ],
+          color: c.card,
+          borderRadius: BorderRadius.circular(AppRadii.card),
+          border: Border.all(color: c.line, width: 1),
+          boxShadow: context.tokens.shadows.sh,
         ),
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            Stack(
-              children: [
-                ClipRRect(
-                  borderRadius: const BorderRadius.only(
-                    topLeft: Radius.circular(20),
-                    topRight: Radius.circular(20),
-                  ),
-                  child: Image.network(
-                    event.coverImageUrl,
-                    height: 150,
-                    width: double.infinity,
-                    fit: BoxFit.cover,
-                    errorBuilder: (context, error, stackTrace) => 
-                      Image.asset('assets/images/enb.jpg', height: 150, width: double.infinity, fit: BoxFit.cover),
-                  ),
-                ),
-                Positioned(
-                  top: 8,
-                  right: 8,
-                  child: GestureDetector(
-                    onTap: () {
-                      favoritesProvider.toggleFavorite(event);
-                    },
-                    child: Container(
-                      padding: const EdgeInsets.all(6),
-                      decoration: BoxDecoration(
-                        color: const Color.fromRGBO(255, 255, 255, 0.9),
-                        shape: BoxShape.circle,
-                      ),
-                      child: Icon(
-                        isFavorite ? Icons.favorite : Icons.favorite_border,
-                        color: isFavorite ? Colors.red : Colors.black,
-                        size: 22,
+            ClipRRect(
+              borderRadius: const BorderRadius.vertical(top: Radius.circular(AppRadii.card)),
+              child: SizedBox(
+                height: 150,
+                width: double.infinity,
+                child: Stack(
+                  fit: StackFit.expand,
+                  children: [
+                    ThemedNetworkImage(url: event.coverImageUrl),
+                    Positioned(
+                      top: 8,
+                      right: 8,
+                      child: GestureDetector(
+                        onTap: () => favoritesProvider.toggleFavorite(event),
+                        child: Container(
+                          width: 32,
+                          height: 32,
+                          decoration: const BoxDecoration(color: Color(0x70100F0E), shape: BoxShape.circle),
+                          child: Icon(
+                            isFavorite ? PhosphorIconsFill.heart : PhosphorIconsRegular.heart,
+                            color: isFavorite ? const Color(0xFFD6006C) : Colors.white,
+                            size: 17,
+                          ),
+                        ),
                       ),
                     ),
-                  ),
+                  ],
                 ),
-              ],
+              ),
             ),
             Padding(
-              padding: const EdgeInsets.all(12.0),
+              padding: const EdgeInsets.all(14),
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
                   Text(
-                    DateFormat('dd MMMM yyyy', 'fr_FR').format(event.startDate),
-                    style: const TextStyle(fontSize: 12, color: Color(0xFF1E90FF), fontWeight: FontWeight.w600)
+                    DateFormat('d MMM yyyy', 'fr_FR').format(event.startDate).toUpperCase(),
+                    style: TextStyle(fontSize: 10.5, fontWeight: FontWeight.w600, color: c.acc),
                   ),
-                  const SizedBox(height: 8),
-                  Text(
-                    event.name,
-                    style: const TextStyle(fontSize: 17, fontWeight: FontWeight.bold),
-                    maxLines: 1,
-                    overflow: TextOverflow.ellipsis,
-                  ),
-                  const SizedBox(height: 12),
+                  const SizedBox(height: 4),
+                  Text(event.name, maxLines: 1, overflow: TextOverflow.ellipsis, style: TextStyle(fontSize: 16.5, fontWeight: FontWeight.w600, color: c.ink)),
+                  const SizedBox(height: 6),
                   Row(
-                    mainAxisAlignment: MainAxisAlignment.spaceBetween,
                     children: [
-                      Flexible(
+                      Expanded(
                         child: Row(
                           children: [
-                            const Icon(Icons.location_on_outlined, size: 16, color: Colors.grey),
+                            Icon(PhosphorIconsRegular.mapPin, size: 14, color: c.ink3),
                             const SizedBox(width: 4),
                             Expanded(
-                              child: Text(
-                                '${event.venueName}, ${event.cityName}',
-                                style: const TextStyle(color: Colors.grey, fontSize: 12),
-                                overflow: TextOverflow.ellipsis,
-                              ),
+                              child: Text('${event.venueName}, ${event.cityName}',
+                                  style: TextStyle(fontSize: 12, color: c.ink2), overflow: TextOverflow.ellipsis),
                             ),
                           ],
                         ),
                       ),
-                      Container(
-                        padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
-                        decoration: BoxDecoration(
-                          color: const Color.fromRGBO(30, 144, 255, 0.1),
-                          borderRadius: BorderRadius.circular(8),
-                        ),
-                        child: Text(
-                          '${event.minPrice.toStringAsFixed(0)} FCFA',
-                          style: const TextStyle(color: Color(0xFF1E90FF), fontWeight: FontWeight.bold, fontSize: 11)
-                        ),
-                      )
+                      Text('${event.minPrice.toStringAsFixed(0)} FCFA',
+                          style: TextStyle(fontSize: 13, fontWeight: FontWeight.w600, color: c.ink)),
                     ],
                   ),
                 ],
               ),
-            )
+            ),
           ],
         ),
       ),

@@ -6,6 +6,7 @@ import 'package:phosphor_flutter/phosphor_flutter.dart';
 
 import 'package:myapp/checkout_screen.dart';
 import 'package:myapp/models/event_model.dart';
+import 'package:myapp/models/ticket_model.dart';
 import 'package:myapp/theme/app_theme.dart';
 import 'package:myapp/theme/design_tokens.dart';
 
@@ -13,16 +14,16 @@ class SuccessScreen extends StatelessWidget {
   final Event? event;
   final double? amount;
   final PaymentMethod? method;
+  final List<EventTicket>? tickets;
 
-  const SuccessScreen({super.key, this.event, this.amount, this.method});
+  const SuccessScreen({super.key, this.event, this.amount, this.method, this.tickets});
 
   @override
   Widget build(BuildContext context) {
     final c = context.appColors;
     final methodName = method == PaymentMethod.moov ? 'Moov Money' : 'Airtel Money';
-    final reference = event != null
-        ? 'TK241-${event!.id.toString().padLeft(4, '0')}-${event!.cityName.substring(0, event!.cityName.length >= 3 ? 3 : event!.cityName.length).toUpperCase()}'
-        : 'TK241-0000-LBV';
+    final reference = (tickets != null && tickets!.isNotEmpty) ? tickets!.first.reference : 'TK241-0000-LBV';
+    final ticketCount = tickets?.fold<int>(0, (sum, t) => sum + t.ticketCount) ?? 0;
 
     return Scaffold(
       backgroundColor: c.bg,
@@ -62,7 +63,7 @@ class SuccessScreen extends StatelessWidget {
                 style: TextStyle(fontSize: 15, height: 1.5, color: c.ink2),
               ),
               const SizedBox(height: 24),
-              if (event != null) _buildTicketCard(context, reference),
+              if (event != null) _buildTicketCard(context, reference, ticketCount),
               const SizedBox(height: 28),
               SizedBox(
                 width: double.infinity,
@@ -88,7 +89,7 @@ class SuccessScreen extends StatelessWidget {
     );
   }
 
-  Widget _buildTicketCard(BuildContext context, String reference) {
+  Widget _buildTicketCard(BuildContext context, String reference, int ticketCount) {
     final c = context.appColors;
     return Container(
       width: double.infinity,
@@ -117,7 +118,8 @@ class SuccessScreen extends StatelessWidget {
                     Text('BILLET ÉMIS', style: TextStyle(fontSize: 10, fontWeight: FontWeight.w600, letterSpacing: 1, color: c.acc)),
                     const SizedBox(height: 2),
                     Text(event!.name, maxLines: 1, overflow: TextOverflow.ellipsis, style: TextStyle(fontSize: 15, fontWeight: FontWeight.w600, color: c.ink)),
-                    Text(DateFormat('d MMM yyyy', 'fr_FR').format(event!.startDate), style: TextStyle(fontSize: 12.5, color: c.ink2)),
+                    Text('${DateFormat('d MMM yyyy', 'fr_FR').format(event!.startDate)} · $ticketCount billet${ticketCount > 1 ? 's' : ''}',
+                        style: TextStyle(fontSize: 12.5, color: c.ink2)),
                   ],
                 ),
               ),
