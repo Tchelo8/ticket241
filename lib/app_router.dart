@@ -3,7 +3,6 @@ import 'package:myapp/forgot_password_screen.dart';
 import 'package:myapp/main_screen.dart';
 import 'package:myapp/models/ticket_model.dart';
 import 'package:myapp/otp_verification_screen.dart';
-import 'package:myapp/starting_screen.dart';
 import 'package:myapp/login_screen.dart';
 import 'package:myapp/signup_screen.dart';
 import 'package:myapp/profile_screen.dart';
@@ -40,7 +39,7 @@ class AppRouter {
         ),
         GoRoute(
           path: '/',
-          builder: (context, state) => const StartingScreen(),
+          builder: (context, state) => const LoginScreen(),
         ),
         GoRoute(
           path: '/login',
