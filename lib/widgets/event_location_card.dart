@@ -1,80 +1,64 @@
 import 'package:flutter/material.dart';
+import 'package:phosphor_flutter/phosphor_flutter.dart';
+import 'package:url_launcher/url_launcher.dart';
 
-class EventLocationCard extends StatefulWidget {
+import '../theme/app_theme.dart';
+import '../theme/design_tokens.dart';
+import '../theme/themed_image.dart';
+
+/// "Le lieu" (README, Détail d'un événement) : carte 132px avec une épingle
+/// magenta au centre, puis le nom, l'adresse et le bouton "Y aller".
+class EventLocationCard extends StatelessWidget {
+  final String venueName;
   final String venueAddress;
 
-  const EventLocationCard({super.key, required this.venueAddress});
+  const EventLocationCard({super.key, required this.venueName, required this.venueAddress});
 
-  @override
-  EventLocationCardState createState() => EventLocationCardState();
-}
-
-class EventLocationCardState extends State<EventLocationCard> {
-  final String _errorMessage = 'La carte est temporairement désactivée.';
-
-  @override
-  void initState() {
-    super.initState();
+  Future<void> _openDirections() async {
+    final uri = Uri.https('www.google.com', '/maps/search/', {'api': '1', 'query': venueAddress});
+    await launchUrl(uri, mode: LaunchMode.externalApplication);
   }
 
   @override
   Widget build(BuildContext context) {
-    return Card(
-      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(15)),
-      margin: const EdgeInsets.all(20.0),
+    final c = context.appColors;
+    return Padding(
+      padding: const EdgeInsets.symmetric(horizontal: AppSpacing.screen),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          const Padding(
-            padding: EdgeInsets.all(16.0),
-            child: Text(
-              'Localisation',
-              style: TextStyle(fontSize: 20, fontWeight: FontWeight.bold),
+          Text('Le lieu', style: Theme.of(context).textTheme.titleLarge),
+          const SizedBox(height: 10),
+          ClipRRect(
+            borderRadius: BorderRadius.circular(AppRadii.card),
+            child: SizedBox(
+              height: 132,
+              width: double.infinity,
+              child: Stack(
+                alignment: Alignment.center,
+                fit: StackFit.expand,
+                children: [
+                  ThemedImage(child: Image.asset('assets/images/map.jpg', fit: BoxFit.cover)),
+                  Icon(PhosphorIconsFill.mapPin, size: 34, color: const Color(0xFFD6006C)),
+                ],
+              ),
             ),
           ),
-          _buildMapContent(),
-          Padding(
-            padding: const EdgeInsets.all(16.0),
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                Text(widget.venueAddress, style: const TextStyle(color: Color.fromRGBO(117, 117, 117, 1))),
-                const SizedBox(height: 10),
-                ElevatedButton.icon(
-                  onPressed: null, // Button is disabled
-                  icon: const Icon(Icons.navigation),
-                  label: const Text('Itinéraire'),
-                  style: ElevatedButton.styleFrom(
-                    backgroundColor: Theme.of(context).primaryColor,
-                    disabledBackgroundColor: const Color.fromRGBO(158, 158, 158, 1),
-                    shape: RoundedRectangleBorder(
-                      borderRadius: BorderRadius.circular(8),
-                    ),
-                  ),
-                ),
-              ],
+          const SizedBox(height: 10),
+          Text(venueName, style: TextStyle(fontSize: 15.5, fontWeight: FontWeight.w600, color: c.ink)),
+          const SizedBox(height: 2),
+          Text(venueAddress, style: TextStyle(fontSize: 13, color: c.ink2)),
+          const SizedBox(height: 12),
+          SizedBox(
+            width: double.infinity,
+            height: 46,
+            child: OutlinedButton.icon(
+              onPressed: _openDirections,
+              icon: Icon(PhosphorIconsRegular.navigationArrow, size: 18, color: c.acc),
+              label: Text('Y aller', style: TextStyle(color: c.acc)),
             ),
           ),
         ],
-      ),
-    );
-  }
-
-  Widget _buildMapContent() {
-    return Container(
-      height: 200,
-      decoration: BoxDecoration(
-        color: const Color.fromRGBO(238, 238, 238, 1),
-      ),
-      child: Center(
-        child: Padding(
-          padding: const EdgeInsets.all(16.0),
-          child: Text(
-            _errorMessage,
-            textAlign: TextAlign.center,
-            style: const TextStyle(color: Color.fromRGBO(97, 97, 97, 1)),
-          ),
-        ),
       ),
     );
   }

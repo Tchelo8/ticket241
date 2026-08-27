@@ -14,6 +14,7 @@ import 'package:myapp/onboarding_screen.dart';
 import 'package:myapp/splash_screen.dart';
 import 'package:myapp/checkout_screen.dart';
 import 'package:myapp/success_screen.dart';
+import 'package:myapp/ussd_waiting_screen.dart';
 import 'package:myapp/edit_profile_screen.dart';
 import 'package:myapp/providers/auth_provider.dart';
 import 'package:myapp/models/event_model.dart';
@@ -98,8 +99,27 @@ class AppRouter {
           },
         ),
         GoRoute(
+          path: '/ussd-waiting',
+          builder: (context, state) {
+            final extra = state.extra as Map<String, dynamic>;
+            return UssdWaitingScreen(
+              event: extra['event'] as Event,
+              amount: extra['amount'] as double,
+              method: extra['method'] as PaymentMethod,
+              phone: extra['phone'] as String,
+            );
+          },
+        ),
+        GoRoute(
           path: '/success',
-          builder: (context, state) => const SuccessScreen(),
+          builder: (context, state) {
+            final extra = state.extra as Map<String, dynamic>?;
+            return SuccessScreen(
+              event: extra?['event'] as Event?,
+              amount: extra?['amount'] as double?,
+              method: extra?['method'] as PaymentMethod?,
+            );
+          },
         ),
       ],
       redirect: (context, state) {
@@ -123,8 +143,8 @@ class AppRouter {
         ].contains(location);
 
         final privateRoutes = [
-          '/app', '/profile', '/edit-profile', '/notifications', 
-          '/details', '/location', '/checkout', '/success'
+          '/app', '/profile', '/edit-profile', '/notifications',
+          '/details', '/location', '/checkout', '/ussd-waiting', '/success'
         ];
 
         if (!isAuthenticated && privateRoutes.contains(location)) {
