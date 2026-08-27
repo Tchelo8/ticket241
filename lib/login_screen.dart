@@ -172,7 +172,7 @@ class _LoginScreenState extends State<LoginScreen> {
               controller: _phoneController,
               keyboardType: TextInputType.phone,
               style: TextStyle(fontFeatures: const [FontFeature.tabularFigures()]),
-              decoration: const InputDecoration(border: InputBorder.none, isDense: true, filled: false, hintText: '074 12 34 56'),
+              decoration: AppFieldDecoration.bare(hintText: '074 12 34 56'),
               validator: (value) => (value == null || value.isEmpty) ? 'Numéro requis' : null,
             ),
           ),
@@ -200,7 +200,7 @@ class _LoginScreenState extends State<LoginScreen> {
             child: TextFormField(
               controller: _passwordController,
               obscureText: !_isPasswordVisible,
-              decoration: const InputDecoration(border: InputBorder.none, isDense: true, filled: false, hintText: 'Mot de passe'),
+              decoration: AppFieldDecoration.bare(hintText: 'Mot de passe'),
               validator: (value) => (value == null || value.isEmpty) ? 'Mot de passe requis' : null,
             ),
           ),

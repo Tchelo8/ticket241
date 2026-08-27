@@ -299,7 +299,7 @@ class SignUpScreenState extends State<SignUpScreen> {
                   controller: controller,
                   obscureText: obscure,
                   keyboardType: keyboardType,
-                  decoration: InputDecoration(hintText: hint, border: InputBorder.none, isDense: true, filled: false),
+                  decoration: AppFieldDecoration.bare(hintText: hint),
                 ),
               ),
               if (suffix != null) suffix,

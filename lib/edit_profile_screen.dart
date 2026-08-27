@@ -199,7 +199,7 @@ class _EditProfileScreenState extends State<EditProfileScreen> {
               controller: controller,
               enabled: !locked,
               keyboardType: keyboardType,
-              decoration: InputDecoration(hintText: label, border: InputBorder.none, isDense: true, filled: false),
+              decoration: AppFieldDecoration.bare(hintText: label),
             ),
           ),
           if (locked) Icon(PhosphorIconsRegular.lockSimple, size: 17, color: c.ink3),

@@ -192,12 +192,7 @@ class ExplorerScreenState extends State<ExplorerScreen> {
                         child: TextField(
                           controller: _searchController,
                           onChanged: _onSearchChanged,
-                          decoration: InputDecoration(
-                            hintText: 'Rechercher...',
-                            border: InputBorder.none,
-                            isDense: true,
-                            filled: false,
-                          ),
+                          decoration: AppFieldDecoration.bare(hintText: 'Rechercher...'),
                         ),
                       ),
                       if (_searchQuery.isNotEmpty)

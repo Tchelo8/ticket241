@@ -183,6 +183,26 @@ extension AppTokensContext on BuildContext {
   AppColorTokens get appColors => tokens.colors;
 }
 
+/// Décoration neutre pour un [TextField]/[TextFormField] posé à l'intérieur
+/// d'un Container déjà stylé (fond + bordure) : neutralise aussi les
+/// bordures d'état (enabled/focused/error/...), sinon InputDecoration.
+/// applyDefaults() les réinjecte depuis l'InputDecorationTheme global et
+/// peint un second cadre par-dessus le premier.
+class AppFieldDecoration {
+  static InputDecoration bare({String? hintText}) => InputDecoration(
+        hintText: hintText,
+        border: InputBorder.none,
+        enabledBorder: InputBorder.none,
+        focusedBorder: InputBorder.none,
+        disabledBorder: InputBorder.none,
+        errorBorder: InputBorder.none,
+        focusedErrorBorder: InputBorder.none,
+        filled: false,
+        isDense: true,
+        contentPadding: EdgeInsets.zero,
+      );
+}
+
 /// Chiffres tabulaires alignés — prix, dates, compteurs, références de billet.
 class AppText {
   static TextStyle tabular(TextStyle style) => style.copyWith(

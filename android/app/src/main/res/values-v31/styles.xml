@@ -1,0 +1,12 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <!-- Android 12+ (API 31+) shows its own system splash screen using the
+         app icon before Flutter draws its first frame, regardless of
+         launch_background.xml. Align its background with the app's
+         "Papier" theme so there is no white flash before our own
+         SplashScreen widget takes over. -->
+    <style name="LaunchTheme" parent="@android:style/Theme.Light.NoTitleBar">
+        <item name="android:windowBackground">@drawable/launch_background</item>
+        <item name="android:windowSplashScreenBackground">@color/launch_background</item>
+    </style>
+</resources>

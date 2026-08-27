@@ -336,7 +336,7 @@ class CheckoutScreenState extends State<CheckoutScreen> {
             child: TextField(
               controller: controller,
               keyboardType: keyboardType,
-              decoration: InputDecoration(hintText: label, border: InputBorder.none, isDense: true, filled: false),
+              decoration: AppFieldDecoration.bare(hintText: label),
             ),
           ),
         ],

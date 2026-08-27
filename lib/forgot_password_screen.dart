@@ -104,7 +104,7 @@ class _ForgotPasswordScreenState extends State<ForgotPasswordScreen> {
                                 child: TextFormField(
                                   controller: _phoneController,
                                   keyboardType: TextInputType.phone,
-                                  decoration: const InputDecoration(border: InputBorder.none, isDense: true, filled: false, hintText: '074 12 34 56'),
+                                  decoration: AppFieldDecoration.bare(hintText: '074 12 34 56'),
                                   validator: (value) => (value == null || value.isEmpty) ? 'Numéro requis' : null,
                                 ),
                               ),
