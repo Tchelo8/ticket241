@@ -2,6 +2,7 @@ import 'dart:async';
 
 import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
+import 'package:phosphor_flutter/phosphor_flutter.dart';
 import 'package:provider/provider.dart';
 
 import 'package:myapp/providers/auth_provider.dart';
@@ -125,7 +126,7 @@ class OtpVerificationScreenState extends State<OtpVerificationScreen> {
           children: [
             Padding(
               padding: const EdgeInsets.fromLTRB(AppSpacing.screenForm, 8, AppSpacing.screenForm, 0),
-              child: GestureDetector(onTap: () => context.go('/signup'), child: Icon(Icons.arrow_back, color: c.ink)),
+              child: GestureDetector(onTap: () => context.go('/signup'), child: Icon(PhosphorIconsRegular.arrowLeft, color: c.ink)),
             ),
             Expanded(
               child: SingleChildScrollView(

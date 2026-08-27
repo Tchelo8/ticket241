@@ -9,7 +9,6 @@ import 'package:myapp/signup_screen.dart';
 import 'package:myapp/profile_screen.dart';
 import 'package:myapp/notifications_screen.dart';
 import 'package:myapp/event_details_screen.dart';
-import 'package:myapp/location_screen.dart';
 import 'package:myapp/onboarding_screen.dart';
 import 'package:myapp/splash_screen.dart';
 import 'package:myapp/checkout_screen.dart';
@@ -88,10 +87,6 @@ class AppRouter {
           },
         ),
         GoRoute(
-          path: '/location',
-          builder: (context, state) => const LocationScreen(),
-        ),
-        GoRoute(
           path: '/checkout',
           builder: (context, state) {
             final extra = state.extra as Map<String, dynamic>;
@@ -159,7 +154,7 @@ class AppRouter {
 
         final privateRoutes = [
           '/app', '/profile', '/edit-profile', '/notifications',
-          '/details', '/location', '/checkout', '/ussd-waiting', '/success',
+          '/details', '/checkout', '/ussd-waiting', '/success',
           '/ticket-qr', '/pdf-viewer',
         ];
 
