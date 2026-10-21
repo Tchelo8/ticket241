@@ -81,7 +81,7 @@ class SignUpScreenState extends State<SignUpScreen> {
         password: _passwordController.text,
       );
       if (mounted) {
-        context.go('/otp-verification', extra: {'phone': _phoneController.text});
+        context.push('/otp-verification', extra: {'phone': _phoneController.text});
       }
     } catch (e) {
       if (e is Map<String, dynamic>) {

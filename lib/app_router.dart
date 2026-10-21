@@ -1,3 +1,4 @@
+import 'package:flutter/cupertino.dart';
 import 'package:go_router/go_router.dart';
 import 'package:myapp/forgot_password_screen.dart';
 import 'package:myapp/main_screen.dart';
@@ -55,11 +56,14 @@ class AppRouter {
         ),
         GoRoute(
           path: '/otp-verification', // Updated route
-          builder: (context, state) {
+          pageBuilder: (context, state) {
             // Extract phone number from extra
             final extra = state.extra as Map<String, dynamic>?;
             final phone = extra?['phone'] as String?;
-            return OtpVerificationScreen(phone: phone);
+            return CupertinoPage(
+              key: state.pageKey,
+              child: OtpVerificationScreen(phone: phone),
+            );
           },
         ),
         GoRoute(

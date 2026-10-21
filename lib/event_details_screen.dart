@@ -40,6 +40,10 @@ class EventDetailsScreenState extends State<EventDetailsScreen> {
     super.initState();
     _initializeTickets();
     _fetchSuggestedEvents();
+    final uuid = widget.event.uuid;
+    if (uuid != null) {
+      _apiService.incrementEventView(uuid);
+    }
   }
 
   void _initializeTickets() {
@@ -250,6 +254,7 @@ class EventDetailsScreenState extends State<EventDetailsScreen> {
             SizedBox(
               height: 36,
               child: OutlinedButton(
+                style: OutlinedButton.styleFrom(minimumSize: Size.zero),
                 onPressed: () => setState(() => _isFollowing = !_isFollowing),
                 child: Text(_isFollowing ? 'Suivi' : 'Suivre'),
               ),
@@ -544,6 +549,7 @@ class EventDetailsScreenState extends State<EventDetailsScreen> {
               SizedBox(
                 height: 54,
                 child: ElevatedButton(
+                  style: ElevatedButton.styleFrom(minimumSize: Size.zero),
                   onPressed: _totalPrice > 0 ? () => _goToCheckout(context) : null,
                   child: Text(_totalPrice > 0 ? 'Continuer' : 'Choisir un billet'),
                 ),

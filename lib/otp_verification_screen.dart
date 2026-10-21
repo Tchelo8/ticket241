@@ -126,7 +126,7 @@ class OtpVerificationScreenState extends State<OtpVerificationScreen> {
           children: [
             Padding(
               padding: const EdgeInsets.fromLTRB(AppSpacing.screenForm, 8, AppSpacing.screenForm, 0),
-              child: GestureDetector(onTap: () => context.go('/signup'), child: Icon(PhosphorIconsRegular.arrowLeft, color: c.ink)),
+              child: GestureDetector(onTap: () => context.pop(), child: Icon(PhosphorIconsRegular.arrowLeft, color: c.ink)),
             ),
             Expanded(
               child: SingleChildScrollView(
@@ -148,7 +148,7 @@ class OtpVerificationScreenState extends State<OtpVerificationScreen> {
                         return Expanded(
                           child: Container(
                             margin: EdgeInsets.only(right: i < _codeLength - 1 ? 8 : 0),
-                            height: 68,
+                            height: 74,
                             alignment: Alignment.center,
                             decoration: BoxDecoration(
                               color: c.card,
@@ -157,7 +157,7 @@ class OtpVerificationScreenState extends State<OtpVerificationScreen> {
                             ),
                             child: Text(
                               filled ? _code[i] : '',
-                              style: TextStyle(fontSize: 28, fontWeight: FontWeight.w600, color: c.ink, fontFeatures: const [FontFeature.tabularFigures()]),
+                              style: TextStyle(fontSize: 30, fontWeight: FontWeight.w600, color: c.ink, fontFeatures: const [FontFeature.tabularFigures()]),
                             ),
                           ),
                         );

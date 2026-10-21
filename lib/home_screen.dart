@@ -443,7 +443,11 @@ class _HomeScreenState extends State<HomeScreen> {
               child: Text('Vous organisez un événement ?', style: Theme.of(context).textTheme.titleSmall),
             ),
             const SizedBox(width: 12),
-            OutlinedButton(onPressed: () {}, child: const Text('Créer un événement')),
+            OutlinedButton(
+              onPressed: () {},
+              style: OutlinedButton.styleFrom(minimumSize: Size.zero),
+              child: const Text('Créer un événement'),
+            ),
           ],
         ),
       ),

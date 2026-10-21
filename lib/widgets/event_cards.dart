@@ -278,6 +278,18 @@ class EventWeekCard extends StatelessWidget {
   }
 }
 
+void _showPastEventMessage(BuildContext context) {
+  ScaffoldMessenger.of(context)
+    ..hideCurrentSnackBar()
+    ..showSnackBar(
+      const SnackBar(
+        content: Text('Cet événement est déjà passé'),
+        duration: Duration(seconds: 2),
+        behavior: SnackBarBehavior.floating,
+      ),
+    );
+}
+
 /// Carte de grille Explorer — 2 colonnes.
 class EventGridCard extends StatelessWidget {
   final String imageUrl;
@@ -307,7 +319,7 @@ class EventGridCard extends StatelessWidget {
   Widget build(BuildContext context) {
     final c = context.appColors;
     return GestureDetector(
-      onTap: isPast ? null : onTap,
+      onTap: isPast ? () => _showPastEventMessage(context) : onTap,
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [

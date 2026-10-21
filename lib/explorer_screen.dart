@@ -151,11 +151,15 @@ class ExplorerScreenState extends State<ExplorerScreen> {
           children: [
             _buildStickyHeader(context),
             Expanded(
-              child: isLoading
-                  ? const Center(child: CircularProgressIndicator())
-                  : _filteredEvents.isEmpty
-                      ? _buildNoResults(context)
-                      : _buildEventsGrid(context),
+              child: RefreshIndicator(
+                color: c.acc,
+                onRefresh: _fetchData,
+                child: isLoading
+                    ? const Center(child: CircularProgressIndicator())
+                    : _filteredEvents.isEmpty
+                        ? _buildNoResults(context)
+                        : _buildEventsGrid(context),
+              ),
             ),
           ],
         ),
@@ -359,29 +363,37 @@ class ExplorerScreenState extends State<ExplorerScreen> {
 
   Widget _buildNoResults(BuildContext context) {
     final c = context.appColors;
-    return Center(
-      child: Padding(
-        padding: const EdgeInsets.all(32),
-        child: Column(
-          mainAxisSize: MainAxisSize.min,
-          children: [
-            Icon(PhosphorIconsRegular.magnifyingGlass, size: 56, color: c.ink3),
-            const SizedBox(height: 16),
-            Text('Aucun événement ne correspond', style: Theme.of(context).textTheme.titleMedium),
-            const SizedBox(height: 6),
-            Text('Essayez d\'élargir le budget ou de retirer un filtre.',
-                textAlign: TextAlign.center, style: TextStyle(fontSize: 14, color: c.ink2)),
-            const SizedBox(height: 20),
-            OutlinedButton(
-              onPressed: () => setState(() {
-                _filters = const ExplorerFilters();
-                _searchController.clear();
-                _searchQuery = '';
-                _applyFilters();
-              }),
-              child: const Text('Réinitialiser les filtres'),
+    return LayoutBuilder(
+      builder: (context, constraints) => SingleChildScrollView(
+        physics: const AlwaysScrollableScrollPhysics(),
+        child: ConstrainedBox(
+          constraints: BoxConstraints(minHeight: constraints.maxHeight),
+          child: Center(
+            child: Padding(
+              padding: const EdgeInsets.all(32),
+              child: Column(
+                mainAxisSize: MainAxisSize.min,
+                children: [
+                  Icon(PhosphorIconsRegular.magnifyingGlass, size: 56, color: c.ink3),
+                  const SizedBox(height: 16),
+                  Text('Aucun événement ne correspond', style: Theme.of(context).textTheme.titleMedium),
+                  const SizedBox(height: 6),
+                  Text('Essayez d\'élargir le budget ou de retirer un filtre.',
+                      textAlign: TextAlign.center, style: TextStyle(fontSize: 14, color: c.ink2)),
+                  const SizedBox(height: 20),
+                  OutlinedButton(
+                    onPressed: () => setState(() {
+                      _filters = const ExplorerFilters();
+                      _searchController.clear();
+                      _searchQuery = '';
+                      _applyFilters();
+                    }),
+                    child: const Text('Réinitialiser les filtres'),
+                  ),
+                ],
+              ),
             ),
-          ],
+          ),
         ),
       ),
     );

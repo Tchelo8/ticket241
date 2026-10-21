@@ -22,10 +22,11 @@ class AppBottomSheet {
       backgroundColor: Colors.transparent,
       barrierColor: const Color(0x70100F0E),
       builder: (context) {
+        final minChildSize = maxHeightFraction < 0.4 ? maxHeightFraction : 0.4;
         return DraggableScrollableSheet(
           initialChildSize: maxHeightFraction,
           maxChildSize: maxHeightFraction,
-          minChildSize: 0.4,
+          minChildSize: minChildSize,
           expand: false,
           builder: (context, scrollController) {
             return Container(

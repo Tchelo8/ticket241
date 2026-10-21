@@ -22,12 +22,22 @@ class ApiResponse<T> {
   });
 }
 
+/// Environnement cible, fixé au build/lancement via --dart-define=ENV=... :
+/// - (défaut) "emulator" -> URL_LOCAL_BASE (10.0.2.2, émulateur Android)
+/// - "test"              -> URL_TEST_BASE (IP locale, téléphone physique en test)
+/// Ignoré en release, qui utilise toujours URL_PROD_BASE.
+const String _env = String.fromEnvironment('ENV', defaultValue: 'emulator');
+
 class ApiService {
   String get _baseUrl {
     if (kReleaseMode) {
       return dotenv.env['URL_PROD_BASE'] ?? 'https://api.default-prod.com';
-    } else {
-      return dotenv.env['URL_LOCAL_BASE'] ?? 'http://10.0.2.2:8080';
+    }
+    switch (_env) {
+      case 'test':
+        return dotenv.env['URL_TEST_BASE'] ?? 'http://192.168.1.81:8080';
+      default:
+        return dotenv.env['URL_LOCAL_BASE'] ?? 'http://10.0.2.2:8080';
     }
   }
 
@@ -150,6 +160,12 @@ class ApiService {
   }
 
   // --- Other Methods ---
+
+  /// Fire-and-forget : incrémente le compteur de vues. Échec ignoré volontairement,
+  /// l'event est déjà affiché depuis les données déjà chargées (liste/favoris).
+  Future<void> incrementEventView(String uuid) {
+    return _request('/api/events/$uuid/view', method: 'POST').then((_) {});
+  }
 
   Future<ApiResponse<List<String>>> getActiveCities() {
     return _request<List<String>>(
