@@ -1,21 +1,24 @@
 import 'dart:async';
-import 'dart:convert';
 import 'package:flutter/material.dart';
 import 'package:myapp/services/api_service.dart';
-import 'package:shared_preferences/shared_preferences.dart';
+import 'package:myapp/services/session_store.dart';
 
 class AuthProvider with ChangeNotifier {
   final ApiService _apiService = ApiService();
-  Map<String, dynamic>? _user;
-  String? _token;
-  bool _isLoading = true; // Start true to check initial login state
+  final SessionStore _session = SessionStore.instance;
+  bool _isLoading = true; // Vrai tant que la session enregistrée n'est pas relue
+  Timer? _expiryTimer;
 
-  Map<String, dynamic>? get user => _user;
-  String? get token => _token;
+  Map<String, dynamic>? get user => _session.user;
+  String? get token => _session.token;
   bool get isLoading => _isLoading;
-  bool get isAuthenticated => _token != null && _user != null;
+  bool get isAuthenticated => _session.hasSession;
 
   AuthProvider() {
+    // Un 401 de l'API = JWT refusé (expiré, compte suspendu…) : on ferme la session
+    _session.onUnauthorized = () {
+      if (isAuthenticated) logout();
+    };
     _tryAutoLogin();
   }
 
@@ -25,20 +28,20 @@ class AuthProvider with ChangeNotifier {
   }
 
   Future<void> _tryAutoLogin() async {
-    final prefs = await SharedPreferences.getInstance();
-    if (!prefs.containsKey('access_token') || !prefs.containsKey('user_data')) {
-      _setLoading(false);
-      return;
-    }
-
-    _token = prefs.getString('access_token');
-    final userDataString = prefs.getString('user_data');
-    if (userDataString != null) {
-      _user = jsonDecode(userDataString);
-    }
-
+    await _session.load(); // session expirée = aucune session
+    _armExpiryTimer();
     _setLoading(false);
-    notifyListeners();
+  }
+
+  /// Déconnexion automatique à l'expiration du JWT (application restée ouverte).
+  void _armExpiryTimer() {
+    _expiryTimer?.cancel();
+    final token = _session.token;
+    if (token == null) return;
+    final expiry = SessionStore.expiryOf(token);
+    if (expiry == null) return;
+    final delay = expiry.difference(DateTime.now());
+    _expiryTimer = Timer(delay.isNegative ? Duration.zero : delay, logout);
   }
 
   Future<void> register({
@@ -52,89 +55,81 @@ class AuthProvider with ChangeNotifier {
 
     if (!response.success) {
       if (response.errors != null) {
-        // Validation errors (400)
+        // Erreurs de validation (400)
         throw response.errors!;
       } else {
-        // General message error (409, 503, etc.)
-        throw response.message ?? 'An unknown error occurred during registration.';
+        // Message du serveur (409 numéro déjà utilisé, 503…)
+        throw response.message ?? "L'inscription n'a pas abouti. Réessayez.";
       }
     }
-    // Success means OTP was sent, UI will navigate to OTP screen
+    // Succès : le code est parti par e-mail, l'écran passe à la vérification
   }
 
   Future<void> verifyOtp(String phone, String code) async {
     final response = await _apiService.verifyOtp(phone, code);
 
     if (response.success && response.data != null) {
-      final responseData = response.data!;
-      _token = responseData['token'];
-      _user = responseData; // The whole response is the user object
-
-      if (_token != null && _user != null) {
-        await _saveSession(_token!, _user!); // Save the session
-        notifyListeners(); // Notify that auth state has changed
-      } else {
-        throw 'Token or user data is missing in the server response.';
-      }
+      await _openSession(response.data!);
     } else {
-      throw response.message ?? 'An unknown error occurred during OTP verification.';
+      throw response.message ?? 'La vérification du code a échoué. Réessayez.';
     }
   }
 
   Future<void> resendOtp(String phone) async {
-     final response = await _apiService.resendOtp(phone);
-     if (!response.success) {
-       throw response.message ?? 'Failed to resend OTP.';
-     }
+    final response = await _apiService.resendOtp(phone);
+    if (!response.success) {
+      throw response.message ?? "Le nouveau code n'a pas pu être envoyé.";
+    }
   }
-
 
   Future<void> login(String phone, String password) async {
     final response = await _apiService.login(phone, password);
 
     if (response.success && response.data != null) {
-      final responseData = response.data!;
-      _token = responseData['token'];
-      _user = responseData; // The whole response is the user object
-
-      if (_token != null && _user != null) {
-        await _saveSession(_token!, _user!); // Save the session
-        notifyListeners(); // Notify that auth state has changed
-      } else {
-         throw 'Token or user data is missing in the server response.';
-      }
+      await _openSession(response.data!);
     } else {
-       if (response.errors != null) {
+      if (response.errors != null) {
         throw response.errors!;
       } else {
-        throw response.message ?? 'An unknown error occurred during login.';
+        throw response.message ?? 'La connexion a échoué. Réessayez.';
       }
     }
   }
 
+  // Pas encore de réinitialisation du mot de passe côté auth-service : on ne fait aucun appel
   Future<void> forgotPassword(String phone) async {
-    final response = await _apiService.forgotPassword(phone);
-     if (!response.success) {
-       throw response.message ?? 'Failed to process forgot password request.';
-     }
+    throw "La réinitialisation du mot de passe n'est pas encore disponible : contactez le support Ticket241.";
   }
 
-  Future<void> _saveSession(String token, Map<String, dynamic> user) async {
-    final prefs = await SharedPreferences.getInstance();
-    await prefs.setString('access_token', token);
-    await prefs.setString('user_data', jsonEncode(user));
+  /// Profil modifié (prénom, nom) : gardé dans la session sans changer le JWT.
+  Future<void> updateUser(Map<String, dynamic> changes) async {
+    final current = _session.user;
+    if (current == null) return;
+    await _session.updateUser({...current, ...changes});
+    notifyListeners();
+  }
+
+  // Réponse de l'auth-service = profil + JWT (null pour un compte déjà vérifié : il doit se connecter)
+  Future<void> _openSession(Map<String, dynamic> responseData) async {
+    final token = responseData['token'] as String?;
+    if (token == null) {
+      throw responseData['message'] as String? ?? 'Compte déjà vérifié : connectez-vous.';
+    }
+    await _session.save(token, responseData);
+    _armExpiryTimer();
+    notifyListeners();
   }
 
   Future<void> logout() async {
+    _expiryTimer?.cancel();
     _setLoading(true);
-    final prefs = await SharedPreferences.getInstance();
-    await prefs.remove('access_token');
-    await prefs.remove('user_data');
-
-    _token = null;
-    _user = null;
-    
+    await _session.clear();
     _setLoading(false);
-    notifyListeners();
+  }
+
+  @override
+  void dispose() {
+    _expiryTimer?.cancel();
+    super.dispose();
   }
 }

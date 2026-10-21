@@ -19,15 +19,24 @@ Future<void> main() async {
   
   // 1. Create the AuthProvider instance BEFORE the app starts.
   final authProvider = AuthProvider();
+  // Billets rechargés à chaque connexion / déconnexion (ceux du compte apparaissent ou disparaissent)
+  final ticketsProvider = TicketsProvider();
+  var wasAuthenticated = authProvider.isAuthenticated;
+  authProvider.addListener(() {
+    if (authProvider.isLoading || authProvider.isAuthenticated == wasAuthenticated) return;
+    wasAuthenticated = authProvider.isAuthenticated;
+    ticketsProvider.refresh();
+  });
 
-  runApp(MyApp(onboardingCompleted: onboardingCompleted, authProvider: authProvider));
+  runApp(MyApp(onboardingCompleted: onboardingCompleted, authProvider: authProvider, ticketsProvider: ticketsProvider));
 }
 
 class MyApp extends StatelessWidget {
   final bool onboardingCompleted;
   final AuthProvider authProvider;
+  final TicketsProvider ticketsProvider;
 
-  const MyApp({super.key, required this.onboardingCompleted, required this.authProvider});
+  const MyApp({super.key, required this.onboardingCompleted, required this.authProvider, required this.ticketsProvider});
 
   @override
   Widget build(BuildContext context) {
@@ -38,7 +47,7 @@ class MyApp extends StatelessWidget {
       providers: [
         ChangeNotifierProvider.value(value: authProvider),
         ChangeNotifierProvider(create: (context) => FavoritesProvider()),
-        ChangeNotifierProvider(create: (context) => TicketsProvider()),
+        ChangeNotifierProvider.value(value: ticketsProvider),
         ChangeNotifierProvider(create: (context) => ThemeProvider()),
       ],
       child: Consumer<ThemeProvider>(

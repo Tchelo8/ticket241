@@ -1,10 +1,12 @@
 import 'package:flutter/material.dart';
+import 'package:fluttertoast/fluttertoast.dart';
 import 'package:go_router/go_router.dart';
 import 'package:phosphor_flutter/phosphor_flutter.dart';
 import 'package:provider/provider.dart';
 
 import 'package:myapp/models/ticket_model.dart';
 import 'package:myapp/providers/tickets_provider.dart';
+import 'package:myapp/services/ticket_pdf.dart';
 import 'package:myapp/theme/app_theme.dart';
 import 'package:myapp/theme/design_tokens.dart';
 import 'package:myapp/widgets/app_bottom_sheet.dart';
@@ -33,35 +35,27 @@ class TicketsScreenState extends State<TicketsScreen> {
       maxHeightFraction: 0.32,
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.stretch,
-        children: isUpcoming
-            ? [
-                ListTile(
-                  contentPadding: EdgeInsets.zero,
-                  leading: const Icon(PhosphorIconsRegular.arrowClockwise),
-                  title: const Text('Commander à nouveau'),
-                  onTap: () => Navigator.pop(context),
-                ),
-                ListTile(
-                  contentPadding: EdgeInsets.zero,
-                  leading: Icon(PhosphorIconsRegular.xCircle, color: const Color(0xFFD6006C)),
-                  title: const Text('Annuler la réservation', style: TextStyle(color: Color(0xFFD6006C))),
-                  onTap: () => Navigator.pop(context),
-                ),
-              ]
-            : [
-                ListTile(
-                  contentPadding: EdgeInsets.zero,
-                  leading: const Icon(PhosphorIconsRegular.downloadSimple),
-                  title: const Text('Télécharger le reçu'),
-                  onTap: () => Navigator.pop(context),
-                ),
-                ListTile(
-                  contentPadding: EdgeInsets.zero,
-                  leading: const Icon(PhosphorIconsRegular.archive),
-                  title: const Text('Archiver'),
-                  onTap: () => Navigator.pop(context),
-                ),
-              ],
+        children: [
+          ListTile(
+            contentPadding: EdgeInsets.zero,
+            leading: const Icon(PhosphorIconsRegular.qrCode),
+            title: const Text('Voir le billet'),
+            onTap: () {
+              Navigator.pop(context);
+              context.push('/ticket-qr', extra: ticket);
+            },
+          ),
+          ListTile(
+            contentPadding: EdgeInsets.zero,
+            leading: const Icon(PhosphorIconsRegular.downloadSimple),
+            title: const Text('Télécharger le PDF'),
+            onTap: () async {
+              Navigator.pop(context);
+              final error = await openTicketPdf(ticket);
+              if (error != null) Fluttertoast.showToast(msg: error, toastLength: Toast.LENGTH_LONG);
+            },
+          ),
+        ],
       ),
     );
   }
@@ -69,10 +63,12 @@ class TicketsScreenState extends State<TicketsScreen> {
   @override
   Widget build(BuildContext context) {
     final c = context.appColors;
-    final tickets = context.watch<TicketsProvider>().tickets;
+    final provider = context.watch<TicketsProvider>();
+    final tickets = provider.tickets;
     final now = DateTime.now();
-    final upcoming = tickets.where((t) => t.eventStartDate.isAfter(now)).toList();
-    final past = tickets.where((t) => !t.eventStartDate.isAfter(now)).toList();
+    // Billet déjà scanné : dans « Passés » même si l'événement n'est pas fini
+    final upcoming = tickets.where((t) => t.eventStartDate.isAfter(now) && t.apiStatus != 'USED').toList();
+    final past = tickets.where((t) => !t.eventStartDate.isAfter(now) || t.apiStatus == 'USED').toList();
     final isUpcoming = _tabIndex == 0;
     final currentList = isUpcoming ? upcoming : past;
 
@@ -94,26 +90,48 @@ class TicketsScreenState extends State<TicketsScreen> {
                 onChanged: (i) => setState(() => _tabIndex = i),
               ),
             ),
-            const SizedBox(height: 16),
-            Expanded(
-              child: AnimatedSwitcher(
-                duration: AppMotion.tIn,
-                transitionBuilder: (child, animation) => SlideTransition(
-                  position: Tween<Offset>(begin: const Offset(0, 0.04), end: Offset.zero).animate(animation),
-                  child: FadeTransition(opacity: animation, child: child),
-                ),
-                child: currentList.isEmpty
-                    ? _buildEmptyState(isUpcoming, key: ValueKey('empty-$isUpcoming'))
-                    : ListView.builder(
-                        key: ValueKey('list-$isUpcoming'),
-                        padding: const EdgeInsets.fromLTRB(AppSpacing.screen, 0, AppSpacing.screen, 24),
-                        itemCount: currentList.length,
-                        itemBuilder: (context, index) => Padding(
-                          padding: const EdgeInsets.only(bottom: 16),
-                          child: _buildTicketCard(context, currentList[index], isUpcoming),
-                        ),
-                      ),
+            const SizedBox(height: 12),
+            if (provider.error != null)
+              Padding(
+                padding: const EdgeInsets.fromLTRB(AppSpacing.screen, 0, AppSpacing.screen, 8),
+                child: Text(provider.error!, style: const TextStyle(fontSize: 12.5, color: Color(0xFFD6006C))),
               ),
+            // Achat sans compte : billets retrouvés avec le numéro et un code reçu par e-mail
+            Padding(
+              padding: const EdgeInsets.symmetric(horizontal: AppSpacing.screen),
+              child: TextButton.icon(
+                onPressed: () => context.push('/recover-tickets'),
+                icon: Icon(PhosphorIconsRegular.key, size: 17, color: c.acc),
+                label: Text('Retrouver des billets achetés sans compte', style: TextStyle(color: c.acc)),
+              ),
+            ),
+            Expanded(
+              child: provider.isLoading && tickets.isEmpty
+                  ? const Center(child: CircularProgressIndicator())
+                  : RefreshIndicator(
+                      onRefresh: provider.refresh,
+                      child: AnimatedSwitcher(
+                        duration: AppMotion.tIn,
+                        transitionBuilder: (child, animation) => SlideTransition(
+                          position: Tween<Offset>(begin: const Offset(0, 0.04), end: Offset.zero).animate(animation),
+                          child: FadeTransition(opacity: animation, child: child),
+                        ),
+                        child: currentList.isEmpty
+                            ? ListView(
+                                key: ValueKey('empty-$isUpcoming'),
+                                children: [_buildEmptyState(isUpcoming)],
+                              )
+                            : ListView.builder(
+                                key: ValueKey('list-$isUpcoming'),
+                                padding: const EdgeInsets.fromLTRB(AppSpacing.screen, 0, AppSpacing.screen, 24),
+                                itemCount: currentList.length,
+                                itemBuilder: (context, index) => Padding(
+                                  padding: const EdgeInsets.only(bottom: 16),
+                                  child: _buildTicketCard(context, currentList[index], isUpcoming),
+                                ),
+                              ),
+                      ),
+                    ),
             ),
           ],
         ),
@@ -172,7 +190,7 @@ class TicketsScreenState extends State<TicketsScreen> {
                             borderRadius: BorderRadius.circular(3),
                           ),
                           child: Text(
-                            isUpcoming ? 'PAYÉ' : 'UTILISÉ',
+                            ticket.status.toUpperCase(),
                             style: TextStyle(fontSize: 9, fontWeight: FontWeight.w700, color: isUpcoming ? c.acc : c.ink2),
                           ),
                         ),
@@ -214,9 +232,9 @@ class TicketsScreenState extends State<TicketsScreen> {
               ],
               const Spacer(),
               TextButton.icon(
-                onPressed: isUpcoming ? () => context.push('/ticket-qr', extra: ticket) : () => _showOptions(ticket, isUpcoming),
-                icon: Icon(isUpcoming ? PhosphorIconsRegular.qrCode : PhosphorIconsRegular.star, size: 17),
-                label: Text(isUpcoming ? 'Voir le QR' : 'Laisser un avis'),
+                onPressed: () => context.push('/ticket-qr', extra: ticket),
+                icon: const Icon(PhosphorIconsRegular.qrCode, size: 17),
+                label: Text(isUpcoming ? 'Voir le QR' : 'Voir le billet'),
               ),
               GestureDetector(
                 onTap: () => _showOptions(ticket, isUpcoming),

@@ -7,22 +7,22 @@ import 'package:provider/provider.dart';
 
 import 'package:myapp/checkout_screen.dart';
 import 'package:myapp/models/event_model.dart';
-import 'package:myapp/models/ticket_model.dart';
+import 'package:myapp/models/order_model.dart';
 import 'package:myapp/providers/tickets_provider.dart';
+import 'package:myapp/services/api_service.dart';
 import 'package:myapp/theme/app_theme.dart';
 import 'package:myapp/theme/design_tokens.dart';
 import 'package:myapp/widgets/ussd_waiting_rings.dart';
 
-/// Confirmation mobile money (USSD) — README écran 12. Attente réaliste de
-/// la validation sur le téléphone, purement visuelle : bascule vers Succès
-/// après 5,2 s comme dans le prototype (aucune API de paiement n'existe
-/// côté backend à ce jour).
+/// Confirmation mobile money (USSD) — README écran 12. La commande est relue toutes les 3 s :
+/// billets payés → Succès ; paiement refusé ou délai dépassé (places libérées) → retour au
+/// paiement avec le message. Le décompte suit l'échéance donnée par ticket-service.
 class UssdWaitingScreen extends StatefulWidget {
   final Event event;
   final double amount;
   final PaymentMethod method;
-  final String phone;
-  final List<EventTicket> tickets;
+  final String phone; // vide sans compte : la demande part au numéro de la commande
+  final OrderAccess order;
 
   const UssdWaitingScreen({
     super.key,
@@ -30,7 +30,7 @@ class UssdWaitingScreen extends StatefulWidget {
     required this.amount,
     required this.method,
     required this.phone,
-    required this.tickets,
+    required this.order,
   });
 
   @override
@@ -38,10 +38,12 @@ class UssdWaitingScreen extends StatefulWidget {
 }
 
 class _UssdWaitingScreenState extends State<UssdWaitingScreen> {
-  static const _initialSeconds = 87;
-  int _secondsLeft = _initialSeconds;
+  final ApiService _api = ApiService();
+  DateTime? _deadline;
+  int _secondsLeft = 0;
   Timer? _countdownTimer;
-  Timer? _successTimer;
+  Timer? _pollTimer;
+  bool _finished = false;
 
   Color get _providerColor => widget.method == PaymentMethod.moov ? const Color(0xFFE8622A) : const Color(0xFFE52329);
   String get _providerName => widget.method == PaymentMethod.moov ? 'Moov Money' : 'Airtel Money';
@@ -52,29 +54,60 @@ class _UssdWaitingScreenState extends State<UssdWaitingScreen> {
   void initState() {
     super.initState();
     _countdownTimer = Timer.periodic(const Duration(seconds: 1), (_) {
-      if (_secondsLeft > 0) setState(() => _secondsLeft--);
+      final deadline = _deadline;
+      if (deadline == null || !mounted) return;
+      final left = deadline.difference(DateTime.now()).inSeconds;
+      setState(() => _secondsLeft = left < 0 ? 0 : left);
     });
-    _successTimer = Timer(const Duration(milliseconds: 5200), () {
-      if (!mounted) return;
-      context.read<TicketsProvider>().addTickets(widget.tickets);
-      context.go('/success', extra: {
-        'event': widget.event,
-        'amount': widget.amount,
-        'method': widget.method,
-        'tickets': widget.tickets,
-      });
-    });
+    _poll();
+    _pollTimer = Timer.periodic(const Duration(seconds: 3), (_) => _poll());
   }
 
   @override
   void dispose() {
     _countdownTimer?.cancel();
-    _successTimer?.cancel();
+    _pollTimer?.cancel();
     super.dispose();
   }
 
-  void _resend() {
-    setState(() => _secondsLeft = _initialSeconds);
+  Future<void> _poll() async {
+    if (_finished) return;
+    final response = await _api.getOrder(widget.order);
+    final tickets = response.data;
+    if (!mounted || _finished || !response.success || tickets == null) return;
+
+    final deadlines = tickets.map((t) => t.expiresAt).whereType<DateTime>().toList()..sort();
+    if (deadlines.isNotEmpty && _deadline == null) {
+      setState(() {
+        _deadline = deadlines.first;
+        _secondsLeft = _deadline!.difference(DateTime.now()).inSeconds.clamp(0, 1 << 30);
+      });
+    }
+
+    switch (orderOutcomeOf(tickets)) {
+      case OrderOutcome.paid:
+        _finished = true;
+        context.read<TicketsProvider>().refresh();
+        context.go('/success', extra: {
+          'event': widget.event,
+          'amount': widget.amount,
+          'method': widget.method,
+          'tickets': tickets,
+          'order': widget.order,
+        });
+        break;
+      case OrderOutcome.failed:
+        _finished = true;
+        context.pop("Le paiement $_providerName a été refusé. Aucun montant n'a été débité.");
+        break;
+      case OrderOutcome.expired:
+        _finished = true;
+        context.pop('La demande a expiré sans confirmation et les places ont été libérées. Vous pouvez recommencer.');
+        break;
+      case OrderOutcome.pending:
+      case OrderOutcome.reserved:
+        break;
+    }
   }
 
   @override
@@ -107,8 +140,10 @@ class _UssdWaitingScreenState extends State<UssdWaitingScreen> {
                   children: [
                     const TextSpan(text: 'Une notification de paiement de '),
                     TextSpan(text: '${widget.amount.toStringAsFixed(0)} FCFA', style: TextStyle(fontWeight: FontWeight.w600, color: c.ink)),
-                    const TextSpan(text: ' vient d\'être envoyée au '),
-                    TextSpan(text: '+241 ${widget.phone}', style: TextStyle(fontWeight: FontWeight.w600, color: c.ink)),
+                    const TextSpan(text: ' vient d\'être envoyée '),
+                    TextSpan(
+                        text: widget.phone.isEmpty ? 'au numéro de la commande' : 'au +241 ${widget.phone}',
+                        style: TextStyle(fontWeight: FontWeight.w600, color: c.ink)),
                     const TextSpan(text: '.'),
                   ],
                 ),
@@ -151,11 +186,17 @@ class _UssdWaitingScreenState extends State<UssdWaitingScreen> {
                 ],
               ),
               const SizedBox(height: 32),
-              SizedBox(width: double.infinity, height: 48, child: OutlinedButton(onPressed: _resend, child: const Text('Renvoyer la demande'))),
+              // Pas d'annulation côté serveur pour une demande en cours : sans validation, elle expire
+              // à l'échéance et les places sont libérées automatiquement
+              Text('Sans validation avant la fin du décompte, la demande expire et vos places sont libérées.',
+                  textAlign: TextAlign.center, style: TextStyle(fontSize: 12.5, color: c.ink3)),
               const SizedBox(height: 10),
               TextButton(
-                onPressed: () => context.pop(),
-                child: Text('Annuler le paiement', style: TextStyle(color: c.ink3)),
+                onPressed: () {
+                  _finished = true;
+                  context.pop();
+                },
+                child: Text('Abandonner', style: TextStyle(color: c.ink3)),
               ),
             ],
           ),

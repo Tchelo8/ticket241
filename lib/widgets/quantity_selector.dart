@@ -9,6 +9,8 @@ class QuantitySelector extends StatelessWidget {
   final int value;
   final ValueChanged<int> onChanged;
   final int min;
+  /// Plafond (maximum par commande, places restantes) : « + » désactivé au-delà
+  final int max;
   final double buttonSize;
 
   const QuantitySelector({
@@ -16,6 +18,7 @@ class QuantitySelector extends StatelessWidget {
     required this.value,
     required this.onChanged,
     this.min = 0,
+    this.max = 99,
     this.buttonSize = 34,
   });
 
@@ -53,7 +56,7 @@ class QuantitySelector extends StatelessWidget {
           fillColor: c.acc,
           iconColor: c.onAcc,
           icon: PhosphorIcons.plus(),
-          onTap: () => onChanged(value + 1),
+          onTap: value < max ? () => onChanged(value + 1) : null,
         ),
       ],
     );

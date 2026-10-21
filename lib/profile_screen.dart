@@ -91,6 +91,35 @@ class ProfileScreen extends StatelessWidget {
       ...favoritesProvider.favorites.map((e) => e.cityName),
     };
 
+    // Visiteur sans compte (achat invité) : pas de profil, invitation à se connecter
+    if (!authProvider.isAuthenticated) {
+      return Scaffold(
+        backgroundColor: c.bg,
+        body: SafeArea(
+          child: ListView(
+            padding: const EdgeInsets.fromLTRB(AppSpacing.screen, 8, AppSpacing.screen, 32),
+            children: [
+              Text('Profil', style: Theme.of(context).textTheme.headlineMedium),
+              const SizedBox(height: 20),
+              Text(
+                'Vous utilisez Ticket241 sans compte. Connectez-vous pour retrouver vos billets sur tous vos appareils.',
+                style: TextStyle(fontSize: 15, height: 1.5, color: c.ink2),
+              ),
+              const SizedBox(height: 20),
+              SizedBox(height: 52, child: ElevatedButton(onPressed: () => context.go('/login'), child: const Text('Se connecter'))),
+              const SizedBox(height: 12),
+              SizedBox(height: 48, child: OutlinedButton(onPressed: () => context.push('/signup'), child: const Text("S'inscrire"))),
+              const SizedBox(height: 12),
+              TextButton(
+                onPressed: () => context.push('/recover-tickets'),
+                child: Text('Retrouver des billets achetés sans compte', style: TextStyle(color: c.acc)),
+              ),
+            ],
+          ),
+        ),
+      );
+    }
+
     return Scaffold(
       backgroundColor: c.bg,
       body: SafeArea(

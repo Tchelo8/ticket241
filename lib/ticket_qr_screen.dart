@@ -1,17 +1,71 @@
 import 'package:flutter/material.dart';
+import 'package:fluttertoast/fluttertoast.dart';
 import 'package:go_router/go_router.dart';
 import 'package:phosphor_flutter/phosphor_flutter.dart';
 import 'package:qr_flutter/qr_flutter.dart';
+import 'package:url_launcher/url_launcher.dart';
 
 import 'package:myapp/models/ticket_model.dart';
+import 'package:myapp/services/api_service.dart';
+import 'package:myapp/services/ticket_pdf.dart';
 import 'package:myapp/theme/app_theme.dart';
 import 'package:myapp/theme/design_tokens.dart';
 import 'package:myapp/widgets/dashed_line.dart';
 
-/// Billet en détail (README écran 15).
-class TicketQrScreen extends StatelessWidget {
+/// Billet en détail (README écran 15). Le QR code affiché est le contenu exact scanné à l'entrée
+/// (donné par ticket-service) ; les listes ne le contiennent pas, il est alors relu dans le détail.
+class TicketQrScreen extends StatefulWidget {
   final EventTicket ticket;
-  const TicketQrScreen({super.key, required this.ticket});
+  /// Billet retrouvé par code (achat sans compte) : session ouverte pour son PDF
+  final String? guestSession;
+
+  const TicketQrScreen({super.key, required this.ticket, this.guestSession});
+
+  @override
+  State<TicketQrScreen> createState() => _TicketQrScreenState();
+}
+
+class _TicketQrScreenState extends State<TicketQrScreen> {
+  final ApiService _api = ApiService();
+  late EventTicket ticket = widget.ticket;
+  bool _loadingQr = false;
+  bool _downloading = false;
+
+  @override
+  void initState() {
+    super.initState();
+    if ((ticket.qrCode == null || ticket.qrCode!.isEmpty) && ticket.ticketUuid != null && ticket.guestToken == null) {
+      _loadQrCode();
+    }
+  }
+
+  Future<void> _loadQrCode() async {
+    setState(() => _loadingQr = true);
+    final response = await _api.getTicket(ticket.ticketUuid!);
+    if (!mounted) return;
+    setState(() {
+      if (response.success && response.data != null) {
+        ticket = response.data!.enrich(imagePath: widget.ticket.imagePath);
+      }
+      _loadingQr = false;
+    });
+  }
+
+  Future<void> _openPdf() async {
+    setState(() => _downloading = true);
+    final error = await openTicketPdf(ticket, api: _api, guestSession: widget.guestSession);
+    if (!mounted) return;
+    setState(() => _downloading = false);
+    if (error != null) Fluttertoast.showToast(msg: error, toastLength: Toast.LENGTH_LONG);
+  }
+
+  Future<void> _openMaps() async {
+    final query = Uri.encodeComponent('${ticket.location}, Gabon');
+    final uri = Uri.parse('https://www.google.com/maps/search/?api=1&query=$query');
+    if (!await launchUrl(uri, mode: LaunchMode.externalApplication)) {
+      Fluttertoast.showToast(msg: "Impossible d'ouvrir la carte.");
+    }
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -28,7 +82,7 @@ class TicketQrScreen extends StatelessWidget {
                 children: [
                   GestureDetector(onTap: () => context.pop(), child: Icon(PhosphorIconsRegular.arrowLeft, color: c.ink)),
                   Text('Votre billet', style: Theme.of(context).textTheme.titleLarge),
-                  Icon(PhosphorIconsRegular.shareNetwork, color: c.ink),
+                  const SizedBox(width: 24),
                 ],
               ),
             ),
@@ -45,8 +99,10 @@ class TicketQrScreen extends StatelessWidget {
                           child: SizedBox(
                             height: 52,
                             child: ElevatedButton.icon(
-                              onPressed: () => context.push('/pdf-viewer'),
-                              icon: const Icon(PhosphorIconsRegular.downloadSimple, size: 18),
+                              onPressed: _downloading || !ticket.isValid ? null : _openPdf,
+                              icon: _downloading
+                                  ? const SizedBox(width: 16, height: 16, child: CircularProgressIndicator(strokeWidth: 2))
+                                  : const Icon(PhosphorIconsRegular.downloadSimple, size: 18),
                               label: const Text('PDF'),
                             ),
                           ),
@@ -56,27 +112,13 @@ class TicketQrScreen extends StatelessWidget {
                           child: SizedBox(
                             height: 52,
                             child: OutlinedButton.icon(
-                              onPressed: () {},
+                              onPressed: ticket.location.isEmpty ? null : _openMaps,
                               icon: Icon(PhosphorIconsRegular.mapTrifold, size: 18, color: c.acc),
                               label: Text('Itinéraire', style: TextStyle(color: c.acc)),
                             ),
                           ),
                         ),
                       ],
-                    ),
-                    const SizedBox(height: 20),
-                    Container(
-                      padding: const EdgeInsets.all(14),
-                      decoration: BoxDecoration(border: Border.all(color: c.line2, width: 1), borderRadius: BorderRadius.circular(AppRadii.card)),
-                      child: Row(
-                        children: [
-                          Icon(PhosphorIconsRegular.shieldCheck, size: 20, color: c.acc),
-                          const SizedBox(width: 10),
-                          Expanded(
-                            child: Text('Annulation gratuite jusqu\'à 48 h avant l\'événement.', style: TextStyle(fontSize: 12.5, color: c.ink2)),
-                          ),
-                        ],
-                      ),
                     ),
                   ],
                 ),
@@ -90,6 +132,7 @@ class TicketQrScreen extends StatelessWidget {
 
   Widget _buildTicketCard(BuildContext context) {
     final c = context.appColors;
+    final qr = ticket.qrCode;
     return Container(
       decoration: BoxDecoration(
         color: c.card,
@@ -103,7 +146,8 @@ class TicketQrScreen extends StatelessWidget {
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                Text('TICKET241 · ENTRÉE', style: TextStyle(fontSize: 10, fontWeight: FontWeight.w600, letterSpacing: 1.4, color: c.acc)),
+                Text('TICKET241 · ${ticket.isValid ? 'ENTRÉE' : ticket.status.toUpperCase()}',
+                    style: TextStyle(fontSize: 10, fontWeight: FontWeight.w600, letterSpacing: 1.4, color: c.acc)),
                 const SizedBox(height: 8),
                 Text(ticket.eventName, style: TextStyle(fontSize: 26, fontWeight: FontWeight.w600, color: c.ink)),
                 const SizedBox(height: 6),
@@ -121,15 +165,24 @@ class TicketQrScreen extends StatelessWidget {
             child: Column(
               children: [
                 Container(
+                  width: 208,
+                  height: 208,
                   padding: const EdgeInsets.all(14),
                   decoration: const BoxDecoration(color: Colors.white),
-                  child: QrImageView(data: ticket.reference, size: 180, backgroundColor: Colors.white),
+                  child: _loadingQr
+                      ? const Center(child: CircularProgressIndicator())
+                      : ticket.isValid && qr != null && qr.isNotEmpty
+                          ? QrImageView(data: qr, size: 180, backgroundColor: Colors.white)
+                          : Center(
+                              child: Text('QR code indisponible', textAlign: TextAlign.center, style: TextStyle(color: c.ink3)),
+                            ),
                 ),
                 const SizedBox(height: 14),
                 Text(ticket.reference,
                     style: TextStyle(fontSize: 15, fontWeight: FontWeight.w600, letterSpacing: 2, color: c.ink, fontFeatures: const [FontFeature.tabularFigures()])),
                 const SizedBox(height: 4),
-                Text('Présentez ce code à l\'entrée', style: TextStyle(fontSize: 12.5, color: c.ink3)),
+                Text(ticket.isValid ? 'Présentez ce code à l\'entrée' : 'Le QR code apparaît une fois le billet payé',
+                    style: TextStyle(fontSize: 12.5, color: c.ink3)),
               ],
             ),
           ),
@@ -138,11 +191,11 @@ class TicketQrScreen extends StatelessWidget {
             padding: const EdgeInsets.symmetric(vertical: 14),
             child: Row(
               children: [
-                Expanded(child: _footerColumn(context, 'TYPE', ticket.eventName)),
+                Expanded(child: _footerColumn(context, 'CATÉGORIE', ticket.categoryName ?? '—')),
                 Container(width: 1, height: 32, color: c.line),
-                Expanded(child: _footerColumn(context, 'PLACES', '${ticket.ticketCount}')),
+                Expanded(child: _footerColumn(context, 'STATUT', ticket.status)),
                 Container(width: 1, height: 32, color: c.line),
-                Expanded(child: _footerColumn(context, 'PAYÉ', '${(ticket.price * ticket.ticketCount).toStringAsFixed(0)} FCFA')),
+                Expanded(child: _footerColumn(context, 'PAYÉ', '${ticket.price.toStringAsFixed(0)} FCFA')),
               ],
             ),
           ),

@@ -2,6 +2,7 @@ import 'package:flutter/cupertino.dart';
 import 'package:go_router/go_router.dart';
 import 'package:myapp/forgot_password_screen.dart';
 import 'package:myapp/main_screen.dart';
+import 'package:myapp/models/order_model.dart';
 import 'package:myapp/models/ticket_model.dart';
 import 'package:myapp/otp_verification_screen.dart';
 import 'package:myapp/login_screen.dart';
@@ -14,8 +15,8 @@ import 'package:myapp/splash_screen.dart';
 import 'package:myapp/checkout_screen.dart';
 import 'package:myapp/success_screen.dart';
 import 'package:myapp/ussd_waiting_screen.dart';
+import 'package:myapp/recover_tickets_screen.dart';
 import 'package:myapp/ticket_qr_screen.dart';
-import 'package:myapp/pdf_viewer_screen.dart';
 import 'package:myapp/edit_profile_screen.dart';
 import 'package:myapp/providers/auth_provider.dart';
 import 'package:myapp/models/event_model.dart';
@@ -107,7 +108,7 @@ class AppRouter {
               amount: extra['amount'] as double,
               method: extra['method'] as PaymentMethod,
               phone: extra['phone'] as String,
-              tickets: extra['tickets'] as List<EventTicket>,
+              order: extra['order'] as OrderAccess,
             );
           },
         ),
@@ -124,15 +125,19 @@ class AppRouter {
           },
         ),
         GoRoute(
-          path: '/ticket-qr',
-          builder: (context, state) {
-            final ticket = state.extra as EventTicket;
-            return TicketQrScreen(ticket: ticket);
-          },
+          path: '/recover-tickets',
+          builder: (context, state) => const RecoverTicketsScreen(),
         ),
         GoRoute(
-          path: '/pdf-viewer',
-          builder: (context, state) => const PdfViewerScreen(),
+          path: '/ticket-qr',
+          builder: (context, state) {
+            // Billet seul, ou billet retrouvé par code avec sa session ({ticket, guestSession})
+            final extra = state.extra;
+            if (extra is Map<String, dynamic>) {
+              return TicketQrScreen(ticket: extra['ticket'] as EventTicket, guestSession: extra['guestSession'] as String?);
+            }
+            return TicketQrScreen(ticket: extra as EventTicket);
+          },
         ),
       ],
       redirect: (context, state) {
@@ -155,11 +160,9 @@ class AppRouter {
           '/', '/login', '/signup', '/forgot-password', '/otp-verification'
         ].contains(location);
 
-        final privateRoutes = [
-          '/app', '/profile', '/edit-profile', '/notifications',
-          '/details', '/checkout', '/ussd-waiting', '/success',
-          '/ticket-qr', '/pdf-viewer',
-        ];
+        // Parcourir, acheter et voir ses billets ne demandent pas de compte (achat invité) ;
+        // seuls le profil et ce qui en dépend exigent une session
+        final privateRoutes = ['/profile', '/edit-profile', '/notifications'];
 
         if (!isAuthenticated && privateRoutes.contains(location)) {
           return '/';

@@ -5,6 +5,7 @@ import 'package:provider/provider.dart';
 import 'package:phosphor_flutter/phosphor_flutter.dart';
 
 import 'package:myapp/models/event_model.dart';
+import 'package:myapp/models/ticket_category_model.dart';
 import 'package:myapp/models/ticket_model.dart';
 import 'package:myapp/providers/favorites_provider.dart';
 import 'package:myapp/services/api_service.dart';
@@ -35,23 +36,45 @@ class EventDetailsScreenState extends State<EventDetailsScreen> {
   List<Event> _suggestedEvents = [];
   bool _isLoadingSuggestions = true;
 
+  bool _isLoadingCategories = true;
+  String? _categoriesError;
+
   @override
   void initState() {
     super.initState();
-    _initializeTickets();
+    _ticketData = [];
+    _loadTicketCategories();
     _fetchSuggestedEvents();
-    final uuid = widget.event.uuid;
-    if (uuid != null) {
-      _apiService.incrementEventView(uuid);
-    }
   }
 
-  void _initializeTickets() {
-    _ticketData = [
-      {'name': 'Billet Standard', 'price': widget.event.minPrice, 'quantity': 1},
-      {'name': 'Pass Carré VIP', 'price': widget.event.maxPrice, 'quantity': 0},
-    ];
-    _calculateTotal();
+  /// Vraies catégories de billets de l'événement (la liste des événements ne les contient pas).
+  /// Le détail compte aussi une vue côté serveur.
+  Future<void> _loadTicketCategories() async {
+    List<dynamic> raw = widget.event.ticketCategories;
+    final uuid = widget.event.uuid;
+    if (uuid != null) {
+      final response = await _apiService.getEventDetails(uuid);
+      if (response.success && response.data != null) {
+        raw = response.data!.ticketCategories;
+      } else if (raw.isEmpty) {
+        _categoriesError = response.messageOr('Impossible de charger les billets de cet événement.');
+      }
+    }
+    if (!mounted) return;
+    setState(() {
+      _ticketData = TicketCategory.listFrom(raw)
+          .map((c) => {
+                'categoryId': c.id,
+                'name': c.name,
+                'price': c.price,
+                'quantity': 0,
+                'max': c.soldOut ? 0 : c.maxSelectable,
+                'note': c.soldOut ? 'Épuisé' : (c.description ?? c.benefits ?? ''),
+              })
+          .toList();
+      _isLoadingCategories = false;
+      _calculateTotal();
+    });
   }
 
   Future<void> _fetchSuggestedEvents() async {
@@ -420,6 +443,11 @@ class EventDetailsScreenState extends State<EventDetailsScreen> {
         children: [
           Text('Billets', style: Theme.of(context).textTheme.titleLarge),
           const SizedBox(height: 10),
+          if (_isLoadingCategories)
+            const Padding(padding: EdgeInsets.all(16), child: Center(child: CircularProgressIndicator()))
+          else if (_ticketData.isEmpty)
+            Text(_categoriesError ?? "Aucun billet n'est en vente pour cet événement.",
+                style: TextStyle(fontSize: 14, color: context.appColors.ink3)),
           for (var i = 0; i < _ticketData.length; i++) ...[
             _buildTicketRow(context, i),
             const SizedBox(height: 10),
@@ -451,10 +479,14 @@ class EventDetailsScreenState extends State<EventDetailsScreen> {
                 const SizedBox(height: 4),
                 Text('${(ticket['price'] as double).toStringAsFixed(0)} FCFA',
                     style: TextStyle(fontSize: 19, fontWeight: FontWeight.w600, color: c.ink)),
+                if ((ticket['note'] as String).isNotEmpty) ...[
+                  const SizedBox(height: 2),
+                  Text(ticket['note'] as String, style: TextStyle(fontSize: 12.5, color: c.ink3)),
+                ],
               ],
             ),
           ),
-          QuantitySelector(value: qty, onChanged: (v) => _updateTicketQuantity(index, v)),
+          QuantitySelector(value: qty, max: ticket['max'] as int, onChanged: (v) => _updateTicketQuantity(index, v)),
         ],
       ),
     );
@@ -561,8 +593,8 @@ class EventDetailsScreenState extends State<EventDetailsScreen> {
     );
   }
 
+  // Lignes du panier : une par catégorie choisie (le numéro des billets est donné par le serveur)
   void _goToCheckout(BuildContext context) {
-    final cityCode = widget.event.cityName.substring(0, widget.event.cityName.length >= 3 ? 3 : widget.event.cityName.length).toUpperCase();
     final tickets = _ticketData
         .where((ticket) => (ticket['quantity'] as int) > 0)
         .map((ticket) => EventTicket(
@@ -573,11 +605,13 @@ class EventDetailsScreenState extends State<EventDetailsScreen> {
               location: widget.event.venueName,
               date: _formatDate(widget.event.startDate, format: 'dd MMMM yyyy'),
               time: _formatDate(widget.event.startDate, format: 'HH:mm'),
-              status: 'Payé',
+              status: '',
               daysLeft: widget.event.startDate.difference(DateTime.now()).inDays,
               isUpcoming: !widget.event.isPastEvent,
-              reference: 'TK241-${widget.event.id.toString().padLeft(4, '0')}${(ticket['name'] as String).hashCode.toRadixString(16).substring(0, 2).toUpperCase()}-$cityCode',
+              reference: '',
               eventStartDate: widget.event.startDate,
+              categoryId: ticket['categoryId'] as int,
+              categoryName: ticket['name'] as String,
             ))
         .toList();
 

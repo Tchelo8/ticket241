@@ -108,7 +108,13 @@ class _LoginScreenState extends State<LoginScreen> {
           label: const Text('S\'inscrire'),
         ),
       ),
-      const SizedBox(height: 20),
+      const SizedBox(height: 10),
+      // Achat possible sans compte : parcourir les événements et payer avec son seul numéro
+      TextButton(
+        onPressed: () => context.go('/app'),
+        child: Text('Explorer et acheter sans compte', style: TextStyle(fontWeight: FontWeight.w600, color: c.acc)),
+      ),
+      const SizedBox(height: 10),
       Text.rich(
         TextSpan(
           text: 'En continuant, vous acceptez nos ',

@@ -2,9 +2,14 @@ import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
 import 'package:intl/intl.dart';
 import 'package:phosphor_flutter/phosphor_flutter.dart';
+import 'package:provider/provider.dart';
 
 import 'package:myapp/models/event_model.dart';
+import 'package:myapp/models/order_model.dart';
 import 'package:myapp/models/ticket_model.dart';
+import 'package:myapp/providers/auth_provider.dart';
+import 'package:myapp/services/api_service.dart';
+import 'package:myapp/services/guest_orders_store.dart';
 import 'package:myapp/theme/app_theme.dart';
 import 'package:myapp/theme/design_tokens.dart';
 import 'package:myapp/widgets/app_bottom_sheet.dart';
@@ -27,28 +32,49 @@ class CheckoutScreen extends StatefulWidget {
 
 enum PaymentMethod { airtel, moov, card }
 
+/// Sans compte : 5 billets au plus par commande (toutes catégories confondues), comme côté serveur
+const guestMaxTickets = 5;
+
 class CheckoutScreenState extends State<CheckoutScreen> {
   final _nameController = TextEditingController();
   final _phoneController = TextEditingController();
+  final _emailController = TextEditingController();
+  final ApiService _api = ApiService();
 
   PaymentMethod _selectedPaymentMethod = PaymentMethod.airtel;
   bool _isProcessing = false;
   bool _agreedToTerms = false;
   late List<EventTicket> _localTickets;
+  String? _error;
+  String? _step;
 
   @override
   void initState() {
     super.initState();
     _localTickets = List.from(widget.tickets);
+    // Coordonnées préremplies depuis le compte connecté
+    final user = context.read<AuthProvider>().user;
+    if (user != null) {
+      _nameController.text = '${user['firstName'] ?? ''} ${user['lastName'] ?? ''}'.trim();
+      _phoneController.text = (user['phone'] as String? ?? '').replaceFirst(RegExp(r'^\+?241'), '');
+      _emailController.text = user['email'] as String? ?? '';
+    }
     _nameController.addListener(() => setState(() {}));
     _phoneController.addListener(() => setState(() {}));
+    _emailController.addListener(() => setState(() {}));
   }
 
+  bool get _isGuest => !context.read<AuthProvider>().isAuthenticated;
+  int get _ticketCount => _localTickets.fold(0, (sum, item) => sum + item.ticketCount);
   double get _totalAmount => _localTickets.fold(0, (sum, item) => sum + (item.price * item.ticketCount));
 
-  bool get _nameValid => _nameController.text.trim().length > 2;
-  bool get _phoneValid => _phoneController.text.replaceAll(RegExp(r'[^0-9]'), '').length >= 8;
-  bool get _canSubmit => _localTickets.isNotEmpty && _agreedToTerms && _nameValid && _phoneValid && !_isProcessing;
+  bool get _nameValid => _nameController.text.trim().split(RegExp(r'\s+')).where((w) => w.isNotEmpty).length >= 2;
+  bool get _phoneValid => phoneDigits(_phoneController.text).length >= 8;
+  bool get _emailValid =>
+      _emailController.text.trim().isEmpty || RegExp(r'^[^\s@]+@[^\s@]+\.[^\s@]+$').hasMatch(_emailController.text.trim());
+  bool get _tooManyForGuest => _isGuest && _ticketCount > guestMaxTickets;
+  bool get _canSubmit =>
+      _localTickets.isNotEmpty && _agreedToTerms && _nameValid && _phoneValid && _emailValid && !_tooManyForGuest && !_isProcessing;
 
   void _changeTicketQty(EventTicket ticket, int newQty) {
     setState(() {
@@ -56,20 +82,7 @@ class CheckoutScreenState extends State<CheckoutScreen> {
       if (newQty <= 0) {
         _localTickets.remove(ticket);
       } else if (index != -1) {
-        _localTickets[index] = EventTicket(
-          imagePath: ticket.imagePath,
-          eventName: ticket.eventName,
-          location: ticket.location,
-          date: ticket.date,
-          time: ticket.time,
-          status: ticket.status,
-          ticketCount: newQty,
-          daysLeft: ticket.daysLeft,
-          isUpcoming: ticket.isUpcoming,
-          price: ticket.price,
-          reference: ticket.reference,
-          eventStartDate: ticket.eventStartDate,
-        );
+        _localTickets[index] = ticket.copyWith(ticketCount: newQty);
       }
       if (_localTickets.isEmpty) context.pop();
     });
@@ -79,22 +92,100 @@ class CheckoutScreenState extends State<CheckoutScreen> {
   void dispose() {
     _nameController.dispose();
     _phoneController.dispose();
+    _emailController.dispose();
     super.dispose();
   }
 
+  String get _providerName => _selectedPaymentMethod == PaymentMethod.moov ? 'Moov Money' : 'Airtel Money';
+
+  void _fail(String message) {
+    if (!mounted) return;
+    setState(() {
+      _error = message;
+      _step = null;
+      _isProcessing = false;
+    });
+  }
+
+  /// 1. réserve tout le panier (une commande) ; 2. attend que les places soient confirmées
+  /// (traitement asynchrone côté serveur) ; 3. envoie la demande de paiement Mobile Money.
   Future<void> _processPayment() async {
     if (!_canSubmit) return;
-    setState(() => _isProcessing = true);
-    await Future.delayed(const Duration(milliseconds: 1400));
-    if (!mounted) return;
-    await context.push('/ussd-waiting', extra: {
-      'event': widget.event,
-      'amount': _totalAmount,
-      'method': _selectedPaymentMethod,
-      'phone': _phoneController.text,
-      'tickets': _localTickets,
+    final guest = _isGuest;
+    final words = _nameController.text.trim().split(RegExp(r'\s+'));
+    setState(() {
+      _isProcessing = true;
+      _error = null;
+      _step = 'Réservation de vos places…';
     });
-    if (mounted) setState(() => _isProcessing = false);
+
+    final reservation = await _api.reserve(
+      eventId: widget.event.id,
+      items: _localTickets.where((t) => t.categoryId != null).map((t) => CartItem(t.categoryId!, t.ticketCount)).toList(),
+      firstName: words.first,
+      lastName: words.skip(1).join(' '),
+      phone: _phoneController.text,
+      email: _emailController.text.trim(),
+      guest: guest,
+    );
+    if (!reservation.success || reservation.data == null) {
+      return _fail(reservation.messageOr('La réservation a échoué. Vérifiez votre connexion et réessayez.'));
+    }
+    final order = reservation.data!.order;
+
+    // Sans compte, le jeton est la seule clé des billets : on le garde sur ce téléphone
+    if (order.isGuest) {
+      await GuestOrdersStore.instance.add(GuestOrder(
+        orderId: order.orderId,
+        token: order.guestToken!,
+        eventName: widget.event.name,
+        createdAt: DateTime.now(),
+      ));
+    }
+
+    final seats = await _waitForReservedSeats(order);
+    if (seats == null) {
+      return _fail('La confirmation des places prend plus de temps que prévu. Réessayez dans quelques instants.');
+    }
+    if (seats.any((t) => t.apiStatus != 'RESERVED')) {
+      return _fail('Ces places ne sont plus disponibles. Modifiez votre sélection puis réessayez.');
+    }
+
+    if (mounted) setState(() => _step = 'Envoi de la demande $_providerName…');
+    final payment = await _api.payOrder(order, _selectedPaymentMethod.name, _phoneController.text);
+    if (!payment.success) {
+      return _fail(payment.messageOr('La connexion à $_providerName a échoué. Vérifiez votre réseau puis réessayez.'));
+    }
+    if (!mounted) return;
+
+    // Retour avec un message = paiement refusé ou expiré (affiché ici pour recommencer)
+    final outcome = await context.push<String>('/ussd-waiting', extra: {
+      'event': widget.event,
+      'amount': reservation.data!.total,
+      'method': _selectedPaymentMethod,
+      'phone': guest ? '' : _phoneController.text,
+      'order': order,
+    });
+    if (mounted) {
+      setState(() {
+        _isProcessing = false;
+        _step = null;
+        _error = outcome;
+      });
+    }
+  }
+
+  /// Relit la commande jusqu'à ce qu'aucun billet ne soit plus « en cours » (PENDING) ; null si trop long.
+  Future<List<EventTicket>?> _waitForReservedSeats(OrderAccess order) async {
+    for (var i = 0; i < 40; i++) {
+      final response = await _api.getOrder(order);
+      final tickets = response.data;
+      if (response.success && tickets != null && tickets.isNotEmpty && tickets.every((t) => t.apiStatus != 'PENDING')) {
+        return tickets;
+      }
+      await Future.delayed(const Duration(milliseconds: 1500));
+    }
+    return null;
   }
 
   void _showTicketOptions(EventTicket ticket) {
@@ -150,6 +241,24 @@ class CheckoutScreenState extends State<CheckoutScreen> {
                     _buildPaymentMethodSection(context),
                     const SizedBox(height: 24),
                     _buildPriceSummary(context),
+                    if (_error != null) ...[
+                      const SizedBox(height: 16),
+                      Container(
+                        padding: const EdgeInsets.all(14),
+                        decoration: BoxDecoration(
+                          color: const Color(0xFFD6006C).withValues(alpha: 0.08),
+                          borderRadius: BorderRadius.circular(AppRadii.card),
+                          border: Border.all(color: const Color(0xFFD6006C)),
+                        ),
+                        child: Row(
+                          children: [
+                            const Icon(PhosphorIconsRegular.warningCircle, color: Color(0xFFD6006C)),
+                            const SizedBox(width: 10),
+                            Expanded(child: Text(_error!, style: const TextStyle(fontSize: 13.5, color: Color(0xFFD6006C)))),
+                          ],
+                        ),
+                      ),
+                    ],
                     const SizedBox(height: 16),
                     _buildCancellationInfo(context),
                     const SizedBox(height: 16),
@@ -273,7 +382,7 @@ class CheckoutScreenState extends State<CheckoutScreen> {
                       ],
                     ),
                   ),
-                  QuantitySelector(value: ticket.ticketCount, buttonSize: 30, min: 1, onChanged: (v) => _changeTicketQty(ticket, v)),
+                  QuantitySelector(value: ticket.ticketCount, buttonSize: 30, min: 1, max: _isGuest ? guestMaxTickets : 10, onChanged: (v) => _changeTicketQty(ticket, v)),
                   SizedBox(
                     width: 82,
                     child: Text('${(ticket.price * ticket.ticketCount).toStringAsFixed(0)} FCFA',
@@ -304,8 +413,26 @@ class CheckoutScreenState extends State<CheckoutScreen> {
         _buildField(controller: _nameController, label: 'Nom complet', icon: PhosphorIconsRegular.user, isValid: _nameController.text.isEmpty || _nameValid),
         const SizedBox(height: 14),
         _buildField(controller: _phoneController, label: 'Numéro de téléphone', icon: PhosphorIconsRegular.phone, prefix: '+241 ', isValid: _phoneController.text.isEmpty || _phoneValid, keyboardType: TextInputType.phone),
+        const SizedBox(height: 14),
+        _buildField(
+          controller: _emailController,
+          label: _isGuest ? 'Adresse e-mail (facultatif)' : 'Adresse e-mail',
+          icon: PhosphorIconsRegular.envelopeSimple,
+          isValid: _emailValid,
+          keyboardType: TextInputType.emailAddress,
+        ),
         const SizedBox(height: 8),
-        Text('La demande de paiement sera envoyée sur ce numéro.', style: TextStyle(fontSize: 12, color: context.appColors.ink3)),
+        Text(
+          _isGuest
+              ? 'La demande de paiement sera envoyée sur ce numéro. Avec un e-mail, vous recevez vos billets en PDF et pouvez les retrouver plus tard.'
+              : 'La demande de paiement sera envoyée sur ce numéro.',
+          style: TextStyle(fontSize: 12, color: context.appColors.ink3),
+        ),
+        if (_tooManyForGuest) ...[
+          const SizedBox(height: 8),
+          const Text('Sans compte, $guestMaxTickets billets au maximum par commande. Connectez-vous pour en prendre davantage.',
+              style: TextStyle(fontSize: 12.5, color: Color(0xFFD6006C))),
+        ],
       ],
     );
   }
@@ -411,13 +538,13 @@ class CheckoutScreenState extends State<CheckoutScreen> {
       decoration: BoxDecoration(color: c.surf, borderRadius: BorderRadius.circular(AppRadii.card), border: Border.all(color: c.line, width: 1)),
       child: Column(
         children: [
-          _priceRow('Sous-total', '${_totalAmount.toStringAsFixed(0)} FCFA'),
+          _priceRow('Prix des billets', '${_totalAmount.toStringAsFixed(0)} FCFA'),
           const SizedBox(height: 10),
-          _priceRow('Frais de service', '0 FCFA'),
-          const SizedBox(height: 10),
-          _priceRow('Réduction', '0 FCFA'),
+          // Frais et taxes calculés par ticket-service à la réservation : le montant exact s'affiche
+          // sur l'écran de confirmation et sur le téléphone
+          _priceRow('Frais de service', 'Calculés à la réservation'),
           Padding(padding: const EdgeInsets.symmetric(vertical: 10), child: Container(height: 1, color: c.line2)),
-          _priceRow('Total', '${_totalAmount.toStringAsFixed(0)} FCFA', isTotal: true),
+          _priceRow('Sous-total', '${_totalAmount.toStringAsFixed(0)} FCFA', isTotal: true),
         ],
       ),
     );
@@ -504,7 +631,7 @@ class CheckoutScreenState extends State<CheckoutScreen> {
                         child: CircularProgressIndicator(strokeWidth: 2.5, valueColor: AlwaysStoppedAnimation(Colors.white)),
                       ),
                       const SizedBox(width: 12),
-                      Text(_selectedPaymentMethod == PaymentMethod.moov ? 'Connexion à Moov Money…' : 'Connexion à Airtel Money…'),
+                      Flexible(child: Text(_step ?? 'Connexion à $_providerName…', overflow: TextOverflow.ellipsis)),
                     ],
                   )
                 : Row(

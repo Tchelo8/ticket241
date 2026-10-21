@@ -22,7 +22,8 @@ class SuccessScreen extends StatelessWidget {
   Widget build(BuildContext context) {
     final c = context.appColors;
     final methodName = method == PaymentMethod.moov ? 'Moov Money' : 'Airtel Money';
-    final reference = (tickets != null && tickets!.isNotEmpty) ? tickets!.first.reference : 'TK241-0000-LBV';
+    // Numéros réels des billets émis par ticket-service
+    final reference = (tickets ?? const <EventTicket>[]).map((t) => t.reference).where((r) => r.isNotEmpty).join(' · ');
     final ticketCount = tickets?.fold<int>(0, (sum, t) => sum + t.ticketCount) ?? 0;
 
     return Scaffold(
@@ -58,7 +59,7 @@ class SuccessScreen extends StatelessWidget {
               Text('Paiement confirmé', textAlign: TextAlign.center, style: Theme.of(context).textTheme.headlineLarge?.copyWith(fontSize: 34)),
               const SizedBox(height: 10),
               Text(
-                '${amount != null ? amount!.toStringAsFixed(0) : '0'} FCFA débités via $methodName. Un SMS de confirmation arrive dans un instant.',
+                '${amount != null ? amount!.toStringAsFixed(0) : '0'} FCFA débités via $methodName. Si vous avez donné votre e-mail, vos billets vous y sont aussi envoyés en PDF.',
                 textAlign: TextAlign.center,
                 style: TextStyle(fontSize: 15, height: 1.5, color: c.ink2),
               ),
@@ -132,7 +133,7 @@ class SuccessScreen extends StatelessWidget {
           Row(
             mainAxisAlignment: MainAxisAlignment.spaceBetween,
             children: [
-              Text(reference, style: TextStyle(fontSize: 15, fontWeight: FontWeight.w600, letterSpacing: 1.4, color: c.ink, fontFeatures: const [FontFeature.tabularFigures()])),
+              Flexible(child: Text(reference, overflow: TextOverflow.ellipsis, style: TextStyle(fontSize: 13, fontWeight: FontWeight.w600, letterSpacing: 1.4, color: c.ink, fontFeatures: const [FontFeature.tabularFigures()]))),
               Text('Voir le QR code', style: TextStyle(fontSize: 13, fontWeight: FontWeight.w600, color: c.acc)),
             ],
           ),
