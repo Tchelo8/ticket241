@@ -19,17 +19,19 @@ import 'package:myapp/recover_tickets_screen.dart';
 import 'package:myapp/ticket_qr_screen.dart';
 import 'package:myapp/edit_profile_screen.dart';
 import 'package:myapp/providers/auth_provider.dart';
+import 'package:myapp/providers/onboarding_provider.dart';
 import 'package:myapp/models/event_model.dart';
 
 class AppRouter {
-  final bool onboardingCompleted;
+  final OnboardingProvider onboarding;
   final AuthProvider authProvider;
   late final GoRouter router;
 
-  AppRouter({required this.onboardingCompleted, required this.authProvider}) {
+  AppRouter({required this.onboarding, required this.authProvider}) {
     router = GoRouter(
       initialLocation: '/splash',
-      refreshListenable: authProvider,
+      // Réévalue les redirections à chaque connexion / déconnexion et à la fin de l'onboarding
+      refreshListenable: Listenable.merge([authProvider, onboarding]),
       routes: [
         GoRoute(
           path: '/splash',
@@ -145,6 +147,7 @@ class AppRouter {
         final location = state.matchedLocation;
 
         final onOnboarding = location == '/onboarding';
+        final onboardingCompleted = onboarding.completed;
         if (!onboardingCompleted) {
           return onOnboarding ? null : '/onboarding';
         }

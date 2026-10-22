@@ -7,16 +7,15 @@ import 'package:myapp/providers/tickets_provider.dart';
 import 'package:myapp/providers/theme_provider.dart';
 import 'package:myapp/theme/app_theme.dart';
 import 'package:provider/provider.dart';
-import 'package:shared_preferences/shared_preferences.dart';
+import 'package:myapp/providers/onboarding_provider.dart';
 import 'package:intl/date_symbol_data_local.dart';
 
 Future<void> main() async {
   WidgetsFlutterBinding.ensureInitialized();
   await initializeDateFormatting('fr_FR', null);
   await dotenv.load(fileName: ".env");
-  final prefs = await SharedPreferences.getInstance();
-  final bool onboardingCompleted = prefs.getBool('onboardingCompleted') ?? false;
-  
+  final onboarding = OnboardingProvider(completed: await OnboardingProvider.load());
+
   // 1. Create the AuthProvider instance BEFORE the app starts.
   final authProvider = AuthProvider();
   // Billets rechargés à chaque connexion / déconnexion (ceux du compte apparaissent ou disparaissent)
@@ -28,23 +27,36 @@ Future<void> main() async {
     ticketsProvider.refresh();
   });
 
-  runApp(MyApp(onboardingCompleted: onboardingCompleted, authProvider: authProvider, ticketsProvider: ticketsProvider));
+  // Routeur créé une seule fois (recréé à chaque build, il perdait sa pile d'écrans)
+  final appRouter = AppRouter(onboarding: onboarding, authProvider: authProvider);
+
+  runApp(MyApp(
+    onboarding: onboarding,
+    authProvider: authProvider,
+    ticketsProvider: ticketsProvider,
+    appRouter: appRouter,
+  ));
 }
 
 class MyApp extends StatelessWidget {
-  final bool onboardingCompleted;
+  final OnboardingProvider onboarding;
   final AuthProvider authProvider;
   final TicketsProvider ticketsProvider;
+  final AppRouter appRouter;
 
-  const MyApp({super.key, required this.onboardingCompleted, required this.authProvider, required this.ticketsProvider});
+  const MyApp({
+    super.key,
+    required this.onboarding,
+    required this.authProvider,
+    required this.ticketsProvider,
+    required this.appRouter,
+  });
 
   @override
   Widget build(BuildContext context) {
-    // 2. Create AppRouter with the AuthProvider instance.
-    final appRouter = AppRouter(onboardingCompleted: onboardingCompleted, authProvider: authProvider);
-
     return MultiProvider(
       providers: [
+        ChangeNotifierProvider.value(value: onboarding),
         ChangeNotifierProvider.value(value: authProvider),
         ChangeNotifierProvider(create: (context) => FavoritesProvider()),
         ChangeNotifierProvider.value(value: ticketsProvider),

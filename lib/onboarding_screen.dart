@@ -1,7 +1,9 @@
 import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
 import 'package:phosphor_flutter/phosphor_flutter.dart';
-import 'package:shared_preferences/shared_preferences.dart';
+import 'package:provider/provider.dart';
+
+import 'package:myapp/providers/onboarding_provider.dart';
 
 import 'package:myapp/theme/app_theme.dart';
 import 'package:myapp/theme/design_tokens.dart';
@@ -66,9 +68,9 @@ class OnboardingScreenState extends State<OnboardingScreen> {
     super.dispose();
   }
 
-  void _completeOnboarding() async {
-    final prefs = await SharedPreferences.getInstance();
-    await prefs.setBool('onboardingCompleted', true);
+  // Passe par OnboardingProvider : le routeur est prévenu et laisse aller vers la connexion
+  Future<void> _completeOnboarding() async {
+    await context.read<OnboardingProvider>().complete();
     if (mounted) context.go('/');
   }
 
