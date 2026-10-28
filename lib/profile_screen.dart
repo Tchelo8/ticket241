@@ -151,7 +151,8 @@ class ProfileScreen extends StatelessWidget {
               _appearanceRow(context, themeProvider),
               _menuRow(context, PhosphorIconsRegular.bell, 'Notifications', '', () => context.push('/notifications')),
               _menuRow(context, PhosphorIconsRegular.question, 'Centre d\'aide', '', () {}),
-              _menuRow(context, PhosphorIconsRegular.fileText, 'Conditions de vente', '', () {}),
+              _menuRow(context, PhosphorIconsRegular.fileText, 'Conditions de vente', '', () => context.push('/conditions-de-vente')),
+              _menuRow(context, PhosphorIconsRegular.shieldCheck, 'Politique de confidentialité', '', () => context.push('/confidentialite')),
             ]),
             const SizedBox(height: 24),
             SizedBox(

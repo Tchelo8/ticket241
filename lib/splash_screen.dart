@@ -82,15 +82,6 @@ class SplashScreenState extends State<SplashScreen> with TickerProviderStateMixi
               ],
             ),
           ),
-          Positioned(
-            left: 0,
-            right: 0,
-            bottom: 32,
-            child: Center(
-              child: Text('LIBREVILLE · GABON',
-                  style: TextStyle(fontSize: 10.5, fontWeight: FontWeight.w600, letterSpacing: 2, color: c.ink3)),
-            ),
-          ),
         ],
       ),
     );

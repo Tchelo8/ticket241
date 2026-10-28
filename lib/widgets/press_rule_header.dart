@@ -9,8 +9,10 @@ import '../theme/app_theme.dart';
 class PressRuleHeader extends StatelessWidget {
   final String left;
   final String? right;
+  /// Retrait du texte par rapport aux bords (les filets restent pleine largeur)
+  final double inset;
 
-  const PressRuleHeader({super.key, required this.left, this.right});
+  const PressRuleHeader({super.key, required this.left, this.right, this.inset = 0});
 
   @override
   Widget build(BuildContext context) {
@@ -27,7 +29,7 @@ class PressRuleHeader extends StatelessWidget {
       children: [
         Container(height: 3, color: c.ink),
         Padding(
-          padding: const EdgeInsets.symmetric(vertical: 8),
+          padding: EdgeInsets.symmetric(vertical: 8, horizontal: inset),
           child: Row(
             mainAxisAlignment: MainAxisAlignment.spaceBetween,
             children: [

@@ -163,12 +163,12 @@ class _HomeScreenState extends State<HomeScreen> {
                               PressRuleHeader(
                                 left: DateFormat('EEEE d MMMM', 'fr_FR').format(DateTime.now()),
                                 right: '${_cityRegions[_selectedCity] ?? _selectedCity} · ${_allEvents.length} events',
+                                inset: AppSpacing.screen,
                               ),
                               const SizedBox(height: 14),
                               _buildSearchBar(),
                               const SizedBox(height: 20),
                               if (popularEvents.isNotEmpty) ...[
-                                SectionHeader(title: 'À l\'affiche'),
                                 _buildPosterCarousel(context, popularEvents),
                                 const SizedBox(height: 8),
                                 Center(

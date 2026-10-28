@@ -59,6 +59,16 @@ class _LoginScreenState extends State<LoginScreen> {
     }
   }
 
+  /// Lien cliquable vers un document légal, dans la phrase d'acceptation
+  InlineSpan _legalLink(String label, String route) => WidgetSpan(
+        alignment: PlaceholderAlignment.baseline,
+        baseline: TextBaseline.alphabetic,
+        child: GestureDetector(
+          onTap: () => context.push(route),
+          child: Text(label, style: TextStyle(fontSize: 12.5, color: context.appColors.acc)),
+        ),
+      );
+
   @override
   Widget build(BuildContext context) {
     final c = context.appColors;
@@ -112,10 +122,9 @@ class _LoginScreenState extends State<LoginScreen> {
       // Achat possible sans compte : parcourir les événements et payer avec son seul numéro
       SizedBox(
         height: 52,
-        child: OutlinedButton.icon(
+        child: OutlinedButton(
           onPressed: () => context.go('/app'),
-          icon: Icon(PhosphorIconsRegular.ticket, size: 18, color: c.ink),
-          label: const Text('Continuer sans compte'),
+          child: const Text('Continuer sans compte'),
         ),
       ),
       const SizedBox(height: 16),
@@ -124,9 +133,9 @@ class _LoginScreenState extends State<LoginScreen> {
           text: 'En continuant, vous acceptez nos ',
           style: TextStyle(fontSize: 12.5, color: c.ink3),
           children: [
-            TextSpan(text: 'Conditions d\'utilisation', style: TextStyle(color: c.acc)),
+            _legalLink('Conditions de vente', '/conditions-de-vente'),
             const TextSpan(text: ' et notre '),
-            TextSpan(text: 'Politique de confidentialité', style: TextStyle(color: c.acc)),
+            _legalLink('Politique de confidentialité', '/confidentialite'),
             const TextSpan(text: '.'),
           ],
         ),

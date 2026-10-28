@@ -18,6 +18,8 @@ import 'package:myapp/ussd_waiting_screen.dart';
 import 'package:myapp/recover_tickets_screen.dart';
 import 'package:myapp/ticket_qr_screen.dart';
 import 'package:myapp/edit_profile_screen.dart';
+import 'package:myapp/legal_screen.dart';
+import 'package:myapp/models/legal_content.dart';
 import 'package:myapp/providers/auth_provider.dart';
 import 'package:myapp/providers/onboarding_provider.dart';
 import 'package:myapp/models/event_model.dart';
@@ -80,6 +82,15 @@ class AppRouter {
         GoRoute(
           path: '/edit-profile',
           builder: (context, state) => const EditProfileScreen(),
+        ),
+        // Documents légaux : accessibles sans compte (lien depuis la connexion)
+        GoRoute(
+          path: '/conditions-de-vente',
+          builder: (context, state) => const LegalScreen(doc: cgv),
+        ),
+        GoRoute(
+          path: '/confidentialite',
+          builder: (context, state) => const LegalScreen(doc: privacy),
         ),
         GoRoute(
           path: '/notifications',
