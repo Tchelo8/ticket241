@@ -316,6 +316,32 @@ class ApiService {
     );
   }
 
+  // --- Favoris du compte (event-service, JWT) ---
+
+  List<Event> _events(dynamic json) => (json as List).map((item) => Event.fromJson(item as Map<String, dynamic>)).toList();
+
+  Future<ApiResponse<List<Event>>> getFavorites() {
+    return _request<List<Event>>('/api/events/favorites', fromJson: _events);
+  }
+
+  Future<ApiResponse<void>> addFavorite(String eventUuid) {
+    return _request<void>('/api/events/favorites/${Uri.encodeComponent(eventUuid)}', method: 'PUT');
+  }
+
+  Future<ApiResponse<void>> removeFavorite(String eventUuid) {
+    return _request<void>('/api/events/favorites/${Uri.encodeComponent(eventUuid)}', method: 'DELETE');
+  }
+
+  /// Favoris gardés sur le téléphone avant la connexion, versés sur le compte : renvoie la liste complète
+  Future<ApiResponse<List<Event>>> importFavorites(List<String> eventUuids) {
+    return _request<List<Event>>(
+      '/api/events/favorites/import',
+      method: 'POST',
+      body: {'eventUuids': eventUuids},
+      fromJson: _events,
+    );
+  }
+
   // --- Commandes (ticket-service) ---
 
   /// Réserve tout le panier dans UNE commande. Avec une session : commande du compte ;
