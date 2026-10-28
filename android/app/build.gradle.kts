@@ -8,7 +8,7 @@ plugins {
 }
 
 android {
-    namespace = "com.example.myapp"
+    namespace = "ga.ticket241.app"
     compileSdk = flutter.compileSdkVersion
     ndkVersion = flutter.ndkVersion
 
@@ -18,8 +18,8 @@ android {
     }
 
     defaultConfig {
-        // TODO: Specify your own unique Application ID (https://developer.android.com/studio/build/application-id.html).
-        applicationId = "com.example.myapp"
+        // Identifiant définitif sur Google Play : ne plus le changer après la première publication
+        applicationId = "ga.ticket241.app"
         // You can update the following values to match your application needs.
         // For more information, see: https://flutter.dev/to/review-gradle-config.
         minSdk = flutter.minSdkVersion

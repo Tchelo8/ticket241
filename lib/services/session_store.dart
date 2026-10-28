@@ -73,14 +73,26 @@ class SessionStore {
     await prefs.remove(_legacyUserKey);
   }
 
+  /// Identifiant numérique du compte (champ `uid` du JWT), utilisé par notification-service
+  int? get accountId {
+    final uid = _token == null ? null : _claimsOf(_token!)?['uid'];
+    if (uid is num) return uid.toInt();
+    return uid is String ? int.tryParse(uid) : null;
+  }
+
   /// Date d'expiration du JWT (champ `exp`), ou null si illisible.
   static DateTime? expiryOf(String token) {
+    final exp = _claimsOf(token)?['exp'];
+    return exp is num ? DateTime.fromMillisecondsSinceEpoch(exp.toInt() * 1000) : null;
+  }
+
+  /// Champs du JWT, lus sans vérification de signature : seul le serveur fait foi
+  static Map<String, dynamic>? _claimsOf(String token) {
     try {
       final parts = token.split('.');
       if (parts.length != 3) return null;
       final payload = jsonDecode(utf8.decode(base64Url.decode(base64Url.normalize(parts[1]))));
-      final exp = payload is Map<String, dynamic> ? payload['exp'] : null;
-      return exp is num ? DateTime.fromMillisecondsSinceEpoch(exp.toInt() * 1000) : null;
+      return payload is Map<String, dynamic> ? payload : null;
     } catch (_) {
       return null;
     }

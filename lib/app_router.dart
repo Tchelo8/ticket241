@@ -19,6 +19,7 @@ import 'package:myapp/recover_tickets_screen.dart';
 import 'package:myapp/ticket_qr_screen.dart';
 import 'package:myapp/edit_profile_screen.dart';
 import 'package:myapp/legal_screen.dart';
+import 'package:myapp/email_alerts_screen.dart';
 import 'package:myapp/models/legal_content.dart';
 import 'package:myapp/providers/auth_provider.dart';
 import 'package:myapp/providers/onboarding_provider.dart';
@@ -91,6 +92,10 @@ class AppRouter {
         GoRoute(
           path: '/confidentialite',
           builder: (context, state) => const LegalScreen(doc: privacy),
+        ),
+        GoRoute(
+          path: '/alerts',
+          builder: (context, state) => const EmailAlertsScreen(),
         ),
         GoRoute(
           path: '/notifications',
@@ -176,7 +181,7 @@ class AppRouter {
 
         // Parcourir, acheter et voir ses billets ne demandent pas de compte (achat invité) ;
         // seuls le profil et ce qui en dépend exigent une session
-        final privateRoutes = ['/profile', '/edit-profile', '/notifications'];
+        final privateRoutes = ['/profile', '/edit-profile', '/notifications', '/alerts'];
 
         if (!isAuthenticated && privateRoutes.contains(location)) {
           return '/';

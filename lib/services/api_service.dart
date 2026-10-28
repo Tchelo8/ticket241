@@ -1,8 +1,10 @@
+import 'dart:async';
 import 'dart:convert';
 import 'package:flutter/foundation.dart' hide Category;
 import 'package:flutter_dotenv/flutter_dotenv.dart';
 import 'package:http/http.dart' as http;
 import 'package:myapp/models/category_model.dart';
+import 'package:myapp/models/email_alerts_model.dart';
 import 'package:myapp/models/order_model.dart';
 import 'package:myapp/models/ticket_model.dart';
 import 'package:myapp/services/session_store.dart';
@@ -43,6 +45,11 @@ const guestSessionHeader = 'X-Guest-Session';
 
 /// Moyen de paiement de l'application → valeur attendue par ticket-service
 const apiPaymentMethods = {'airtel': 'AIRTEL_MONEY', 'moov': 'MOOV_MONEY', 'card': 'CARD'};
+
+/// Délai maximum d'une requête : au-delà, l'écran affiche une erreur au lieu de charger sans fin
+const _requestTimeout = Duration(seconds: 20);
+const _downloadTimeout = Duration(seconds: 60);
+const _timeoutMessage = 'Le serveur met trop de temps à répondre. Vérifiez votre connexion et réessayez.';
 
 /// Seuls les chiffres du numéro saisi (« 074 12 34 56 » → « 074123456 »), comme le site web
 String phoneDigits(String phone) => phone.replaceAll(RegExp(r'[^0-9]'), '');
@@ -88,16 +95,16 @@ class ApiService {
 
       switch (method.toUpperCase()) {
         case 'POST':
-          response = await http.post(url, headers: allHeaders, body: bodyString);
+          response = await http.post(url, headers: allHeaders, body: bodyString).timeout(_requestTimeout);
           break;
         case 'PUT':
-          response = await http.put(url, headers: allHeaders, body: bodyString);
+          response = await http.put(url, headers: allHeaders, body: bodyString).timeout(_requestTimeout);
           break;
         case 'DELETE':
-          response = await http.delete(url, headers: allHeaders, body: bodyString);
+          response = await http.delete(url, headers: allHeaders, body: bodyString).timeout(_requestTimeout);
           break;
         default:
-          response = await http.get(url, headers: allHeaders);
+          response = await http.get(url, headers: allHeaders).timeout(_requestTimeout);
           break;
       }
 
@@ -128,6 +135,8 @@ class ApiService {
           statusCode: response.statusCode,
         );
       }
+    } on TimeoutException {
+      return ApiResponse<T>(success: false, message: _timeoutMessage);
     } catch (e) {
       return ApiResponse<T>(
         success: false,
@@ -142,7 +151,7 @@ class ApiService {
       final response = await http.get(
         Uri.parse('$_baseUrl$endpoint'),
         headers: {..._headers(extra: headers, json: false), 'Accept': 'application/pdf'},
-      );
+      ).timeout(_downloadTimeout);
       if (response.statusCode >= 200 && response.statusCode < 300) {
         return ApiResponse(success: true, data: response.bodyBytes, statusCode: response.statusCode);
       }
@@ -151,6 +160,8 @@ class ApiService {
         message = (jsonDecode(utf8.decode(response.bodyBytes)) as Map<String, dynamic>)['message'] as String?;
       } catch (_) {}
       return ApiResponse(success: false, message: message, statusCode: response.statusCode);
+    } on TimeoutException {
+      return ApiResponse(success: false, message: _timeoutMessage);
     } catch (e) {
       return ApiResponse(success: false, message: 'Erreur réseau. Vérifiez votre connexion et réessayez.');
     }
@@ -313,6 +324,24 @@ class ApiService {
         }
         return categoryList.map((item) => Category.fromJson(item)).toList();
       },
+    );
+  }
+
+  // --- Alertes e-mail (notification-service, par id numérique du compte) ---
+
+  Future<ApiResponse<EmailAlerts>> getEmailAlerts(int accountId) {
+    return _request<EmailAlerts>(
+      '/api/notifications/preferences/$accountId',
+      fromJson: (json) => EmailAlerts.fromJson(json as Map<String, dynamic>),
+    );
+  }
+
+  Future<ApiResponse<EmailAlerts>> updateEmailAlerts(int accountId, EmailAlerts alerts) {
+    return _request<EmailAlerts>(
+      '/api/notifications/preferences',
+      method: 'PUT',
+      body: {'userId': accountId, ...alerts.toJson()},
+      fromJson: (json) => EmailAlerts.fromJson(json as Map<String, dynamic>),
     );
   }
 

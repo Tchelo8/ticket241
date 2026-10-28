@@ -162,7 +162,7 @@ class _HomeScreenState extends State<HomeScreen> {
                               _buildHeader(context),
                               PressRuleHeader(
                                 left: DateFormat('EEEE d MMMM', 'fr_FR').format(DateTime.now()),
-                                right: '${_cityRegions[_selectedCity] ?? _selectedCity} · ${_allEvents.length} events',
+                                right: '${_cityRegions[_selectedCity] ?? _selectedCity} · ${_allEvents.length} événement${_allEvents.length > 1 ? 's' : ''}',
                                 inset: AppSpacing.screen,
                               ),
                               const SizedBox(height: 14),

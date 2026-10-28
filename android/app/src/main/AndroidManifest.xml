@@ -1,6 +1,14 @@
 <manifest xmlns:android="http://schemas.android.com/apk/res/android">
+    <!-- Indispensable en version publiée : sans elle, l'app ne joint aucun serveur -->
+    <uses-permission android:name="android.permission.INTERNET"/>
+
+    <!-- Pas de sauvegarde automatique : la session et les jetons des commandes sans compte sont
+         chiffrés avec une clé propre au téléphone, illisibles une fois restaurés sur un autre -->
     <application
         android:label="Ticket241"
+        android:allowBackup="false"
+        android:fullBackupContent="false"
+        android:dataExtractionRules="@xml/data_extraction_rules"
         android:name="${applicationName}"
         android:icon="@mipmap/ic_launcher">
         <activity
@@ -25,10 +33,6 @@
                 <category android:name="android.intent.category.LAUNCHER"/>
             </intent-filter>
         </activity>
-
-        <!-- Google Maps API Key -->
-        <meta-data android:name="com.google.android.geo.API_KEY"
-               android:value="YOUR_API_KEY"/>
 
         <!-- Don't delete the meta-data below.
              This is used by the Flutter tool to generate GeneratedPluginRegistrant.java -->

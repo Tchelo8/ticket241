@@ -1,8 +1,10 @@
 import 'package:flutter/material.dart';
+import 'package:flutter_dotenv/flutter_dotenv.dart';
 import 'package:go_router/go_router.dart';
 import 'package:intl/intl.dart';
 import 'package:provider/provider.dart';
 import 'package:phosphor_flutter/phosphor_flutter.dart';
+import 'package:share_plus/share_plus.dart';
 
 import 'package:myapp/models/event_model.dart';
 import 'package:myapp/models/ticket_category_model.dart';
@@ -106,6 +108,26 @@ class EventDetailsScreenState extends State<EventDetailsScreen> {
     _totalPrice = total;
   }
 
+  /// Partage par la feuille du téléphone (WhatsApp, SMS…). Le lien vers la page de l'événement
+  /// n'est ajouté que si l'adresse du site public est connue (URL_SITE_PUBLIC dans .env).
+  Future<void> _share() async {
+    final event = widget.event;
+    final site = dotenv.env['URL_SITE_PUBLIC']?.trim().replaceAll(RegExp(r'/+$'), '');
+    final lines = [
+      event.name,
+      '${_formatDate(event.startDate, format: "EEEE d MMMM yyyy 'à' HH:mm")} · ${event.venueName}, ${event.cityName}',
+      if (site != null && site.isNotEmpty && event.uuid != null) '$site/evenements/${event.uuid}'
+      else 'Billets sur Ticket241',
+    ];
+    // Sur iPad, la feuille de partage doit être ancrée à une zone de l'écran
+    final box = context.findRenderObject() as RenderBox?;
+    await SharePlus.instance.share(ShareParams(
+      text: lines.join('\n'),
+      subject: event.name,
+      sharePositionOrigin: box == null ? null : box.localToGlobal(Offset.zero) & box.size,
+    ));
+  }
+
   String _formatDate(DateTime? date, {String format = 'dd MMMM yyyy, HH:mm'}) {
     if (date == null) return 'N/A';
     return DateFormat(format, 'fr_FR').format(date);
@@ -194,7 +216,7 @@ class EventDetailsScreenState extends State<EventDetailsScreen> {
                       onTap: () => favoritesProvider.toggleFavorite(widget.event),
                     ),
                     const SizedBox(width: 10),
-                    _floatingButton(icon: PhosphorIconsRegular.shareNetwork, onTap: () {}),
+                    _floatingButton(icon: PhosphorIconsRegular.shareNetwork, onTap: _share),
                   ],
                 ),
               ],

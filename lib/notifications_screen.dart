@@ -37,7 +37,7 @@ class NotificationsScreen extends StatelessWidget {
                   body: 'Nous vous préviendrons pour les mises en vente, les rappels d\'événement et vos confirmations de paiement.',
                   primaryLabel: 'Gérer mes alertes',
                   primaryIcon: PhosphorIconsRegular.gear,
-                  onPrimary: () => context.push('/profile'),
+                  onPrimary: () => context.push('/alerts'),
                 ),
               ),
             ),

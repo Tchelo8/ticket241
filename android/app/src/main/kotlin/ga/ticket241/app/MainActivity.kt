@@ -1,4 +1,4 @@
-package com.example.myapp
+package ga.ticket241.app
 
 import io.flutter.embedding.android.FlutterActivity
 

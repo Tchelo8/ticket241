@@ -26,6 +26,59 @@ class TicketsScreen extends StatefulWidget {
 
 class TicketsScreenState extends State<TicketsScreen> {
   int _tabIndex = 0;
+  bool _claiming = false;
+
+  Future<void> _claimGuestOrders(TicketsProvider provider) async {
+    setState(() => _claiming = true);
+    try {
+      final claimed = await provider.claimGuestOrders();
+      Fluttertoast.showToast(
+          msg: claimed > 1 ? '$claimed commandes rattachées à votre compte.' : 'Commande rattachée à votre compte.');
+    } catch (e) {
+      Fluttertoast.showToast(msg: e.toString(), toastLength: Toast.LENGTH_LONG);
+    }
+    if (mounted) setState(() => _claiming = false);
+  }
+
+  /// Connecté avec des achats faits sans compte sur ce téléphone : on propose de les rattacher
+  Widget _claimBanner(BuildContext context, TicketsProvider provider) {
+    final c = context.appColors;
+    final n = provider.claimableOrders;
+    return Container(
+      margin: const EdgeInsets.fromLTRB(AppSpacing.screen, 0, AppSpacing.screen, 8),
+      padding: const EdgeInsets.all(14),
+      decoration: BoxDecoration(
+        color: c.accs,
+        borderRadius: BorderRadius.circular(AppRadii.card),
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Text(
+            n > 1
+                ? '$n commandes ont été achetées sans compte sur ce téléphone.'
+                : 'Une commande a été achetée sans compte sur ce téléphone.',
+            style: TextStyle(fontSize: 14, fontWeight: FontWeight.w600, color: c.ink),
+          ),
+          const SizedBox(height: 4),
+          Text(
+            n > 1
+                ? 'Rattachez-les à votre compte pour les retrouver sur tous vos appareils et sur le site.'
+                : 'Rattachez-la à votre compte pour la retrouver sur tous vos appareils et sur le site.',
+            style: TextStyle(fontSize: 13, height: 1.4, color: c.ink2),
+          ),
+          const SizedBox(height: 10),
+          SizedBox(
+            height: 40,
+            child: ElevatedButton(
+              onPressed: _claiming ? null : () => _claimGuestOrders(provider),
+              child: Text(_claiming ? 'Rattachement…' : 'Rattacher à mon compte'),
+            ),
+          ),
+        ],
+      ),
+    );
+  }
 
   void _showOptions(EventTicket ticket, bool isUpcoming) {
     AppBottomSheet.show(
@@ -96,6 +149,7 @@ class TicketsScreenState extends State<TicketsScreen> {
                 padding: const EdgeInsets.fromLTRB(AppSpacing.screen, 0, AppSpacing.screen, 8),
                 child: Text(provider.error!, style: const TextStyle(fontSize: 12.5, color: Color(0xFFD6006C))),
               ),
+            if (provider.claimableOrders > 0) _claimBanner(context, provider),
             // Achat sans compte : billets retrouvés avec le numéro et un code reçu par e-mail
             Padding(
               padding: const EdgeInsets.symmetric(horizontal: AppSpacing.screen),
