@@ -7,6 +7,7 @@ import 'package:flutter_staggered_animations/flutter_staggered_animations.dart';
 
 import 'package:myapp/models/event_model.dart';
 import 'package:myapp/providers/favorites_provider.dart';
+import 'package:myapp/providers/theme_provider.dart';
 import 'package:myapp/services/api_service.dart';
 import 'package:myapp/city_selection_popup.dart';
 import 'package:myapp/theme/app_theme.dart';
@@ -36,7 +37,7 @@ class HomeScreen extends StatefulWidget {
 }
 
 class _HomeScreenState extends State<HomeScreen> {
-  String _selectedCity = 'Libreville';
+  String _selectedCity = ''; // Ville du ThemeProvider, partagée avec Explorer et le Profil
   final ApiService _apiService = ApiService();
   List<Event> _allEvents = [];
   bool _isLoading = true;
@@ -46,7 +47,17 @@ class _HomeScreenState extends State<HomeScreen> {
   void initState() {
     super.initState();
     Intl.defaultLocale = 'fr_FR';
-    _fetchEvents();
+  }
+
+  @override
+  void didChangeDependencies() {
+    super.didChangeDependencies();
+    // Recharge dès que la ville change, ici, dans Explorer ou dans le Profil
+    final city = Provider.of<ThemeProvider>(context).city;
+    if (city != _selectedCity) {
+      _selectedCity = city;
+      _fetchEvents();
+    }
   }
 
   @override
@@ -55,12 +66,14 @@ class _HomeScreenState extends State<HomeScreen> {
     super.dispose();
   }
 
-  Future<void> _fetchEvents({String? city}) async {
+  Future<void> _fetchEvents() async {
+    final city = _selectedCity;
     setState(() {
       _isLoading = true;
     });
-    final response = await _apiService.getEvents(city: city ?? _selectedCity);
-    if (mounted) {
+    final response = await _apiService.getEvents(city: city);
+    // Ville changée pendant le chargement : seule la dernière réponse compte
+    if (mounted && city == _selectedCity) {
       setState(() {
         _allEvents = (response.success && response.data != null) ? response.data! : [];
         if (!response.success) {
@@ -69,32 +82,6 @@ class _HomeScreenState extends State<HomeScreen> {
           );
         }
         _isLoading = false;
-      });
-    }
-  }
-
-  void _showCitySelection(BuildContext context) async {
-    final result = await showModalBottomSheet<String>(
-      context: context,
-      isScrollControlled: true,
-      backgroundColor: Colors.transparent,
-      builder: (context) {
-        return DraggableScrollableSheet(
-          initialChildSize: 0.78,
-          minChildSize: 0.4,
-          maxChildSize: 0.78,
-          expand: false,
-          builder: (context, scrollController) {
-            return CitySelectionPopup(currentCity: _selectedCity);
-          },
-        );
-      },
-    );
-
-    if (result != null && result != _selectedCity) {
-      setState(() {
-        _selectedCity = result;
-        _fetchEvents(city: _selectedCity);
       });
     }
   }
@@ -236,7 +223,7 @@ class _HomeScreenState extends State<HomeScreen> {
         mainAxisAlignment: MainAxisAlignment.spaceBetween,
         children: [
           GestureDetector(
-            onTap: () => _showCitySelection(context),
+            onTap: () => CitySelectionPopup.pick(context),
             child: Container(
               height: 40,
               padding: const EdgeInsets.symmetric(horizontal: 12),

@@ -3,9 +3,11 @@ import 'package:go_router/go_router.dart';
 import 'package:provider/provider.dart';
 import 'package:phosphor_flutter/phosphor_flutter.dart';
 
+import 'package:myapp/city_selection_popup.dart';
 import 'package:myapp/models/category_model.dart';
 import 'package:myapp/models/event_model.dart';
 import 'package:myapp/providers/favorites_provider.dart';
+import 'package:myapp/providers/theme_provider.dart';
 import 'package:myapp/services/api_service.dart';
 import 'package:myapp/theme/app_theme.dart';
 import 'package:myapp/theme/design_tokens.dart';
@@ -28,16 +30,21 @@ class ExplorerScreenState extends State<ExplorerScreen> {
   List<Category> _categories = [];
   bool _isLoadingEvents = true;
   bool _isLoadingCategories = true;
-  final String _selectedCity = 'Libreville';
+  String _selectedCity = ''; // Ville du ThemeProvider, partagée avec l'Accueil et le Profil
 
   List<Event> _filteredEvents = [];
   ExplorerFilters _filters = const ExplorerFilters();
   String _searchQuery = '';
 
   @override
-  void initState() {
-    super.initState();
-    _fetchData();
+  void didChangeDependencies() {
+    super.didChangeDependencies();
+    // Recharge dès que la ville change, ici, dans l'Accueil ou dans le Profil
+    final city = Provider.of<ThemeProvider>(context).city;
+    if (city != _selectedCity) {
+      _selectedCity = city;
+      _fetchData();
+    }
   }
 
   @override
@@ -46,7 +53,8 @@ class ExplorerScreenState extends State<ExplorerScreen> {
     super.dispose();
   }
 
-  Future<void> _fetchData({String? city}) async {
+  Future<void> _fetchData() async {
+    final city = _selectedCity;
     setState(() {
       _isLoadingEvents = true;
       _isLoadingCategories = true;
@@ -54,14 +62,15 @@ class ExplorerScreenState extends State<ExplorerScreen> {
 
     try {
       final responses = await Future.wait([
-        _apiService.getEvents(city: city ?? _selectedCity),
+        _apiService.getEvents(city: city),
         _apiService.getCategories(),
       ]);
 
       final eventsResponse = responses[0] as ApiResponse<List<Event>>;
       final categoriesResponse = responses[1] as ApiResponse<List<Category>>;
 
-      if (!mounted) return;
+      // Ville changée pendant le chargement : seule la dernière réponse compte
+      if (!mounted || city != _selectedCity) return;
 
       setState(() {
         _allEvents = (eventsResponse.success && eventsResponse.data != null) ? eventsResponse.data! : [];
@@ -175,7 +184,34 @@ class ExplorerScreenState extends State<ExplorerScreen> {
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          Text('Explorer', style: Theme.of(context).textTheme.headlineMedium),
+          Row(
+            mainAxisAlignment: MainAxisAlignment.spaceBetween,
+            children: [
+              Text('Explorer', style: Theme.of(context).textTheme.headlineMedium),
+              GestureDetector(
+                onTap: () => CitySelectionPopup.pick(context),
+                child: Container(
+                  height: 36,
+                  padding: const EdgeInsets.symmetric(horizontal: 12),
+                  decoration: BoxDecoration(
+                    color: c.card,
+                    borderRadius: BorderRadius.circular(AppRadii.pill),
+                    border: Border.all(color: c.line, width: 1),
+                  ),
+                  child: Row(
+                    mainAxisSize: MainAxisSize.min,
+                    children: [
+                      Icon(PhosphorIconsRegular.mapPin, size: 16, color: c.acc),
+                      const SizedBox(width: 6),
+                      Text(_selectedCity, style: TextStyle(fontSize: 14, fontWeight: FontWeight.w600, color: c.ink)),
+                      const SizedBox(width: 4),
+                      Icon(PhosphorIconsRegular.caretDown, size: 13, color: c.ink2),
+                    ],
+                  ),
+                ),
+              ),
+            ],
+          ),
           const SizedBox(height: 12),
           Row(
             children: [

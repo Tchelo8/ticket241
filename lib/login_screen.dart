@@ -110,11 +110,15 @@ class _LoginScreenState extends State<LoginScreen> {
       ),
       const SizedBox(height: 10),
       // Achat possible sans compte : parcourir les événements et payer avec son seul numéro
-      TextButton(
-        onPressed: () => context.go('/app'),
-        child: Text('Explorer et acheter sans compte', style: TextStyle(fontWeight: FontWeight.w600, color: c.acc)),
+      SizedBox(
+        height: 52,
+        child: OutlinedButton.icon(
+          onPressed: () => context.go('/app'),
+          icon: Icon(PhosphorIconsRegular.ticket, size: 18, color: c.ink),
+          label: const Text('Continuer sans compte'),
+        ),
       ),
-      const SizedBox(height: 10),
+      const SizedBox(height: 16),
       Text.rich(
         TextSpan(
           text: 'En continuant, vous acceptez nos ',

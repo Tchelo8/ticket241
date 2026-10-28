@@ -1,5 +1,8 @@
 import 'package:flutter/material.dart';
 import 'package:phosphor_flutter/phosphor_flutter.dart';
+import 'package:provider/provider.dart';
+
+import 'package:myapp/providers/theme_provider.dart';
 
 import 'package:myapp/services/api_service.dart';
 import 'package:myapp/theme/app_theme.dart';
@@ -10,6 +13,25 @@ import 'package:myapp/theme/design_tokens.dart';
 class CitySelectionPopup extends StatefulWidget {
   final String currentCity;
   const CitySelectionPopup({super.key, required this.currentCity});
+
+  /// Ouvre la feuille et enregistre la ville choisie : une seule ville pour toute l'app
+  /// (Accueil, Explorer, Profil), les écrans qui l'écoutent se rechargent d'eux-mêmes.
+  static Future<void> pick(BuildContext context) async {
+    final themeProvider = context.read<ThemeProvider>();
+    final result = await showModalBottomSheet<String>(
+      context: context,
+      isScrollControlled: true,
+      backgroundColor: Colors.transparent,
+      builder: (context) => DraggableScrollableSheet(
+        initialChildSize: 0.78,
+        minChildSize: 0.4,
+        maxChildSize: 0.78,
+        expand: false,
+        builder: (context, _) => CitySelectionPopup(currentCity: themeProvider.city),
+      ),
+    );
+    if (result != null) themeProvider.setCity(result);
+  }
 
   @override
   State<CitySelectionPopup> createState() => CitySelectionPopupState();

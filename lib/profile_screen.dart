@@ -44,9 +44,13 @@ class ProfileScreen extends StatelessWidget {
               const SizedBox(width: 12),
               Expanded(
                 child: ElevatedButton(
-                  onPressed: () {
+                  onPressed: () async {
+                    final router = GoRouter.of(context);
+                    final auth = context.read<AuthProvider>();
                     Navigator.pop(context);
-                    context.read<AuthProvider>().logout();
+                    // Déconnexion : retour à la page de connexion (et non à l'écran profil invité)
+                    await auth.logout();
+                    router.go('/login');
                   },
                   child: const Text('Confirmer'),
                 ),
