@@ -16,8 +16,8 @@ class LegalDocument {
 
 const cgv = LegalDocument(
   title: 'Conditions générales de vente',
-  lead: "L'essentiel en une phrase : vous payez en mobile money, votre billet arrive aussitôt, et vous pouvez annuler sans frais jusqu'à 48 heures avant l'événement.",
-  updated: 'Mise à jour le 1er octobre 2026',
+  lead: "L'essentiel en une phrase : vous payez en mobile money, votre billet arrive aussitôt, et les conditions de remboursement de chaque événement sont indiquées sur sa page avant l'achat.",
+  updated: 'Mise à jour le 29 octobre 2026',
   sections: [
     LegalSection('Objet', [
       "Les présentes conditions régissent la vente de billets d'événements par Ticket241, plateforme de billetterie exploitée au Gabon, agissant en qualité d'intermédiaire entre l'acheteur et l'organisateur.",
@@ -36,8 +36,9 @@ const cgv = LegalDocument(
       "Le billet est nominatif lorsque l'organisateur l'exige ; une pièce d'identité peut alors être demandée à l'entrée.",
     ]),
     LegalSection('Annulation et remboursement', [
-      "L'acheteur peut annuler sa commande sans frais jusqu'à 48 heures avant le début de l'événement. Le remboursement est intégral, sur le compte mobile money utilisé, sous 72 heures.",
-      "En cas d'annulation de l'événement par l'organisateur, le remboursement est automatique. En cas de report, le billet reste valable pour la nouvelle date.",
+      "Chaque organisateur fixe les conditions de remboursement de son événement : remboursable jusqu'à un nombre de jours avant son début, ou non remboursable. Ces conditions sont indiquées sur la page de l'événement avant l'achat.",
+      "Dans ce délai, l'acheteur demande le remboursement au support en indiquant le numéro de son billet. Le remboursement est fait sur le compte mobile money utilisé pour le paiement.",
+      "En cas d'annulation de l'événement par l'organisateur, les acheteurs sont remboursés. En cas de report, le billet reste valable pour la nouvelle date.",
     ]),
     LegalSection('Responsabilité', [
       "L'organisateur est seul responsable du déroulement de l'événement. Ticket241 ne saurait être tenu responsable d'une modification de programme, d'horaire ou de lieu décidée par l'organisateur.",

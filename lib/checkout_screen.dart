@@ -641,7 +641,16 @@ class CheckoutScreenState extends State<CheckoutScreen> {
                         const Icon(PhosphorIconsRegular.lockSimple, size: 18),
                         const SizedBox(width: 8),
                       ],
-                      Text(active ? 'Payer ${_totalAmount.toStringAsFixed(0)} FCFA' : 'Complétez vos coordonnées et acceptez les conditions'),
+                      // Sur deux lignes au plus : le message d'attente est long pour les petits écrans
+                      Flexible(
+                        child: Text(
+                          active ? 'Payer ${_totalAmount.toStringAsFixed(0)} FCFA' : 'Complétez vos coordonnées et acceptez les conditions',
+                          textAlign: TextAlign.center,
+                          maxLines: 2,
+                          overflow: TextOverflow.ellipsis,
+                          style: active ? null : const TextStyle(fontSize: 13.5, height: 1.25),
+                        ),
+                      ),
                     ],
                   ),
           ),

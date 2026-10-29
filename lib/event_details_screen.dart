@@ -79,11 +79,14 @@ class EventDetailsScreenState extends State<EventDetailsScreen> {
     });
   }
 
+  /// Suggestions : autres événements à venir de la même ville que celui affiché
   Future<void> _fetchSuggestedEvents() async {
-    final response = await _apiService.getEvents();
+    final response = await _apiService.getEvents(city: widget.event.cityName);
     if (mounted && response.success && response.data != null) {
+      final now = DateTime.now();
       setState(() {
-        _suggestedEvents = response.data!.where((e) => e.id != widget.event.id).take(5).toList();
+        _suggestedEvents =
+            response.data!.where((e) => e.id != widget.event.id && e.startDate.isAfter(now)).take(5).toList();
         _isLoadingSuggestions = false;
       });
     } else if (mounted) {
@@ -404,7 +407,7 @@ class EventDetailsScreenState extends State<EventDetailsScreen> {
             _infoRow(context, PhosphorIconsRegular.doorOpen, 'OUVERTURE DES PORTES', _formatDate(widget.event.doorsOpenTime, format: 'HH:mm')),
             _infoRow(context, PhosphorIconsRegular.mapTrifold, 'ADRESSE', widget.event.venueAddress),
             _infoRow(context, PhosphorIconsRegular.arrowCounterClockwise, 'REMBOURSEMENT',
-                widget.event.allowRefund ? 'Jusqu\'à ${widget.event.refundDeadlineDays} jours avant l\'événement' : 'Non remboursable'),
+                _refundText),
             _infoRow(context, PhosphorIconsRegular.identificationBadge, 'ÂGE MINIMUM',
                 widget.event.minAge > 0 ? '${widget.event.minAge} ans' : 'Tout public'),
             _infoRow(context, PhosphorIconsRegular.buildings, 'ORGANISATEUR', widget.event.organizerName ?? 'N/A'),
@@ -514,6 +517,15 @@ class EventDetailsScreenState extends State<EventDetailsScreen> {
     );
   }
 
+  /// Règle de remboursement fixée par l'organisateur (allowRefund, refundDeadlineDays), jamais un délai en dur
+  String get _refundText {
+    final event = widget.event;
+    if (!event.allowRefund) return 'Billets non remboursables pour cet événement.';
+    final days = event.refundDeadlineDays;
+    if (days <= 0) return 'Remboursement possible jusqu\'au début de l\'événement.';
+    return 'Remboursement possible jusqu\'à $days jour${days > 1 ? 's' : ''} avant l\'événement.';
+  }
+
   Widget _buildCancellationBlock(BuildContext context) {
     final c = context.appColors;
     return Padding(
@@ -529,7 +541,7 @@ class EventDetailsScreenState extends State<EventDetailsScreen> {
             Icon(PhosphorIconsRegular.shieldCheck, size: 22, color: c.acc),
             const SizedBox(width: 12),
             Expanded(
-              child: Text('Annulation gratuite jusqu\'à 48 h avant l\'événement.', style: TextStyle(fontSize: 13, color: c.ink2)),
+              child: Text(_refundText, style: TextStyle(fontSize: 13, color: c.ink2)),
             ),
           ],
         ),
